@@ -6,6 +6,26 @@ def importar_lista():
     conexion = sqlite3.connect('herrajes.db')
     cursor = conexion.cursor()
 
+    # --- CREAR TABLAS SI NO EXISTEN ---
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS proveedores (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre TEXT,
+            contacto TEXT,
+            descuento_global REAL
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS productos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            proveedor_id INTEGER,
+            codigo_proveedor TEXT,
+            descripcion TEXT,
+            costo_base REAL,
+            coeficiente_ganancia REAL
+        )
+    ''')
+
     # 2. Creamos un proveedor genérico si no existe (para cumplir con tu diseño de base de datos)
     cursor.execute("SELECT id FROM proveedores WHERE nombre = 'Proveedor Principal'")
     proveedor = cursor.fetchone()
