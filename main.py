@@ -22,24 +22,34 @@ def abrir_clientes():
 def ejecutar_archivo(nombre_archivo):
     """Función auxiliar para abrir archivos con manejo de errores"""
     if os.path.exists(nombre_archivo):
+        # Usamos Popen para procesos que corren en paralelo (ventanas hijas)
         subprocess.Popen([sys.executable, nombre_archivo])
     else:
         messagebox.showerror("Error", f"No se encontró el archivo: {nombre_archivo}")
 
 def abrir_importador():
     mensaje = ("¿Deseas actualizar la base de datos desde 'lista_precios.xlsx'?\n\n"
-               "Este proceso hará lo siguiente:\n"
-               "1. Agregará los productos nuevos del Excel.\n"
-               "2. Actualizará los precios de los productos existentes.\n"
-               "3. Marcará como 'inactivos' los productos que ya no estén en el Excel (sin borrarlos del historial).")
-    respuesta = messagebox.askyesno("Confirmar Actualización de Productos", mensaje)
-    if respuesta:
+               "Este proceso actualizará precios y productos.")
+    
+    if messagebox.askyesno("Confirmar Actualización", mensaje):
         try:
-            proceso = subprocess.run([sys.executable, 'importar_excel.py'], check=True, capture_output=True, text=True, encoding='utf-8')
-            messagebox.showinfo("Proceso Finalizado", f"Se completó la actualización:\n\n{proceso.stdout}")
-        except subprocess.CalledProcessError as e:
-            messagebox.showerror("Error de Importación", f"Ocurrió un error durante la ejecución del script:\n\n{e.stderr}")
-
+            # Usamos shell=True y cp1252 para máxima compatibilidad con Windows
+            proceso = subprocess.run(
+                [sys.executable, 'importar_excel.py'], 
+                capture_output=True, 
+                text=True, 
+                encoding='cp1252', 
+                errors='replace'
+            )
+            
+            if proceso.returncode == 0:
+                messagebox.showinfo("Éxito", f"Actualización completa:\n{proceso.stdout}")
+            else:
+                # Si el script falló, mostramos qué pasó sin que muera main.py
+                messagebox.showerror("Error en el Script", f"Detalle del error:\n{proceso.stderr}")
+        
+        except Exception as e:
+            messagebox.showerror("Error Crítico", f"No se pudo ejecutar el proceso: {str(e)}")
 # --- CONFIGURACIÓN DE LA VENTANA PRINCIPAL ---
 
 root = tk.Tk()
@@ -73,19 +83,19 @@ def crear_boton_menu(texto, comando):
     return btn
 
 # 1. Ventas
-crear_boton_menu("🛒  NUEVO PRESUPUESTO", abrir_presupuesto)
+crear_boton_menu("🛒   NUEVO PRESUPUESTO", abrir_presupuesto)
 
 # 2. Catálogo
-crear_boton_menu("🔍  CATÁLOGO FOTOGRÁFICO", abrir_catalogo)
+crear_boton_menu("🔍   CATÁLOGO FOTOGRÁFICO", abrir_catalogo)
 
 # 3. Clientes
-crear_boton_menu("👥  AGENDA DE CLIENTES", abrir_clientes)
+crear_boton_menu("👥   AGENDA DE CLIENTES", abrir_clientes)
 
 # 4. Historial
-crear_boton_menu("📊  HISTORIAL DE VENTAS", abrir_historial)
+crear_boton_menu("📊   HISTORIAL DE VENTAS", abrir_historial)
 
 # 5. Inventario
-crear_boton_menu("📦  ACTUALIZAR DESDE EXCEL", abrir_importador)
+crear_boton_menu("📦   ACTUALIZAR DESDE EXCEL", abrir_importador)
 
 # --- Pie de página ---
 tk.Label(
