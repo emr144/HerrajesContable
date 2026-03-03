@@ -28,28 +28,11 @@ def ejecutar_archivo(nombre_archivo):
         messagebox.showerror("Error", f"No se encontró el archivo: {nombre_archivo}")
 
 def abrir_importador():
-    mensaje = ("¿Deseas actualizar la base de datos desde 'lista_precios.xlsx'?\n\n"
-               "Este proceso actualizará precios y productos.")
-    
-    if messagebox.askyesno("Confirmar Actualización", mensaje):
-        try:
-            # Usamos shell=True y cp1252 para máxima compatibilidad con Windows
-            proceso = subprocess.run(
-                [sys.executable, 'importar_excel.py'], 
-                capture_output=True, 
-                text=True, 
-                encoding='cp1252', 
-                errors='replace'
-            )
-            
-            if proceso.returncode == 0:
-                messagebox.showinfo("Éxito", f"Actualización completa:\n{proceso.stdout}")
-            else:
-                # Si el script falló, mostramos qué pasó sin que muera main.py
-                messagebox.showerror("Error en el Script", f"Detalle del error:\n{proceso.stderr}")
-        
-        except Exception as e:
-            messagebox.showerror("Error Crítico", f"No se pudo ejecutar el proceso: {str(e)}")
+    """
+    Abre la nueva ventana de importación por proveedor.
+    """
+    ejecutar_archivo('importar_excel.py')
+
 # --- CONFIGURACIÓN DE LA VENTANA PRINCIPAL ---
 
 root = tk.Tk()

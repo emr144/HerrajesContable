@@ -1,126 +1,185 @@
 import sqlite3
 import sys
 import os
+import tkinter as tk
+from tkinter import ttk, filedialog, messagebox
+import styles as st # Para mantener la consistencia visual
 
 try:
     import pandas as pd
 except ImportError:
-    print("❌ ERROR: No tienes instalada la librería 'pandas'.", file=sys.stderr)
-    print("Ejecuta en tu terminal: pip install pandas openpyxl", file=sys.stderr)
+    # Si estamos en un entorno gráfico, un print no se verá.
+    try:
+        root = tk.Tk()
+        root.withdraw()
+        messagebox.showerror("Librería Faltante", "No tienes instalada la librería 'pandas'.\n\nEjecuta en tu terminal:\npip install pandas openpyxl")
+    except tk.TclError:
+        print("❌ ERROR: No tienes instalada la librería 'pandas'.", file=sys.stderr)
+        print("Ejecuta en tu terminal: pip install pandas openpyxl", file=sys.stderr)
     sys.exit(1)
 
-def _verificar_y_actualizar_esquema(cursor):
-    """Asegura que la tabla tenga la columna 'estado'."""
-    cursor.execute("PRAGMA table_info(productos)")
-    columnas = [info[1] for info in cursor.fetchall()]
-    if 'estado' not in columnas:
-        try:
-            cursor.execute("ALTER TABLE productos ADD COLUMN estado TEXT DEFAULT 'ACTIVO'")
-        except Exception as e:
-            print(f"❌ Error al actualizar esquema: {e}", file=sys.stderr)
-
-def importar_lista():
-    archivo_excel = 'lista_precios.xlsx'
+def _ejecutar_importacion(proveedor_id, archivo_excel):
+    """
+    Importa o actualiza productos desde un Excel para un proveedor específico.
+    Utiliza una operación UPSERT para mayor eficiencia.
+    """
     db_nombre = 'herrajes.db'
-
     if not os.path.exists(archivo_excel):
-        print(f"❌ ERROR: No se encuentra el archivo '{archivo_excel}'", file=sys.stderr)
-        sys.exit(1)
+        return f"❌ ERROR: No se encuentra el archivo '{archivo_excel}'"
 
-    conexion = sqlite3.connect(db_nombre)
-    cursor = conexion.cursor()
-
-    # --- INICIALIZACIÓN DE TABLAS ---
-    cursor.execute('''CREATE TABLE IF NOT EXISTS proveedores (
-        id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT NOT NULL, contacto TEXT, descuento_global REAL DEFAULT 0.0)''')
-    
-    cursor.execute('''CREATE TABLE IF NOT EXISTS productos (
-        id INTEGER PRIMARY KEY AUTOINCREMENT, proveedor_id INTEGER, codigo_proveedor TEXT NOT NULL,
-        descripcion TEXT NOT NULL, costo_base REAL NOT NULL, coeficiente_ganancia REAL NOT NULL,
-        iva REAL DEFAULT 0.21, estado TEXT DEFAULT 'ACTIVO', ultima_actualizacion DATE DEFAULT CURRENT_DATE,
-        FOREIGN KEY (proveedor_id) REFERENCES proveedores (id))''')
-
-    _verificar_y_actualizar_esquema(cursor)
-
-    # Proveedor por defecto
-    cursor.execute("SELECT id FROM proveedores WHERE nombre = 'Proveedor Principal'")
-    res = cursor.fetchone()
-    if not res:
-        cursor.execute("INSERT INTO proveedores (nombre) VALUES ('Proveedor Principal')")
-        proveedor_id = cursor.lastrowid
-    else:
-        proveedor_id = res[0]
-
-    print(f"📂 Leyendo {archivo_excel}...")
     try:
-        # Leemos el excel
+        conexion = sqlite3.connect(db_nombre)
+        cursor = conexion.cursor()
+        
+        # Aseguramos un índice único para que la operación UPSERT funcione correctamente.
+        cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_producto_proveedor ON productos (codigo_proveedor, proveedor_id)")
+        
         df = pd.read_excel(archivo_excel)
 
-        # --- NORMALIZACIÓN DE COLUMNAS (La magia ocurre aquí) ---
-        # Pasamos todos los nombres de columnas a minúsculas y quitamos espacios/tildes extraños
         df.columns = df.columns.astype(str).str.lower().str.strip()
-        
-        # Mapeamos variaciones comunes a nombres que el código entiende
         mapeo = {
             'código': 'codigo', 'codigo': 'codigo',
             'descripción': 'descripcion', 'descripcion': 'descripcion',
             'costo base': 'costo', 'costo': 'costo', 'precio': 'costo'
         }
         df.rename(columns=mapeo, inplace=True)
-
-        # Verificación de columnas obligatorias
-        columnas_actuales = df.columns.tolist()
         for col in ['codigo', 'descripcion', 'costo']:
-            if col not in columnas_actuales:
-                print(f"❌ ERROR: Falta la columna '{col}' en el Excel.", file=sys.stderr)
-                print(f"Columnas detectadas: {columnas_actuales}", file=sys.stderr)
-                sys.exit(1)
-
-        print("🔄 Procesando productos...")
-        cursor.execute("UPDATE productos SET estado = 'INACTIVO'")
-
-        nuevos = 0
-        actualizados = 0
-
+            if col not in df.columns:
+                return f"❌ ERROR: Falta la columna obligatoria '{col}' en el Excel."
+        
+        # 1. Marcar como inactivos SOLO los productos del proveedor a actualizar.
+        cursor.execute("UPDATE productos SET estado = 'INACTIVO' WHERE proveedor_id = ?", (proveedor_id,))
+        
+        productos_a_procesar = []
         for _, fila in df.iterrows():
-            # Extraemos datos limpiando posibles valores nulos
-            cod = str(fila['codigo']).strip()
-            desc = str(fila['descripcion']).strip()
+            cod = str(fila.get('codigo', '')).strip()
+            desc = str(fila.get('descripcion', '')).strip()
             try:
-                prec = float(fila['costo'])
-            except:
+                prec = float(fila.get('costo', 0.0))
+            except (ValueError, TypeError):
                 prec = 0.0
-
+            
             if not cod or cod == 'nan':
                 continue
+            
+            productos_a_procesar.append((proveedor_id, cod, desc, prec, 1.6))
 
-            cursor.execute("SELECT id FROM productos WHERE codigo_proveedor = ?", (cod,))
-            existe = cursor.fetchone()
-
-            if existe:
-                cursor.execute("""UPDATE productos SET descripcion = ?, costo_base = ?, 
-                               estado = 'ACTIVO', ultima_actualizacion = CURRENT_DATE 
-                               WHERE codigo_proveedor = ?""", (desc, prec, cod))
-                actualizados += 1
-            else:
-                cursor.execute("""INSERT INTO productos (proveedor_id, codigo_proveedor, descripcion, 
-                               costo_base, coeficiente_ganancia, estado) 
-                               VALUES (?, ?, ?, ?, ?, 'ACTIVO')""", 
-                               (proveedor_id, cod, desc, prec, 1.6))
-                nuevos += 1
-
+        # 2. Usar UPSERT para insertar o actualizar en bloque (mucho más rápido).
+        upsert_query = """
+            INSERT INTO productos (proveedor_id, codigo_proveedor, descripcion, costo_base, coeficiente_ganancia, estado, ultima_actualizacion)
+            VALUES (?, ?, ?, ?, ?, 'ACTIVO', CURRENT_DATE)
+            ON CONFLICT(codigo_proveedor, proveedor_id) DO UPDATE SET
+                descripcion = excluded.descripcion,
+                costo_base = excluded.costo_base,
+                estado = 'ACTIVO',
+                ultima_actualizacion = CURRENT_DATE;
+        """
+        cursor.executemany(upsert_query, productos_a_procesar)
         conexion.commit()
-        print(f"\n✨ ¡IMPORTACIÓN EXITOSA!")
-        print(f"✅ Nuevos: {nuevos} | 🔄 Actualizados: {actualizados}")
 
+        # Generar un reporte del resultado
+        cursor.execute("SELECT COUNT(*) FROM productos WHERE proveedor_id = ? AND estado = 'ACTIVO'", (proveedor_id,))
+        activos_ahora = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) FROM productos WHERE proveedor_id = ? AND estado = 'INACTIVO'", (proveedor_id,))
+        inactivos_ahora = cursor.fetchone()[0]
+
+        return (f"✨ ¡IMPORTACIÓN EXITOSA!\n\n"
+                f"Proveedor ID: {proveedor_id}\n"
+                f"Archivo: {os.path.basename(archivo_excel)}\n\n"
+                f"✅ {len(productos_a_procesar)} productos del Excel procesados.\n"
+                f"🔄 Total de productos ACTIVOS para este proveedor: {activos_ahora}\n"
+                f"🗑️ Productos marcados como INACTIVOS: {inactivos_ahora}")
+        
     except PermissionError:
-        print("❌ ERROR: El Excel está abierto. Ciérralo y reintenta.", file=sys.stderr)
-        sys.exit(1)
+        return "❌ ERROR: El Excel está abierto. Ciérralo y reintenta."
+    except sqlite3.Error as e:
+        return f"❌ Error de Base de Datos: {e}"
     except Exception as e:
-        print(f"❌ Error inesperado: {e}", file=sys.stderr)
-        sys.exit(1)
+        return f"❌ Error inesperado durante la importación: {e}"
     finally:
-        conexion.close()
+        if 'conexion' in locals() and conexion:
+            conexion.close()
+
+def importar_lista():
+    """Crea una interfaz gráfica para seleccionar proveedor e importar el archivo."""
+    
+    def obtener_proveedores():
+        try:
+            conexion = sqlite3.connect('herrajes.db')
+            cursor = conexion.cursor()
+            cursor.execute("SELECT id, nombre FROM proveedores ORDER BY nombre")
+            proveedores = cursor.fetchall()
+            conexion.close()
+            return proveedores
+        except Exception as e:
+            messagebox.showerror("Error DB", f"No se pudo leer la lista de proveedores: {e}")
+            return []
+
+    def seleccionar_archivo():
+        filepath = filedialog.askopenfilename(
+            title="Seleccionar archivo de precios",
+            filetypes=(("Archivos Excel", "*.xlsx"), ("Todos los archivos", "*.*"))
+        )
+        if filepath:
+            ruta_archivo.set(filepath)
+            label_archivo.config(text=os.path.basename(filepath), fg=st.TEXT_PRIMARY)
+
+    def iniciar_importacion():
+        proveedor_seleccionado = combo_proveedores.get()
+        archivo = ruta_archivo.get()
+
+        if not proveedor_seleccionado or not archivo:
+            messagebox.showwarning("Faltan datos", "Debes seleccionar un proveedor y un archivo Excel.")
+            return
+
+        proveedor_id = proveedor_map.get(proveedor_seleccionado)
+        if not proveedor_id:
+            messagebox.showerror("Error", "Proveedor no válido.")
+            return
+
+        btn_importar.config(state="disabled", text="Importando...")
+        ventana.update_idletasks()
+        
+        resultado = _ejecutar_importacion(proveedor_id, archivo)
+        
+        messagebox.showinfo("Resultado de Importación", resultado)
+        btn_importar.config(state="normal", text="Iniciar Importación")
+        if "ERROR" not in resultado:
+            ventana.destroy()
+
+    ventana = tk.Tk()
+    ventana.title("Importador por Proveedor")
+    ventana.geometry("500x350")
+    st.aplicar_estilo_ventana(ventana)
+    ventana.config(padx=30, pady=20)
+
+    tk.Label(ventana, text="Importar Lista de Precios", font=st.FONT_TITLE, bg=st.BG_MAIN, fg=st.TEXT_PRIMARY).pack(pady=(0, 20))
+
+    frame_proveedor = tk.Frame(ventana, bg=st.BG_MAIN)
+    frame_proveedor.pack(fill="x", pady=5)
+    tk.Label(frame_proveedor, text="1. Seleccionar Proveedor:", font=st.FONT_LABEL, bg=st.BG_MAIN, fg=st.TEXT_SECONDARY).pack(anchor="w")
+    
+    proveedores_lista = obtener_proveedores()
+    proveedor_map = {nombre: pid for pid, nombre in proveedores_lista}
+    combo_proveedores = ttk.Combobox(frame_proveedor, values=[nombre for pid, nombre in proveedores_lista], state="readonly", font=st.FONT_NORMAL)
+    combo_proveedores.pack(fill="x", pady=5)
+
+    frame_archivo = tk.Frame(ventana, bg=st.BG_MAIN)
+    frame_archivo.pack(fill="x", pady=15)
+    tk.Label(frame_archivo, text="2. Seleccionar Archivo Excel:", font=st.FONT_LABEL, bg=st.BG_MAIN, fg=st.TEXT_SECONDARY).pack(anchor="w")
+    
+    ruta_archivo = tk.StringVar()
+    btn_seleccionar = tk.Button(frame_archivo, text="📂 Elegir Archivo (.xlsx)", command=seleccionar_archivo, **st.estilo_boton(st.ACCENT))
+    st.configurar_hover(btn_seleccionar, st.ACCENT, st.BG_CARD)
+    btn_seleccionar.pack(fill="x", pady=5)
+    label_archivo = tk.Label(frame_archivo, text="Ningún archivo seleccionado", font=st.FONT_NORMAL, bg=st.BG_MAIN, fg="gray")
+    label_archivo.pack(pady=5)
+
+    btn_importar = tk.Button(ventana, text="🚀 Iniciar Importación", command=iniciar_importacion, **st.estilo_boton())
+    st.configurar_hover(btn_importar)
+    btn_importar.pack(fill="x", pady=(20, 0))
+
+    ventana.mainloop()
 
 if __name__ == '__main__':
     importar_lista()
