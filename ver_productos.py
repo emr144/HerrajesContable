@@ -5,7 +5,7 @@ def ver_productos():
     conexion = sqlite3.connect('herrajes.db')
     cursor = conexion.cursor()
 
-    # 2. Hacemos una consulta (query) uniendo las tablas de productos y proveedores
+    # 2. Hacemos la consulta agregando 'p.stock'
     query = '''
         SELECT 
             p.codigo_proveedor, 
@@ -13,36 +13,31 @@ def ver_productos():
             pr.nombre AS proveedor,
             p.costo_base, 
             p.coeficiente_ganancia, 
-            p.iva
+            p.iva,
+            p.stock
         FROM productos p
         JOIN proveedores pr ON p.proveedor_id = pr.id
     '''
     
     cursor.execute(query)
-    productos = cursor.fetchall() # Esto trae todos los resultados
+    productos = cursor.fetchall()
 
-    # 3. Imprimimos el encabezado de nuestra "tabla" en la consola
-    print("\n" + "="*85)
-    print(f"{'CÓDIGO':<10} | {'DESCRIPCIÓN':<30} | {'PROVEEDOR':<20} | {'PRECIO DE VENTA'}")
-    print("="*85)
+    # 3. Encabezado más ancho para que entre el Stock
+    print("\n" + "="*105)
+    print(f"{'CÓDIGO':<10} | {'DESCRIPCIÓN':<30} | {'PROVEEDOR':<20} | {'STOCK':<8} | {'PRECIO DE VENTA'}")
+    print("="*105)
 
-    # 4. Recorremos los productos y calculamos el precio final
+    # 4. Recorremos los productos
     for prod in productos:
-        codigo = prod[0]
-        desc = prod[1]
-        proveedor = prod[2]
-        costo = prod[3]
-        coef = prod[4]
-        iva = prod[5]
+        codigo, desc, proveedor, costo, coef, iva, stock = prod # Desempaquetamos los 7 datos
 
-        # La fórmula mágica: Costo * Ganancia * (1 + IVA)
-        # Ejemplo: 1200 * 1.6 * 1.21
+        # Fórmula: Costo * Ganancia * (1 + IVA)
         precio_final = costo * coef * (1 + iva)
 
-        # Imprimimos la fila dándole formato para que se vea ordenado
-        print(f"{codigo:<10} | {desc:<30} | {proveedor:<20} | $ {precio_final:.2f}")
+        # Imprimimos la fila con el stock incluido
+        print(f"{codigo:<10} | {desc:<30} | {proveedor:<20} | {stock:<8} | $ {precio_final:.2f}")
 
-    print("="*85 + "\n")
+    print("="*105 + "\n")
     conexion.close()
 
 if __name__ == '__main__':

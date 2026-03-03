@@ -4,78 +4,80 @@ from tkinter import ttk, messagebox
 import os
 from datetime import datetime
 from fpdf import FPDF
+import styles as st # Importamos los estilos
 
 # Variables globales
 carrito = []
-total_presupuesto = 0.0
-dict_clientes = {} # Para guardar ID -> Nombre de los clientes
+total_sin_descuento = 0.0
+
+# --- FUNCIONES DE LÓGICA ---
 
 def obtener_clientes():
-    """Trae la lista de clientes de la DB para el desplegable"""
-    global dict_clientes
     conexion = sqlite3.connect('herrajes.db')
     cursor = conexion.cursor()
-    cursor.execute("SELECT id, nombre FROM clientes ORDER BY nombre ASC")
+    cursor.execute("SELECT nombre FROM clientes ORDER BY nombre ASC")
     filas = cursor.fetchall()
     conexion.close()
-    
-    # Limpiamos y cargamos el diccionario
-    dict_clientes = {nombre: id for id, nombre in filas}
-    return list(dict_clientes.keys())
+    return [f[0] for f in filas]
 
-def generar_pdf_ticket(nro_presupuesto, nombre_cliente, items_tabla, total):
-    if not os.path.exists('presupuestos_pdf'):
-        os.makedirs('presupuestos_pdf')
+def buscar_productos_db(termino):
+    conexion = sqlite3.connect('herrajes.db')
+    cursor = conexion.cursor()
+    query = '''
+        SELECT p.codigo_proveedor, p.descripcion, pr.nombre
+        FROM productos p
+        JOIN proveedores pr ON p.proveedor_id = pr.id
+        WHERE (p.codigo_proveedor LIKE ? 
+           OR p.descripcion LIKE ? 
+           OR pr.nombre LIKE ?)
+           AND p.estado = 'ACTIVO'
+        LIMIT 10
+    '''
+    patron = f'%{termino}%'
+    cursor.execute(query, (patron, patron, patron))
+    resultados = cursor.fetchall()
+    conexion.close()
+    return resultados
 
-    pdf = FPDF('P', 'mm', (80, 200))
-    pdf.add_page()
-    pdf.set_margins(4, 4, 4)
-    pdf.set_auto_page_break(False)
+def actualizar_total_visual():
+    global total_sin_descuento
+    if check_desc_var.get():
+        total_con_descuento = total_sin_descuento * 0.90
+        label_total.config(text=f"TOTAL: $ {total_con_descuento:.2f}", fg="red")
+        label_info_desc.config(text="(Descuento 10% Aplicado)")
+    else:
+        label_total.config(text=f"TOTAL: $ {total_sin_descuento:.2f}", fg="darkgreen")
+        label_info_desc.config(text="")
 
-    # --- ENCABEZADO ---
-    pdf.set_font("Arial", 'B', 12)
-    pdf.cell(0, 8, "HERRAJES CONTABLE", ln=True, align='C')
-    
-    pdf.set_font("Arial", size=8)
-    pdf.cell(0, 5, f"Ticket Nro: {nro_presupuesto}", ln=True, align='L')
-    pdf.cell(0, 5, f"Fecha: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True, align='L')
-    pdf.cell(0, 5, f"Cliente: {nombre_cliente}", ln=True, align='L')
-    
-    pdf.cell(0, 2, "-" * 45, ln=True, align='C')
+def seleccionar_producto(event=None):
+    if not lista_sugerencias.curselection(): return
+    seleccion = lista_sugerencias.get(lista_sugerencias.curselection())
+    codigo = seleccion.split(" | ")[0]
+    entrada_codigo.delete(0, tk.END)
+    entrada_codigo.insert(0, codigo)
+    lista_sugerencias.place_forget()
+    entrada_cantidad.focus()
 
-    # --- PRODUCTOS ---
-    pdf.set_font("Arial", 'B', 8)
-    pdf.cell(35, 6, "Descripcion", 0)
-    pdf.cell(8, 6, "Cant", 0, 0, 'C')
-    pdf.cell(25, 6, "Subtotal", 0, 1, 'R')
-    pdf.cell(0, 1, "-" * 45, ln=True, align='C')
-
-    pdf.set_font("Arial", size=8)
-    for row in items_tabla:
-        desc_producto = str(row[1])[:22]
-        pdf.cell(35, 6, desc_producto, 0)
-        pdf.cell(8, 6, str(row[2]), 0, 0, 'C')
-        pdf.cell(25, 6, str(row[4]), 0, 1, 'R')
-
-    # --- TOTAL ---
-    pdf.ln(3)
-    pdf.cell(0, 1, "=" * 35, ln=True, align='C')
-    pdf.set_font("Arial", 'B', 11)
-    pdf.cell(0, 10, f"TOTAL: {total}", ln=True, align='R')
-    
-    pdf.set_font("Arial", 'I', 7)
-    pdf.ln(2)
-    pdf.cell(0, 5, "Gracias por su confianza", ln=True, align='C')
-
-    nombre_archivo = f"presupuestos_pdf/Ticket_{nro_presupuesto}.pdf"
-    pdf.output(nombre_archivo)
-    return nombre_archivo
+def actualizar_sugerencias(event=None):
+    texto = entrada_codigo.get().strip()
+    lista_sugerencias.delete(0, tk.END)
+    if len(texto) < 2:
+        lista_sugerencias.place_forget()
+        return
+    productos = buscar_productos_db(texto)
+    if productos:
+        for p in productos:
+            lista_sugerencias.insert(tk.END, f"{p[0]} | {p[1]} | {p[2]}")
+        lista_sugerencias.place(x=entrada_codigo.winfo_x(), y=entrada_codigo.winfo_y() + entrada_codigo.winfo_height())
+        lista_sugerencias.lift()
+    else:
+        lista_sugerencias.place_forget()
 
 def agregar_producto(event=None):
-    global total_presupuesto
+    global total_sin_descuento
     codigo = entrada_codigo.get().strip().upper()
     try:
-        cantidad = float(entrada_cantidad.get().strip())
+        cantidad = int(entrada_cantidad.get().strip())
     except ValueError:
         messagebox.showerror("Error", "La cantidad debe ser un número.")
         return
@@ -92,106 +94,243 @@ def agregar_producto(event=None):
         prod_id, desc, costo, coef, iva = producto
         precio_unitario = costo * coef * (1 + iva)
         subtotal = precio_unitario * cantidad
+        
         carrito.append({'prod_id': prod_id, 'cantidad': cantidad, 'precio_unitario': precio_unitario})
+        
+        # INSERTAMOS EN LA TABLA CON LA COLUMNA SUBTOTAL
         tabla.insert("", "end", values=(codigo, desc, cantidad, f"$ {precio_unitario:.2f}", f"$ {subtotal:.2f}"))
-        total_presupuesto += subtotal
-        label_total.config(text=f"TOTAL: $ {total_presupuesto:.2f}")
+        
+        total_sin_descuento += subtotal
+        actualizar_total_visual()
+        
         entrada_codigo.delete(0, tk.END)
         entrada_cantidad.delete(0, tk.END)
         entrada_cantidad.insert(0, "1")
         entrada_codigo.focus()
+        lista_sugerencias.place_forget()
     else:
         messagebox.showwarning("No encontrado", f"El código '{codigo}' no existe.")
 
-def guardar_presupuesto():
-    global total_presupuesto, carrito
-    if not carrito:
-        messagebox.showwarning("Vacío", "No hay productos.")
+def borrar_item():
+    """Elimina el producto seleccionado de la tabla y resta su valor del total"""
+    global total_sin_descuento
+    seleccion = tabla.selection()
+    if not seleccion:
+        messagebox.showwarning("Atención", "Seleccione un producto para eliminar.")
         return
+    
+    for item in seleccion:
+        valores = tabla.item(item, "values")
+        # El subtotal está en la posición 4, le quitamos el "$" para volverlo número
+        subtotal_item = float(valores[4].replace("$ ", ""))
+        total_sin_descuento -= subtotal_item
+        
+        # También lo quitamos del carrito (buscando por índice o posición)
+        indice = tabla.index(item)
+        if indice < len(carrito):
+            carrito.pop(indice)
+            
+        tabla.delete(item)
+    
+    actualizar_total_visual()
 
-    # Obtenemos el nombre seleccionado en el Combobox
-    nombre_cliente = combo_cliente.get().strip()
-    if not nombre_cliente:
-        nombre_cliente = "Consumidor Final"
+def generar_ticket_pdf(presupuesto_id):
+    """Genera un PDF con el detalle de la venta y lo abre automáticamente"""
+    try:
+        conexion = sqlite3.connect('herrajes.db')
+        cursor = conexion.cursor()
+        
+        # 1. Recuperamos datos de la cabecera
+        cursor.execute("SELECT cliente_nombre, fecha, total FROM presupuestos WHERE id = ?", (presupuesto_id,))
+        datos_venta = cursor.fetchone()
+        
+        # 2. Recuperamos los productos
+        cursor.execute('''
+            SELECT p.descripcion, d.cantidad, d.precio_unitario_congelado 
+            FROM presupuesto_detalles d
+            JOIN productos p ON d.producto_id = p.id
+            WHERE d.presupuesto_id = ?
+        ''', (presupuesto_id,))
+        items = cursor.fetchall()
+        conexion.close()
+        
+        if not datos_venta: return
 
+        cliente, fecha, total = datos_venta
+        
+        # 3. Construimos el PDF (Formato Ticket 80mm)
+        # Calculamos altura dinámica: Base 80mm + 10mm por producto para que no sobre papel
+        altura_ticket = 80 + (len(items) * 10)
+        
+        pdf = FPDF(orientation='P', unit='mm', format=(80, altura_ticket))
+        pdf.set_margins(3, 3, 3) # Márgenes estrechos (3mm)
+        pdf.add_page()
+        
+        # Encabezado
+        pdf.set_font("Arial", "B", 12)
+        pdf.cell(0, 5, "Herrajes Santa Fe", ln=True, align="C")
+        pdf.set_font("Arial", size=8)
+        pdf.cell(0, 5, "Comprobante de Venta", ln=True, align="C")
+        pdf.ln(2)
+        
+        # Datos Cliente
+        pdf.set_font("Arial", "B", 8)
+        pdf.cell(0, 4, f"Ticket N: {presupuesto_id}", ln=True)
+        pdf.cell(0, 4, f"Fecha: {fecha}", ln=True)
+        pdf.multi_cell(0, 4, f"Cliente: {cliente}")
+        pdf.ln(2)
+        
+        # Tabla de Productos
+        # Anchos ajustados para 80mm: Desc(32) + Cant(8) + Precio(15) + Total(17) = 72mm
+        pdf.set_fill_color(230, 230, 230)
+        pdf.set_font("Arial", "B", 7)
+        pdf.cell(32, 5, "Descripcion", 1, 0, 'C', 1)
+        pdf.cell(8, 5, "Cant", 1, 0, 'C', 1)
+        pdf.cell(15, 5, "Precio", 1, 0, 'C', 1)
+        pdf.cell(17, 5, "Total", 1, 1, 'C', 1)
+        
+        pdf.set_font("Arial", size=7)
+        for desc, cant, precio in items:
+            subtotal = cant * precio
+            # Recortar descripción para que entre en una línea corta
+            desc_fmt = (desc[:18] + '..') if len(desc) > 20 else desc
+            
+            pdf.cell(32, 5, desc_fmt, 1)
+            pdf.cell(8, 5, str(cant), 1, 0, 'C')
+            pdf.cell(15, 5, f"{precio:.2f}", 1, 0, 'R')
+            pdf.cell(17, 5, f"{subtotal:.2f}", 1, 1, 'R')
+            
+        # Total
+        pdf.ln(4)
+        pdf.set_font("Arial", "B", 11)
+        pdf.cell(45, 6, "TOTAL:", 0, 0, 'R')
+        pdf.cell(27, 6, f"$ {total:.2f}", 0, 1, 'R')
+
+        # Pie
+        pdf.ln(4)
+        pdf.set_font("Arial", "I", 7)
+        pdf.cell(0, 4, "Gracias por su compra", ln=True, align="C")
+        
+        # 4. Guardar y Abrir
+        if not os.path.exists("comprobantes"):
+            os.makedirs("comprobantes")
+            
+        ruta_pdf = os.path.abspath(f"comprobantes/ticket_{presupuesto_id}.pdf")
+        pdf.output(ruta_pdf)
+        
+        # Abrir archivo (Windows)
+        os.startfile(ruta_pdf)
+        
+    except Exception as e:
+        messagebox.showerror("Error PDF", f"No se pudo generar el PDF: {e}")
+
+def guardar_presupuesto():
+    global total_sin_descuento, carrito
+    if not carrito: return
+    
+    total_final = total_sin_descuento * 0.9 if check_desc_var.get() else total_sin_descuento
+    nombre_cliente = combo_cliente.get().strip() or "Consumidor Final"
+    
     conexion = sqlite3.connect('herrajes.db')
     cursor = conexion.cursor()
-
-    # Guardar Cabecera
-    cursor.execute("INSERT INTO presupuestos (cliente_nombre, total) VALUES (?, ?)", (nombre_cliente, total_presupuesto))
+    cursor.execute("INSERT INTO presupuestos (cliente_nombre, total) VALUES (?, ?)", (nombre_cliente, total_final))
     presupuesto_id = cursor.lastrowid
-
-    datos_para_ticket = []
-    for child in tabla.get_children():
-        datos_para_ticket.append(tabla.item(child)["values"])
-
+    
     for item in carrito:
         cursor.execute('INSERT INTO presupuesto_detalles (presupuesto_id, producto_id, cantidad, precio_unitario_congelado) VALUES (?, ?, ?, ?)',
                        (presupuesto_id, item['prod_id'], item['cantidad'], item['precio_unitario']))
-
     conexion.commit()
     conexion.close()
 
-    ruta_ticket = generar_pdf_ticket(presupuesto_id, nombre_cliente, datos_para_ticket, f"$ {total_presupuesto:.2f}")
+    # Generar Ticket PDF
+    generar_ticket_pdf(presupuesto_id)
     
-    messagebox.showinfo("¡Éxito!", f"Ticket N° {presupuesto_id} generado.")
-    os.startfile(ruta_ticket)
+    messagebox.showinfo("Éxito", f"Presupuesto N° {presupuesto_id} guardado.")
     
-    # Limpiar
+    # Reset
     carrito.clear()
-    total_presupuesto = 0.0
-    label_total.config(text="TOTAL: $ 0.00")
-    combo_cliente.set('')
-    for row in tabla.get_children():
-        tabla.delete(row)
+    total_sin_descuento = 0.0
+    check_desc_var.set(False)
+    actualizar_total_visual()
+    for row in tabla.get_children(): tabla.delete(row)
 
 # --- INTERFAZ ---
 ventana = tk.Tk()
-ventana.title("Punto de Venta Pro - HerrajesContable")
-ventana.geometry("750x600")
+ventana.title("Punto de Venta - HerrajesContable")
+ventana.geometry("1000x800")
+st.aplicar_estilo_ventana(ventana)
 
-# Fila Cliente con Buscador
-frame_cliente = tk.Frame(ventana, pady=10)
-frame_cliente.pack(fill=tk.X, padx=15)
-tk.Label(frame_cliente, text="Seleccionar Cliente:", font=("Arial", 10, "bold")).pack(side=tk.LEFT)
+# --- Estilos para widgets TTK ---
+style = ttk.Style()
+style.theme_use("clam")
+# Treeview
+style.configure("Treeview", background=st.BG_CARD, foreground="white", fieldbackground=st.BG_CARD, borderwidth=0, rowheight=25)
+style.map("Treeview", background=[('selected', st.ACCENT)])
+style.configure("Treeview.Heading", background=st.BG_CARD, foreground=st.TEXT_SECONDARY, font=st.FONT_LABEL, padding=10)
+# Combobox
+ventana.option_add('*TCombobox*Listbox.background', st.BG_CARD)
+ventana.option_add('*TCombobox*Listbox.foreground', 'white')
+ventana.option_add('*TCombobox*Listbox.selectBackground', st.ACCENT)
+style.configure("TCombobox", fieldbackground=st.BG_MAIN, background=st.BG_CARD, foreground='white', borderwidth=0, padding=5)
 
-# Combo de Clientes
-lista_nombres = obtener_clientes()
-combo_cliente = ttk.Combobox(frame_cliente, values=lista_nombres, width=40, font=("Arial", 11))
-combo_cliente.pack(side=tk.LEFT, padx=10)
-# Si no hay clientes en la agenda, se puede escribir uno nuevo directamente
-if not lista_nombres:
-    combo_cliente.set("Consumidor Final")
+# Buscador y Cliente (Frames superiores)
+frame_top = tk.Frame(ventana, pady=10, bg=st.BG_MAIN); frame_top.pack(fill=tk.X, padx=15)
+tk.Label(frame_top, text="Cliente:", bg=st.BG_MAIN, fg=st.TEXT_SECONDARY, font=st.FONT_LABEL).pack(side=tk.LEFT)
+combo_cliente = ttk.Combobox(frame_top, values=obtener_clientes(), width=30, font=st.FONT_NORMAL); combo_cliente.pack(side=tk.LEFT, padx=10)
 
-# Buscador de Productos
-frame_prod = tk.Frame(ventana, pady=10)
-frame_prod.pack(fill=tk.X, padx=15)
-tk.Label(frame_prod, text="Código:").pack(side=tk.LEFT)
-entrada_codigo = tk.Entry(frame_prod, width=12, font=("Arial", 11))
-entrada_codigo.pack(side=tk.LEFT, padx=5)
-entrada_codigo.bind('<Return>', agregar_producto)
+frame_busqueda = tk.Frame(ventana, pady=10, bg=st.BG_MAIN); frame_busqueda.pack(fill=tk.X, padx=15)
+tk.Label(frame_busqueda, text="Producto:", bg=st.BG_MAIN, fg=st.TEXT_SECONDARY, font=st.FONT_LABEL).pack(side=tk.LEFT)
+entrada_codigo = tk.Entry(frame_busqueda, width=40, font=st.FONT_NORMAL, bg=st.BG_CARD, fg="white", bd=0, insertbackground="white"); entrada_codigo.pack(side=tk.LEFT, padx=5)
+entrada_codigo.bind('<KeyRelease>', actualizar_sugerencias)
 
-tk.Label(frame_prod, text="Cant:").pack(side=tk.LEFT, padx=5)
-entrada_cantidad = tk.Entry(frame_prod, width=6, font=("Arial", 11))
-entrada_cantidad.insert(0, "1")
-entrada_cantidad.pack(side=tk.LEFT, padx=5)
-entrada_cantidad.bind('<Return>', agregar_producto)
+tk.Label(frame_busqueda, text="Cant:", bg=st.BG_MAIN, fg=st.TEXT_SECONDARY, font=st.FONT_LABEL).pack(side=tk.LEFT, padx=5)
+entrada_cantidad = tk.Entry(frame_busqueda, width=5, font=st.FONT_NORMAL, bg=st.BG_CARD, fg="white", bd=0, insertbackground="white"); entrada_cantidad.insert(0, "1"); entrada_cantidad.pack(side=tk.LEFT, padx=5)
 
-tk.Button(frame_prod, text="Agregar", command=agregar_producto, bg="#2196F3", fg="white").pack(side=tk.LEFT, padx=10)
+btn_agregar = tk.Button(frame_busqueda, text="➕ Agregar", command=agregar_producto, **st.estilo_boton(st.ACCENT))
+st.configurar_hover(btn_agregar, st.ACCENT, st.BG_CARD)
+btn_agregar.pack(side=tk.LEFT, padx=10)
 
-# Tabla Treeview
-columnas = ("codigo", "descripcion", "cantidad", "precio", "subtotal")
-tabla = ttk.Treeview(ventana, columns=columnas, show="headings", height=12)
-for col in columnas: tabla.heading(col, text=col.capitalize())
-tabla.column("descripcion", width=300)
-tabla.pack(fill=tk.BOTH, expand=True, padx=15)
+lista_sugerencias = tk.Listbox(ventana, font=st.FONT_NORMAL, width=50, height=6, bg=st.BG_CARD, fg="white", selectbackground=st.ACCENT, bd=0)
+lista_sugerencias.bind('<<ListboxSelect>>', seleccionar_producto)
 
-# Pie
-frame_inf = tk.Frame(ventana, pady=20)
-frame_inf.pack(fill=tk.X, padx=15)
-label_total = tk.Label(frame_inf, text="TOTAL: $ 0.00", font=("Arial", 24, "bold"), fg="darkgreen")
+# TABLA CON COLUMNA SUBTOTAL
+columnas = ("cod", "desc", "cant", "p_unit", "subtotal")
+tabla = ttk.Treeview(ventana, columns=columnas, show="headings", style="Treeview")
+tabla.heading("cod", text="CÓDIGO")
+tabla.heading("desc", text="DESCRIPCIÓN")
+tabla.heading("cant", text="CANT.")
+tabla.heading("p_unit", text="P. UNITARIO")
+tabla.heading("subtotal", text="SUBTOTAL")
+
+tabla.column("cod", width=100)
+tabla.column("desc", width=400)
+tabla.column("cant", width=80, anchor="center")
+tabla.column("p_unit", width=150, anchor="e")
+tabla.column("subtotal", width=150, anchor="e")
+tabla.pack(fill=tk.BOTH, expand=True, padx=15, pady=10)
+
+# Botón para borrar ítem de la tabla
+btn_borrar = tk.Button(ventana, text="❌ Eliminar Producto", command=borrar_item, **st.estilo_boton(st.RED_ERROR))
+st.configurar_hover(btn_borrar, st.RED_ERROR, st.BG_CARD)
+btn_borrar.pack(anchor="e", padx=15)
+
+# Pie de ventana
+frame_bot = tk.Frame(ventana, pady=20, bg=st.BG_MAIN); frame_bot.pack(fill=tk.X, padx=15)
+label_total = tk.Label(frame_bot, text="TOTAL: $ 0.00", font=("Inter", 28, "bold"), fg="darkgreen", bg=st.BG_MAIN)
 label_total.pack(side=tk.LEFT)
-tk.Button(frame_inf, text="💾 GUARDAR E IMPRIMIR", command=guardar_presupuesto, bg="#4CAF50", fg="white", font=("Arial", 12, "bold"), padx=20, pady=10).pack(side=tk.RIGHT)
+
+check_desc_var = tk.BooleanVar()
+check_descuento = tk.Checkbutton(frame_bot, text="Descuento 10% (Gremio)", variable=check_desc_var, 
+                                 command=actualizar_total_visual, font=st.FONT_NORMAL, bg=st.BG_MAIN, fg="white",
+                                 selectcolor=st.BG_CARD, activebackground=st.BG_MAIN, activeforeground="white")
+check_descuento.pack(side=tk.LEFT, padx=20)
+
+label_info_desc = tk.Label(frame_bot, text="", fg=st.RED_ERROR, bg=st.BG_MAIN, font=st.FONT_NORMAL)
+label_info_desc.pack(side=tk.LEFT)
+
+btn_guardar = tk.Button(frame_bot, text="💾 GUARDAR VENTA", command=guardar_presupuesto, **st.estilo_boton())
+st.configurar_hover(btn_guardar)
+btn_guardar.pack(side=tk.RIGHT)
 
 if __name__ == '__main__':
     ventana.mainloop()

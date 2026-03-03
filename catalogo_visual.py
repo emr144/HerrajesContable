@@ -1,25 +1,60 @@
 import sqlite3
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import messagebox, ttk
 import os
+from PIL import Image, ImageTk
+import styles as st # Importamos los estilos
 
-try:
-    from PIL import Image, ImageTk
-except ImportError:
-    # Creamos una ventana oculta temporal solo para mostrar el error
-    root = tk.Tk()
-    root.withdraw()
-    messagebox.showerror("Error de Librería", "Falta instalar la librería 'Pillow'.\n\nPor favor ejecuta en la terminal:\npip install pillow")
-    exit()
+def obtener_productos(filtro=""):
+    """Consulta la DB buscando por código o por descripción"""
+    conexion = sqlite3.connect('herrajes.db')
+    cursor = conexion.cursor()
+    query = "SELECT codigo_proveedor, descripcion FROM productos WHERE (codigo_proveedor LIKE ? OR descripcion LIKE ?) AND estado = 'ACTIVO' LIMIT 10"
+    cursor.execute(query, (f'%{filtro}%', f'%{filtro}%'))
+    resultados = cursor.fetchall()
+    conexion.close()
+    return resultados
 
-def buscar_producto(event=None):
-    # 1. Obtenemos el texto escrito y lo limpiamos
-    codigo_buscado = entrada_codigo.get().strip().upper() 
+def actualizar_sugerencias(event=None):
+    """Se ejecuta cada vez que el usuario escribe en la caja de búsqueda"""
+    texto = entrada_busqueda.get().strip()
+    lista_sugerencias.delete(0, tk.END)
     
-    if not codigo_buscado:
-        return 
+    if len(texto) < 2:
+        lista_sugerencias.place_forget()
+        return
 
-    # 2. Conexión a la base de datos
+    productos = obtener_productos(texto)
+    
+    if productos:
+        for p in productos:
+            lista_sugerencias.insert(tk.END, f"{p[0]} - {p[1]}")
+        
+        # Posicionamiento dinámico de la lista
+        lista_sugerencias.place(x=entrada_busqueda.winfo_x(), 
+                                 y=entrada_busqueda.winfo_y() + entrada_busqueda.winfo_height())
+        lista_sugerencias.lift()
+    else:
+        lista_sugerencias.place_forget()
+
+def seleccionar_producto(event=None):
+    """Carga el producto seleccionado de la lista"""
+    if not lista_sugerencias.curselection():
+        return
+    
+    seleccion = lista_sugerencias.get(lista_sugerencias.curselection())
+    codigo = seleccion.split(" - ")[0]
+    
+    entrada_busqueda.delete(0, tk.END)
+    entrada_busqueda.insert(0, codigo)
+    lista_sugerencias.place_forget()
+    mostrar_detalle(codigo)
+
+def mostrar_detalle(codigo_buscado=None):
+    """Muestra la info y la foto en tamaño grande"""
+    if not codigo_buscado:
+        codigo_buscado = entrada_busqueda.get().strip().upper()
+
     conexion = sqlite3.connect('herrajes.db')
     cursor = conexion.cursor()
     cursor.execute('''
@@ -29,64 +64,79 @@ def buscar_producto(event=None):
     producto = cursor.fetchone()
     conexion.close()
 
-    # 3. Actualización de la interfaz
     if producto:
         desc, costo, coef, iva = producto
         precio_final = costo * coef * (1 + iva)
         
         label_desc.config(text=desc)
-        label_codigo.config(text=f"Código: {codigo_buscado}")
+        label_codigo_info.config(text=f"Código: {codigo_buscado}")
         label_precio.config(text=f"Precio Venta: $ {precio_final:.2f}")
 
-        # Buscamos la foto en la carpeta que creamos
+        # --- GESTIÓN DE IMAGEN ---
         ruta_imagen = f"imagenes_productos/{codigo_buscado}.jpg"
         if os.path.exists(ruta_imagen):
             try:
                 img = Image.open(ruta_imagen)
-                img.thumbnail((250, 250))
+                # Redimensionar a 500px manteniendo proporción y alta calidad
+                img.thumbnail((500, 500), Image.Resampling.LANCZOS)
                 img_tk = ImageTk.PhotoImage(img)
+                
                 label_imagen.config(image=img_tk, text="") 
                 label_imagen.image = img_tk 
-            except Exception:
-                label_imagen.config(image='', text="[ Error al cargar imagen ]", fg="red")
+            except Exception as e:
+                label_imagen.config(image='', text=f"[ Error: {e} ]", fg="red")
         else:
-            label_imagen.config(image='', text="[ Sin imagen disponible ]", fg="red")
+            label_imagen.config(image='', text="[ Sin imagen disponible ]", fg="gray")
     else:
         messagebox.showwarning("No encontrado", f"El código '{codigo_buscado}' no existe.")
 
-# --- Configuración Visual ---
+# --- INTERFAZ GRÁFICA ---
 ventana = tk.Tk()
-ventana.title("Buscador de Productos - HerrajesContable")
-ventana.geometry("450x550")
-ventana.config(padx=20, pady=20)
+ventana.title("Catálogo Inteligente - HerrajesContable")
+ventana.geometry("650x850")
+st.aplicar_estilo_ventana(ventana)
+ventana.config(padx=25, pady=25) # Mantenemos el padding
 
-frame_buscador = tk.Frame(ventana)
-frame_buscador.pack(pady=10)
+tk.Label(ventana, text="Buscar por Nombre o Código:", font=st.FONT_LABEL, 
+         bg=st.BG_MAIN, fg=st.TEXT_SECONDARY).pack(anchor="w")
 
-tk.Label(frame_buscador, text="Código:").pack(side=tk.LEFT, padx=5)
+frame_busqueda = tk.Frame(ventana, bg=st.BG_MAIN)
+frame_busqueda.pack(fill=tk.X, pady=5)
 
-entrada_codigo = tk.Entry(frame_buscador, font=("Arial", 12), width=12)
-entrada_codigo.pack(side=tk.LEFT, padx=5)
-# Esto hace que el Enter dispare la búsqueda
-entrada_codigo.bind('<Return>', buscar_producto)
+entrada_busqueda = tk.Entry(frame_busqueda, font=st.FONT_NORMAL, bg=st.BG_CARD, fg="white", 
+                            bd=0, insertbackground="white", width=40)
+entrada_busqueda.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
+entrada_busqueda.bind('<KeyRelease>', actualizar_sugerencias)
+entrada_busqueda.bind('<Return>', lambda e: mostrar_detalle())
 
-btn_buscar = tk.Button(frame_buscador, text="Buscar", command=buscar_producto, 
-                       bg="#2196F3", fg="white", font=("Arial", 10, "bold"))
-btn_buscar.pack(side=tk.LEFT, padx=5)
+btn_buscar = tk.Button(frame_busqueda, text=" 🔍 BUSCAR ", command=mostrar_detalle, **st.estilo_boton(st.ACCENT))
+st.configurar_hover(btn_buscar, st.ACCENT, st.BG_CARD)
+btn_buscar.pack(side=tk.RIGHT)
 
-tk.Frame(ventana, height=2, bd=1, relief=tk.SUNKEN).pack(fill=tk.X, pady=15)
+# Sugerencias flotantes
+lista_sugerencias = tk.Listbox(ventana, font=st.FONT_NORMAL, height=5, width=60, 
+                               bg=st.BG_CARD, fg="white", selectbackground=st.ACCENT, bd=0)
+lista_sugerencias.bind('<<ListboxSelect>>', seleccionar_producto)
 
-label_desc = tk.Label(ventana, text="---", font=("Arial", 16, "bold"))
+tk.Frame(ventana, height=2, bg=st.BG_CARD).pack(fill=tk.X, pady=20)
+
+# Datos del producto
+label_desc = tk.Label(ventana, text="Esperando búsqueda...", font=st.FONT_TITLE, wraplength=550,
+                      bg=st.BG_MAIN, fg=st.TEXT_PRIMARY)
 label_desc.pack(pady=5)
 
-label_codigo = tk.Label(ventana, text="Código: ---", font=("Arial", 12, "italic"), fg="gray")
-label_codigo.pack()
+label_codigo_info = tk.Label(ventana, text="Código: ---", font=st.FONT_LABEL, 
+                             bg=st.BG_MAIN, fg=st.TEXT_SECONDARY)
+label_codigo_info.pack()
 
-label_precio = tk.Label(ventana, text="Precio Venta: $ 0.00", font=("Arial", 18, "bold"), fg="darkgreen")
-label_precio.pack(pady=10)
+label_precio = tk.Label(ventana, text="$ 0.00", font=("Inter", 24, "bold"), 
+                        bg=st.BG_MAIN, fg=st.ACCENT)
+label_precio.pack(pady=15)
 
-label_imagen = tk.Label(ventana, text="[ Ingrese código ]", font=("Arial", 12), fg="gray")
-label_imagen.pack(pady=10)
+# Contenedor de Imagen (Sin anchos fijos para que la imagen mande)
+label_imagen = tk.Label(ventana, text="[ Imagen del Producto ]", font=st.FONT_NORMAL, 
+                        bg=st.BG_CARD, fg=st.TEXT_SECONDARY, relief="flat")
+label_imagen.pack(pady=10, fill=tk.BOTH, expand=True)
 
 if __name__ == '__main__':
     ventana.mainloop()
