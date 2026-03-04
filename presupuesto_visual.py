@@ -255,82 +255,92 @@ def guardar_presupuesto():
     for row in tabla.get_children(): tabla.delete(row)
 
 # --- INTERFAZ ---
-ventana = tk.Tk()
-ventana.title("Punto de Venta - HerrajesContable")
-ventana.geometry("1000x800")
-st.aplicar_estilo_ventana(ventana)
+def montar_interfaz(parent):
+    global combo_cliente, entrada_codigo, entrada_cantidad, lista_sugerencias, tabla, label_total, check_desc_var, label_info_desc
+    
+    ventana = tk.Frame(parent, bg=st.BG_MAIN)
+    # ventana.title("Punto de Venta - HerrajesContable") -> Ya no es necesario
+    # ventana.geometry("1000x800") -> El tamaño lo maneja el main
+    # st.aplicar_estilo_ventana(ventana) -> El frame ya tiene bg=st.BG_MAIN
 
-# --- Estilos para widgets TTK ---
-style = ttk.Style()
-style.theme_use("clam")
-# Treeview
-style.configure("Treeview", background=st.BG_CARD, foreground="white", fieldbackground=st.BG_CARD, borderwidth=0, rowheight=25)
-style.map("Treeview", background=[('selected', st.ACCENT)])
-style.configure("Treeview.Heading", background=st.BG_CARD, foreground=st.TEXT_SECONDARY, font=st.FONT_LABEL, padding=10)
-# Combobox
-ventana.option_add('*TCombobox*Listbox.background', st.BG_CARD)
-ventana.option_add('*TCombobox*Listbox.foreground', 'white')
-ventana.option_add('*TCombobox*Listbox.selectBackground', st.ACCENT)
-style.configure("TCombobox", fieldbackground=st.BG_MAIN, background=st.BG_CARD, foreground='white', borderwidth=0, padding=5)
+    # --- Estilos para widgets TTK ---
+    style = ttk.Style()
+    style.theme_use("clam")
+    # Treeview
+    style.configure("Treeview", background=st.BG_CARD, foreground="white", fieldbackground=st.BG_CARD, borderwidth=0, rowheight=25)
+    style.map("Treeview", background=[('selected', st.ACCENT)])
+    style.configure("Treeview.Heading", background=st.BG_CARD, foreground=st.TEXT_SECONDARY, font=st.FONT_LABEL, padding=10)
+    # Combobox
+    parent.option_add('*TCombobox*Listbox.background', st.BG_CARD)
+    parent.option_add('*TCombobox*Listbox.foreground', 'white')
+    parent.option_add('*TCombobox*Listbox.selectBackground', st.ACCENT)
+    style.configure("TCombobox", fieldbackground=st.BG_MAIN, background=st.BG_CARD, foreground='white', borderwidth=0, padding=5)
 
-# Buscador y Cliente (Frames superiores)
-frame_top = tk.Frame(ventana, pady=10, bg=st.BG_MAIN); frame_top.pack(fill=tk.X, padx=15)
-tk.Label(frame_top, text="Cliente:", bg=st.BG_MAIN, fg=st.TEXT_SECONDARY, font=st.FONT_LABEL).pack(side=tk.LEFT)
-combo_cliente = ttk.Combobox(frame_top, values=obtener_clientes(), width=30, font=st.FONT_NORMAL); combo_cliente.pack(side=tk.LEFT, padx=10)
+    # Buscador y Cliente (Frames superiores)
+    frame_top = tk.Frame(ventana, pady=10, bg=st.BG_MAIN); frame_top.pack(fill=tk.X, padx=15)
+    tk.Label(frame_top, text="Cliente:", bg=st.BG_MAIN, fg=st.TEXT_SECONDARY, font=st.FONT_LABEL).pack(side=tk.LEFT)
+    combo_cliente = ttk.Combobox(frame_top, values=obtener_clientes(), width=30, font=st.FONT_NORMAL); combo_cliente.pack(side=tk.LEFT, padx=10)
 
-frame_busqueda = tk.Frame(ventana, pady=10, bg=st.BG_MAIN); frame_busqueda.pack(fill=tk.X, padx=15)
-tk.Label(frame_busqueda, text="Producto:", bg=st.BG_MAIN, fg=st.TEXT_SECONDARY, font=st.FONT_LABEL).pack(side=tk.LEFT)
-entrada_codigo = tk.Entry(frame_busqueda, width=40, font=st.FONT_NORMAL, bg=st.BG_CARD, fg="white", bd=0, insertbackground="white"); entrada_codigo.pack(side=tk.LEFT, padx=5)
-entrada_codigo.bind('<KeyRelease>', actualizar_sugerencias)
+    frame_busqueda = tk.Frame(ventana, pady=10, bg=st.BG_MAIN); frame_busqueda.pack(fill=tk.X, padx=15)
+    tk.Label(frame_busqueda, text="Producto:", bg=st.BG_MAIN, fg=st.TEXT_SECONDARY, font=st.FONT_LABEL).pack(side=tk.LEFT)
+    entrada_codigo = tk.Entry(frame_busqueda, width=40, font=st.FONT_NORMAL, bg=st.BG_CARD, fg="white", bd=0, insertbackground="white"); entrada_codigo.pack(side=tk.LEFT, padx=5)
+    entrada_codigo.bind('<KeyRelease>', actualizar_sugerencias)
 
-tk.Label(frame_busqueda, text="Cant:", bg=st.BG_MAIN, fg=st.TEXT_SECONDARY, font=st.FONT_LABEL).pack(side=tk.LEFT, padx=5)
-entrada_cantidad = tk.Entry(frame_busqueda, width=5, font=st.FONT_NORMAL, bg=st.BG_CARD, fg="white", bd=0, insertbackground="white"); entrada_cantidad.insert(0, "1"); entrada_cantidad.pack(side=tk.LEFT, padx=5)
+    tk.Label(frame_busqueda, text="Cant:", bg=st.BG_MAIN, fg=st.TEXT_SECONDARY, font=st.FONT_LABEL).pack(side=tk.LEFT, padx=5)
+    entrada_cantidad = tk.Entry(frame_busqueda, width=5, font=st.FONT_NORMAL, bg=st.BG_CARD, fg="white", bd=0, insertbackground="white"); entrada_cantidad.insert(0, "1"); entrada_cantidad.pack(side=tk.LEFT, padx=5)
 
-btn_agregar = tk.Button(frame_busqueda, text="➕ Agregar", command=agregar_producto, **st.estilo_boton(st.ACCENT))
-st.configurar_hover(btn_agregar, st.ACCENT, st.BG_CARD)
-btn_agregar.pack(side=tk.LEFT, padx=10)
+    btn_agregar = tk.Button(frame_busqueda, text="➕ Agregar", command=agregar_producto, **st.estilo_boton(st.ACCENT))
+    st.configurar_hover(btn_agregar, st.ACCENT, st.BG_CARD)
+    btn_agregar.pack(side=tk.LEFT, padx=10)
 
-lista_sugerencias = tk.Listbox(ventana, font=st.FONT_NORMAL, width=50, height=6, bg=st.BG_CARD, fg="white", selectbackground=st.ACCENT, bd=0)
-lista_sugerencias.bind('<<ListboxSelect>>', seleccionar_producto)
+    lista_sugerencias = tk.Listbox(ventana, font=st.FONT_NORMAL, width=50, height=6, bg=st.BG_CARD, fg="white", selectbackground=st.ACCENT, bd=0)
+    lista_sugerencias.bind('<<ListboxSelect>>', seleccionar_producto)
 
-# TABLA CON COLUMNA SUBTOTAL
-columnas = ("cod", "desc", "cant", "p_unit", "subtotal")
-tabla = ttk.Treeview(ventana, columns=columnas, show="headings", style="Treeview")
-tabla.heading("cod", text="CÓDIGO")
-tabla.heading("desc", text="DESCRIPCIÓN")
-tabla.heading("cant", text="CANT.")
-tabla.heading("p_unit", text="P. UNITARIO")
-tabla.heading("subtotal", text="SUBTOTAL")
+    # TABLA CON COLUMNA SUBTOTAL
+    columnas = ("cod", "desc", "cant", "p_unit", "subtotal")
+    tabla = ttk.Treeview(ventana, columns=columnas, show="headings", style="Treeview")
+    tabla.heading("cod", text="CÓDIGO")
+    tabla.heading("desc", text="DESCRIPCIÓN")
+    tabla.heading("cant", text="CANT.")
+    tabla.heading("p_unit", text="P. UNITARIO")
+    tabla.heading("subtotal", text="SUBTOTAL")
 
-tabla.column("cod", width=100)
-tabla.column("desc", width=400)
-tabla.column("cant", width=80, anchor="center")
-tabla.column("p_unit", width=150, anchor="e")
-tabla.column("subtotal", width=150, anchor="e")
-tabla.pack(fill=tk.BOTH, expand=True, padx=15, pady=10)
+    tabla.column("cod", width=100)
+    tabla.column("desc", width=400)
+    tabla.column("cant", width=80, anchor="center")
+    tabla.column("p_unit", width=150, anchor="e")
+    tabla.column("subtotal", width=150, anchor="e")
+    tabla.pack(fill=tk.BOTH, expand=True, padx=15, pady=10)
 
-# Botón para borrar ítem de la tabla
-btn_borrar = tk.Button(ventana, text="❌ Eliminar Producto", command=borrar_item, **st.estilo_boton(st.RED_ERROR))
-st.configurar_hover(btn_borrar, st.RED_ERROR, st.BG_CARD)
-btn_borrar.pack(anchor="e", padx=15)
+    # Botón para borrar ítem de la tabla
+    btn_borrar = tk.Button(ventana, text="❌ Eliminar Producto", command=borrar_item, **st.estilo_boton(st.RED_ERROR))
+    st.configurar_hover(btn_borrar, st.RED_ERROR, st.BG_CARD)
+    btn_borrar.pack(anchor="e", padx=15)
 
-# Pie de ventana
-frame_bot = tk.Frame(ventana, pady=20, bg=st.BG_MAIN); frame_bot.pack(fill=tk.X, padx=15)
-label_total = tk.Label(frame_bot, text="TOTAL: $ 0.00", font=("Inter", 28, "bold"), fg="darkgreen", bg=st.BG_MAIN)
-label_total.pack(side=tk.LEFT)
+    # Pie de ventana
+    frame_bot = tk.Frame(ventana, pady=20, bg=st.BG_MAIN); frame_bot.pack(fill=tk.X, padx=15)
+    label_total = tk.Label(frame_bot, text="TOTAL: $ 0.00", font=("Inter", 28, "bold"), fg="darkgreen", bg=st.BG_MAIN)
+    label_total.pack(side=tk.LEFT)
 
-check_desc_var = tk.BooleanVar()
-check_descuento = tk.Checkbutton(frame_bot, text="Descuento 10% (Gremio)", variable=check_desc_var, 
-                                 command=actualizar_total_visual, font=st.FONT_NORMAL, bg=st.BG_MAIN, fg="white",
-                                 selectcolor=st.BG_CARD, activebackground=st.BG_MAIN, activeforeground="white")
-check_descuento.pack(side=tk.LEFT, padx=20)
+    check_desc_var = tk.BooleanVar()
+    check_descuento = tk.Checkbutton(frame_bot, text="Descuento 10% (Gremio)", variable=check_desc_var, 
+                                     command=actualizar_total_visual, font=st.FONT_NORMAL, bg=st.BG_MAIN, fg="white",
+                                     selectcolor=st.BG_CARD, activebackground=st.BG_MAIN, activeforeground="white")
+    check_descuento.pack(side=tk.LEFT, padx=20)
 
-label_info_desc = tk.Label(frame_bot, text="", fg=st.RED_ERROR, bg=st.BG_MAIN, font=st.FONT_NORMAL)
-label_info_desc.pack(side=tk.LEFT)
+    label_info_desc = tk.Label(frame_bot, text="", fg=st.RED_ERROR, bg=st.BG_MAIN, font=st.FONT_NORMAL)
+    label_info_desc.pack(side=tk.LEFT)
 
-btn_guardar = tk.Button(frame_bot, text="💾 GUARDAR VENTA", command=guardar_presupuesto, **st.estilo_boton())
-st.configurar_hover(btn_guardar)
-btn_guardar.pack(side=tk.RIGHT)
+    btn_guardar = tk.Button(frame_bot, text="💾 GUARDAR VENTA", command=guardar_presupuesto, **st.estilo_boton())
+    st.configurar_hover(btn_guardar)
+    btn_guardar.pack(side=tk.RIGHT)
+    
+    return ventana
 
 if __name__ == '__main__':
-    ventana.mainloop()
+    root = tk.Tk()
+    root.geometry("1000x800")
+    st.aplicar_estilo_ventana(root)
+    app = montar_interfaz(root)
+    app.pack(fill="both", expand=True)
+    root.mainloop()

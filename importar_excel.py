@@ -27,28 +27,22 @@ def _ejecutar_importacion(proveedor_id, archivo_excel):
     if not os.path.exists(archivo_excel):
         return f"❌ ERROR: No se encuentra el archivo '{archivo_excel}'"
 
+    # --- FASE 1: PREPARACIÓN EN MEMORIA (SIN TOCAR LA DB) ---
+    # Leemos y procesamos el Excel ANTES de abrir la conexión para evitar bloqueos.
     try:
-        conexion = sqlite3.connect(db_nombre)
-        cursor = conexion.cursor()
-        
-        # Aseguramos un índice único para que la operación UPSERT funcione correctamente.
-        cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_producto_proveedor ON productos (codigo_proveedor, proveedor_id)")
-        
         df = pd.read_excel(archivo_excel)
-
         df.columns = df.columns.astype(str).str.lower().str.strip()
+        
         mapeo = {
             'código': 'codigo', 'codigo': 'codigo',
             'descripción': 'descripcion', 'descripcion': 'descripcion',
             'costo base': 'costo', 'costo': 'costo', 'precio': 'costo'
         }
         df.rename(columns=mapeo, inplace=True)
+        
         for col in ['codigo', 'descripcion', 'costo']:
             if col not in df.columns:
                 return f"❌ ERROR: Falta la columna obligatoria '{col}' en el Excel."
-        
-        # 1. Marcar como inactivos SOLO los productos del proveedor a actualizar.
-        cursor.execute("UPDATE productos SET estado = 'INACTIVO' WHERE proveedor_id = ?", (proveedor_id,))
         
         productos_a_procesar = []
         for _, fila in df.iterrows():
@@ -63,8 +57,23 @@ def _ejecutar_importacion(proveedor_id, archivo_excel):
                 continue
             
             productos_a_procesar.append((proveedor_id, cod, desc, prec, 1.6))
+            
+    except Exception as e:
+        return f"❌ Error leyendo o procesando el Excel: {e}"
 
-        # 2. Usar UPSERT para insertar o actualizar en bloque (mucho más rápido).
+    # --- FASE 2: TRANSACCIÓN RÁPIDA EN BASE DE DATOS ---
+    conexion = None
+    try:
+        conexion = sqlite3.connect(db_nombre)
+        cursor = conexion.cursor()
+        
+        # 1. Aseguramos índice (DDL)
+        cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_producto_proveedor ON productos (codigo_proveedor, proveedor_id)")
+        
+        # 2. Marcar como inactivos (Inicia la transacción implícita)
+        cursor.execute("UPDATE productos SET estado = 'INACTIVO' WHERE proveedor_id = ?", (proveedor_id,))
+
+        # 3. Usar UPSERT para insertar o actualizar en bloque
         upsert_query = """
             INSERT INTO productos (proveedor_id, codigo_proveedor, descripcion, costo_base, coeficiente_ganancia, estado, ultima_actualizacion)
             VALUES (?, ?, ?, ?, ?, 'ACTIVO', CURRENT_DATE)
@@ -75,6 +84,8 @@ def _ejecutar_importacion(proveedor_id, archivo_excel):
                 ultima_actualizacion = CURRENT_DATE;
         """
         cursor.executemany(upsert_query, productos_a_procesar)
+        
+        # 4. Confirmar cambios (Libera el lock inmediatamente)
         conexion.commit()
 
         # Generar un reporte del resultado
@@ -92,15 +103,21 @@ def _ejecutar_importacion(proveedor_id, archivo_excel):
         
     except PermissionError:
         return "❌ ERROR: El Excel está abierto. Ciérralo y reintenta."
+    except sqlite3.OperationalError as e:
+        if "locked" in str(e):
+            return "❌ ERROR: La base de datos está bloqueada. Cierra otras ventanas del programa e intenta de nuevo."
+        return f"❌ Error Operacional de DB: {e}"
     except sqlite3.Error as e:
+        if conexion: conexion.rollback()
         return f"❌ Error de Base de Datos: {e}"
     except Exception as e:
+        if conexion: conexion.rollback()
         return f"❌ Error inesperado durante la importación: {e}"
     finally:
-        if 'conexion' in locals() and conexion:
+        if conexion:
             conexion.close()
 
-def importar_lista():
+def montar_interfaz(parent):
     """Crea una interfaz gráfica para seleccionar proveedor e importar el archivo."""
     
     def obtener_proveedores():
@@ -144,13 +161,9 @@ def importar_lista():
         
         messagebox.showinfo("Resultado de Importación", resultado)
         btn_importar.config(state="normal", text="Iniciar Importación")
-        if "ERROR" not in resultado:
-            ventana.destroy()
+        # Ya no destruimos la ventana porque es una pestaña
 
-    ventana = tk.Tk()
-    ventana.title("Importador por Proveedor")
-    ventana.geometry("500x350")
-    st.aplicar_estilo_ventana(ventana)
+    ventana = tk.Frame(parent, bg=st.BG_MAIN)
     ventana.config(padx=30, pady=20)
 
     tk.Label(ventana, text="Importar Lista de Precios", font=st.FONT_TITLE, bg=st.BG_MAIN, fg=st.TEXT_PRIMARY).pack(pady=(0, 20))
@@ -179,7 +192,11 @@ def importar_lista():
     st.configurar_hover(btn_importar)
     btn_importar.pack(fill="x", pady=(20, 0))
 
-    ventana.mainloop()
+    return ventana
 
 if __name__ == '__main__':
-    importar_lista()
+    root = tk.Tk()
+    st.aplicar_estilo_ventana(root)
+    app = montar_interfaz(root)
+    app.pack(fill="both", expand=True)
+    root.mainloop()

@@ -160,51 +160,59 @@ def ver_detalles(event=None):
     pass
 
 # --- INTERFAZ ---
-ventana = tk.Tk()
-ventana.title("Historial de Ventas - HerrajesContable")
-ventana.geometry("800x600") # Un poco más grande para que se vea mejor
-st.aplicar_estilo_ventana(ventana) # Aplicamos fondo oscuro
+def montar_interfaz(parent):
+    global tabla
+    
+    ventana = tk.Frame(parent, bg=st.BG_MAIN)
 
-tk.Label(ventana, text="Historial de Presupuestos / Ventas", font=st.FONT_TITLE, 
-         bg=st.BG_MAIN, fg=st.TEXT_PRIMARY).pack(pady=20)
+    tk.Label(ventana, text="Historial de Presupuestos / Ventas", font=st.FONT_TITLE, 
+             bg=st.BG_MAIN, fg=st.TEXT_PRIMARY).pack(pady=20)
 
-# Tabla de Historial
-style_tabla = ttk.Style()
-style_tabla.theme_use("clam")
-style_tabla.configure("Treeview", background=st.BG_CARD, foreground="white", fieldbackground=st.BG_CARD, borderwidth=0, rowheight=25)
-style_tabla.map("Treeview", background=[('selected', st.ACCENT)])
-style_tabla.configure("Treeview.Heading", background=st.BG_CARD, foreground=st.TEXT_SECONDARY, font=st.FONT_LABEL, padding=10)
+    # Tabla de Historial
+    style_tabla = ttk.Style()
+    style_tabla.theme_use("clam")
+    style_tabla.configure("Treeview", background=st.BG_CARD, foreground="white", fieldbackground=st.BG_CARD, borderwidth=0, rowheight=25)
+    style_tabla.map("Treeview", background=[('selected', st.ACCENT)])
+    style_tabla.configure("Treeview.Heading", background=st.BG_CARD, foreground=st.TEXT_SECONDARY, font=st.FONT_LABEL, padding=10)
 
-columnas = ("id", "fecha", "cliente", "total")
-tabla = ttk.Treeview(ventana, columns=columnas, show="headings", style="Treeview")
-tabla.heading("id", text="N° TICKET")
-tabla.heading("fecha", text="FECHA")
-tabla.heading("cliente", text="CLIENTE")
-tabla.heading("total", text="TOTAL ($)")
+    columnas = ("id", "fecha", "cliente", "total")
+    tabla = ttk.Treeview(ventana, columns=columnas, show="headings", style="Treeview")
+    tabla.heading("id", text="N° TICKET")
+    tabla.heading("fecha", text="FECHA")
+    tabla.heading("cliente", text="CLIENTE")
+    tabla.heading("total", text="TOTAL ($)")
 
-tabla.column("id", width=100, anchor="center")
-tabla.column("fecha", width=180, anchor="center")
-tabla.column("cliente", width=300)
-tabla.column("total", width=150, anchor="e")
-tabla.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
+    tabla.column("id", width=100, anchor="center")
+    tabla.column("fecha", width=180, anchor="center")
+    tabla.column("cliente", width=300)
+    tabla.column("total", width=150, anchor="e")
+    tabla.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
 
-# Botonera
-frame_botones = tk.Frame(ventana, bg=st.BG_MAIN)
-frame_botones.pack(pady=15)
+    # Botonera
+    frame_botones = tk.Frame(ventana, bg=st.BG_MAIN)
+    frame_botones.pack(pady=15)
 
-btn_refrescar = tk.Button(frame_botones, text="🔄 Actualizar Lista", command=cargar_historial, **st.estilo_boton(st.ACCENT))
-st.configurar_hover(btn_refrescar, st.ACCENT, st.BG_CARD)
-btn_refrescar.pack(side=tk.LEFT, padx=10)
+    btn_refrescar = tk.Button(frame_botones, text="🔄 Actualizar Lista", command=cargar_historial, **st.estilo_boton(st.ACCENT))
+    st.configurar_hover(btn_refrescar, st.ACCENT, st.BG_CARD)
+    btn_refrescar.pack(side=tk.LEFT, padx=10)
 
-# BOTÓN REIMPRIMIR
-btn_imprimir = tk.Button(frame_botones, text="🖨️ VER TICKET", command=reimprimir_seleccionado, **st.estilo_boton(st.ACCENT))
-st.configurar_hover(btn_imprimir, st.ACCENT, st.BG_CARD)
-btn_imprimir.pack(side=tk.LEFT, padx=10)
+    # BOTÓN REIMPRIMIR
+    btn_imprimir = tk.Button(frame_botones, text="🖨️ VER TICKET", command=reimprimir_seleccionado, **st.estilo_boton(st.ACCENT))
+    st.configurar_hover(btn_imprimir, st.ACCENT, st.BG_CARD)
+    btn_imprimir.pack(side=tk.LEFT, padx=10)
 
-# BOTÓN ELIMINAR
-btn_eliminar = tk.Button(frame_botones, text="🗑️ ELIMINAR VENTA", command=eliminar_venta, **st.estilo_boton(st.RED_ERROR))
-st.configurar_hover(btn_eliminar, st.RED_ERROR, st.BG_CARD)
-btn_eliminar.pack(side=tk.LEFT, padx=10)
+    # BOTÓN ELIMINAR
+    btn_eliminar = tk.Button(frame_botones, text="🗑️ ELIMINAR VENTA", command=eliminar_venta, **st.estilo_boton(st.RED_ERROR))
+    st.configurar_hover(btn_eliminar, st.RED_ERROR, st.BG_CARD)
+    btn_eliminar.pack(side=tk.LEFT, padx=10)
 
-cargar_historial()
-ventana.mainloop()
+    cargar_historial()
+    
+    return ventana
+
+if __name__ == '__main__':
+    root = tk.Tk()
+    st.aplicar_estilo_ventana(root)
+    app = montar_interfaz(root)
+    app.pack(fill="both", expand=True)
+    root.mainloop()

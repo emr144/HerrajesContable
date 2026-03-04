@@ -1,0 +1,248 @@
+import sqlite3
+import tkinter as tk
+from tkinter import ttk, messagebox
+import styles as st
+
+# Variable global para controlar edición
+producto_seleccionado_id = None
+
+def cargar_productos(filtro=""):
+    """Carga y muestra los productos en la tabla, con JOIN a proveedores."""
+    for row in tabla.get_children():
+        tabla.delete(row)
+    
+    conexion = sqlite3.connect('herrajes.db')
+    cursor = conexion.cursor()
+    
+    query = """
+        SELECT p.id, p.codigo_proveedor, p.descripcion, pr.nombre, p.costo_base, 
+               p.coeficiente_ganancia, p.iva, p.estado
+        FROM productos p
+        JOIN proveedores pr ON p.proveedor_id = pr.id
+    """
+    
+    if filtro:
+        query += " WHERE (p.codigo_proveedor LIKE ? OR p.descripcion LIKE ? OR pr.nombre LIKE ?) "
+        param = f"%{filtro}%"
+        params = (param, param, param)
+    else:
+        params = ()
+        
+    query += " ORDER BY p.descripcion ASC"
+    cursor.execute(query, params)
+        
+    registros = cursor.fetchall()
+    for prod in registros:
+        p_id, cod, desc, prov, costo, coef, iva, estado = prod
+        precio_venta = costo * coef * (1 + iva)
+        
+        valores_display = (p_id, cod, desc, prov, f"$ {costo:.2f}", coef, f"$ {precio_venta:.2f}", estado)
+        valores_con_accion = valores_display + ('✏️', '🗑️')
+        
+        tabla.insert("", "end", values=valores_con_accion, iid=p_id)
+
+    label_contador.config(text=f"Total Productos: {len(registros)}")
+    conexion.close()
+
+def limpiar_formulario(deseleccionar=False):
+    """Limpia los campos del formulario de edición."""
+    global producto_seleccionado_id
+    producto_seleccionado_id = None
+    ent_desc.delete(0, tk.END)
+    ent_costo.delete(0, tk.END)
+    ent_coef.delete(0, tk.END)
+    btn_guardar.config(text="💾 GUARDAR CAMBIOS", state="disabled")
+    if deseleccionar and tabla.selection():
+        tabla.selection_remove(tabla.selection())
+
+def guardar_producto():
+    """Actualiza un producto existente en la base de datos."""
+    if not producto_seleccionado_id:
+        return
+
+    try:
+        desc = ent_desc.get().strip()
+        costo = float(ent_costo.get().strip().replace('$', ''))
+        coef = float(ent_coef.get().strip())
+    except ValueError:
+        messagebox.showerror("Error de Formato", "Costo y Coeficiente deben ser números válidos.")
+        return
+
+    if not desc:
+        messagebox.showwarning("Atención", "La descripción no puede estar vacía.")
+        return
+
+    conexion = sqlite3.connect('herrajes.db')
+    cursor = conexion.cursor()
+    cursor.execute("""
+        UPDATE productos SET descripcion=?, costo_base=?, coeficiente_ganancia=? 
+        WHERE id=?
+    """, (desc, costo, coef, producto_seleccionado_id))
+    conexion.commit()
+    conexion.close()
+    
+    messagebox.showinfo("Éxito", "Producto actualizado correctamente.")
+    limpiar_formulario()
+    cargar_productos(ent_buscar.get())
+
+def cargar_datos_para_editar(item_id):
+    """Carga los datos de un producto en el formulario para su edición."""
+    global producto_seleccionado_id
+    
+    conexion = sqlite3.connect('herrajes.db')
+    cursor = conexion.cursor()
+    cursor.execute("SELECT descripcion, costo_base, coeficiente_ganancia FROM productos WHERE id=?", (item_id,))
+    valores = cursor.fetchone()
+    conexion.close()
+
+    if not valores: return
+
+    limpiar_formulario()
+    producto_seleccionado_id = item_id
+    
+    ent_desc.insert(0, valores[0])
+    ent_costo.insert(0, f"{valores[1]:.2f}")
+    ent_coef.insert(0, str(valores[2]))
+    
+    btn_guardar.config(state="normal")
+
+def eliminar_producto_por_id(producto_id, descripcion):
+    """Elimina un único producto, pidiendo confirmación."""
+    msg = f"¿Eliminar el producto '{descripcion}' (ID: {producto_id})?"
+    if messagebox.askyesno("Confirmar Eliminación", msg):
+        try:
+            conexion = sqlite3.connect('herrajes.db')
+            cursor = conexion.cursor()
+            cursor.execute("DELETE FROM productos WHERE id = ?", (producto_id,))
+            conexion.commit()
+            conexion.close()
+            cargar_productos(ent_buscar.get())
+            limpiar_formulario(deseleccionar=True)
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo eliminar el producto: {e}")
+
+def eliminar_por_proveedor_dialogo():
+    """Abre un diálogo para seleccionar un proveedor y borrar todos sus productos."""
+    dialog = tk.Toplevel(ventana)
+    dialog.title("Eliminar Productos por Proveedor")
+    dialog.geometry("400x200")
+    st.aplicar_estilo_ventana(dialog)
+    dialog.config(padx=20, pady=20)
+
+    tk.Label(dialog, text="Seleccione un proveedor para\nborrar TODOS sus productos:", 
+             font=st.FONT_LABEL, bg=st.BG_MAIN, fg=st.TEXT_SECONDARY).pack(pady=10)
+
+    # Obtener proveedores
+    conexion = sqlite3.connect('herrajes.db')
+    cursor = conexion.cursor()
+    cursor.execute("SELECT id, nombre FROM proveedores ORDER BY nombre")
+    proveedores = cursor.fetchall()
+    conexion.close()
+    
+    proveedor_map = {nombre: pid for pid, nombre in proveedores}
+    combo = ttk.Combobox(dialog, values=[p[1] for p in proveedores], state="readonly", font=st.FONT_NORMAL)
+    combo.pack(fill="x", pady=5)
+
+    def confirmar_borrado():
+        nombre_prov = combo.get()
+        if not nombre_prov:
+            messagebox.showwarning("Atención", "Debe seleccionar un proveedor.", parent=dialog)
+            return
+        
+        proveedor_id = proveedor_map[nombre_prov]
+        
+        msg = (f"¡¡¡ATENCIÓN!!!\n\n"
+               f"¿Está 100% seguro de que desea eliminar TODOS los productos del proveedor '{nombre_prov}'?\n\n"
+               "Esta acción es IRREVERSIBLE.")
+        
+        if messagebox.askyesno("Confirmación Final Requerida", msg, icon='error', parent=dialog):
+            try:
+                conn = sqlite3.connect('herrajes.db')
+                cur = conn.cursor()
+                cur.execute("DELETE FROM productos WHERE proveedor_id = ?", (proveedor_id,))
+                conn.commit()
+                eliminados = cur.rowcount
+                conn.close()
+                messagebox.showinfo("Éxito", f"Se eliminaron {eliminados} productos de '{nombre_prov}'.", parent=ventana)
+                dialog.destroy()
+                cargar_productos()
+            except Exception as e:
+                messagebox.showerror("Error", f"No se pudieron eliminar los productos: {e}", parent=dialog)
+
+    btn_confirmar = tk.Button(dialog, text="ELIMINAR PRODUCTOS", command=confirmar_borrado, **st.estilo_boton(st.RED_ERROR))
+    st.configurar_hover(btn_confirmar, st.RED_ERROR, st.BG_CARD)
+    btn_confirmar.pack(fill="x", pady=15)
+
+def on_tabla_click(event):
+    """Manejador de clics en la tabla para editar o eliminar."""
+    if tabla.identify_region(event.x, event.y) != "cell": return
+
+    columna_id_str = tabla.identify_column(event.x)
+    item_id = tabla.identify_row(event.y)
+    if not item_id: return
+        
+    valores = tabla.item(item_id, 'values')
+    
+    if columna_id_str == "#9": # Columna "Editar"
+        cargar_datos_para_editar(item_id)
+    elif columna_id_str == "#10": # Columna "Eliminar"
+        eliminar_producto_por_id(item_id, valores[2]) # Pasamos ID y descripción
+
+# --- INTERFAZ GRÁFICA ---
+def montar_interfaz(parent):
+    global ent_desc, ent_costo, ent_coef, btn_guardar, ent_buscar, label_contador, tabla, ventana
+    
+    ventana = tk.Frame(parent, bg=st.BG_MAIN)
+    # Nota: 'ventana' se usa en eliminar_por_proveedor_dialogo como parent, así que debe ser accesible
+
+    frame_izquierdo = tk.Frame(ventana, bg=st.BG_MAIN, width=350); frame_izquierdo.pack(side=tk.LEFT, fill=tk.Y, padx=20, pady=20)
+    frame_derecho = tk.Frame(ventana, bg=st.BG_MAIN); frame_derecho.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, pady=20, padx=(0, 20))
+
+    # --- Panel Izquierdo (Formulario y Acciones) ---
+    tk.Label(frame_izquierdo, text="EDITAR PRODUCTO", font=st.FONT_TITLE, bg=st.BG_MAIN, fg=st.TEXT_PRIMARY).pack(pady=10, anchor="w")
+
+    frame_form = tk.Frame(frame_izquierdo, bg=st.BG_CARD, padx=20, pady=20); frame_form.pack(fill=tk.X)
+    def crear_campo(label, fila):
+        tk.Label(frame_form, text=label, font=st.FONT_LABEL, bg=st.BG_CARD, fg=st.TEXT_SECONDARY).grid(row=fila, column=0, sticky="w", pady=8)
+        entry = tk.Entry(frame_form, font=st.FONT_NORMAL, bg=st.BG_MAIN, fg="white", bd=0, insertbackground="white")
+        entry.grid(row=fila, column=1, sticky="ew", padx=10, pady=8)
+        return entry
+    frame_form.columnconfigure(1, weight=1)
+    ent_desc = crear_campo("Descripción:", 0)
+    ent_costo = crear_campo("Costo Base:", 1)
+    ent_coef = crear_campo("Coeficiente:", 2)
+
+    btn_guardar = tk.Button(frame_izquierdo, text="💾 GUARDAR CAMBIOS", command=guardar_producto, **st.estilo_boton()); btn_guardar.pack(fill=tk.X, pady=15); st.configurar_hover(btn_guardar)
+    btn_guardar.config(state="disabled")
+
+    tk.Frame(frame_izquierdo, height=2, bg=st.BG_CARD).pack(fill=tk.X, pady=20)
+
+    tk.Label(frame_izquierdo, text="ACCIONES MASIVAS", font=st.FONT_TITLE, bg=st.BG_MAIN, fg=st.TEXT_PRIMARY).pack(pady=10, anchor="w")
+    btn_eliminar_prov = tk.Button(frame_izquierdo, text="🗑️ Eliminar por Proveedor", command=eliminar_por_proveedor_dialogo, **st.estilo_boton(st.RED_ERROR)); btn_eliminar_prov.pack(fill=tk.X, pady=10); st.configurar_hover(btn_eliminar_prov, st.RED_ERROR, st.BG_CARD)
+
+    # --- Panel Derecho (Buscador y Tabla) ---
+    frame_buscar = tk.Frame(frame_derecho, bg=st.BG_MAIN); frame_buscar.pack(fill=tk.X, pady=(0, 10))
+    tk.Label(frame_buscar, text="🔍 Buscar Producto o Proveedor:", font=st.FONT_LABEL, bg=st.BG_MAIN, fg="white").pack(side=tk.LEFT)
+    ent_buscar = tk.Entry(frame_buscar, font=st.FONT_NORMAL, bg=st.BG_CARD, fg="white", bd=0, insertbackground="white"); ent_buscar.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=10)
+    ent_buscar.bind("<KeyRelease>", lambda e: cargar_productos(ent_buscar.get()))
+    label_contador = tk.Label(frame_buscar, text="Total: 0", font=st.FONT_LABEL, bg=st.BG_MAIN, fg=st.ACCENT); label_contador.pack(side=tk.RIGHT)
+
+    style_tabla = ttk.Style(); style_tabla.theme_use("clam"); style_tabla.configure("Treeview", background=st.BG_CARD, foreground="white", fieldbackground=st.BG_CARD, borderwidth=0, rowheight=30, font=st.FONT_NORMAL); style_tabla.map("Treeview", background=[('selected', st.ACCENT)]); style_tabla.configure("Treeview.Heading", font=st.FONT_LABEL)
+
+    columnas = ("id", "código", "descripción", "proveedor", "costo", "coef", "p_venta", "estado", "editar", "eliminar")
+    tabla = ttk.Treeview(frame_derecho, columns=columnas, show="headings"); tabla.pack(fill=tk.BOTH, expand=True)
+    for col in columnas: tabla.heading(col, text=col.upper())
+
+    tabla.column("id", width=50, anchor="center"); tabla.column("código", width=100); tabla.column("descripción", width=250); tabla.column("proveedor", width=120); tabla.column("costo", width=90, anchor="e"); tabla.column("coef", width=60, anchor="center"); tabla.column("p_venta", width=100, anchor="e"); tabla.column("estado", width=80, anchor="center"); tabla.column("editar", width=60, anchor="center"); tabla.column("eliminar", width=60, anchor="center")
+
+    tabla.bind("<Button-1>", on_tabla_click)
+    cargar_productos()
+    
+    return ventana
+
+if __name__ == '__main__':
+    root = tk.Tk()
+    st.aplicar_estilo_ventana(root)
+    app = montar_interfaz(root)
+    app.pack(fill="both", expand=True)
+    root.mainloop()

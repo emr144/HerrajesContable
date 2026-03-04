@@ -91,52 +91,58 @@ def mostrar_detalle(codigo_buscado=None):
         messagebox.showwarning("No encontrado", f"El código '{codigo_buscado}' no existe.")
 
 # --- INTERFAZ GRÁFICA ---
-ventana = tk.Tk()
-ventana.title("Catálogo Inteligente - HerrajesContable")
-ventana.geometry("650x850")
-st.aplicar_estilo_ventana(ventana)
-ventana.config(padx=25, pady=25) # Mantenemos el padding
+def montar_interfaz(parent):
+    global entrada_busqueda, lista_sugerencias, label_desc, label_codigo_info, label_precio, label_imagen
+    
+    ventana = tk.Frame(parent, bg=st.BG_MAIN)
+    ventana.config(padx=25, pady=25) # Mantenemos el padding
 
-tk.Label(ventana, text="Buscar por Nombre o Código:", font=st.FONT_LABEL, 
-         bg=st.BG_MAIN, fg=st.TEXT_SECONDARY).pack(anchor="w")
+    tk.Label(ventana, text="Buscar por Nombre o Código:", font=st.FONT_LABEL, 
+             bg=st.BG_MAIN, fg=st.TEXT_SECONDARY).pack(anchor="w")
 
-frame_busqueda = tk.Frame(ventana, bg=st.BG_MAIN)
-frame_busqueda.pack(fill=tk.X, pady=5)
+    frame_busqueda = tk.Frame(ventana, bg=st.BG_MAIN)
+    frame_busqueda.pack(fill=tk.X, pady=5)
 
-entrada_busqueda = tk.Entry(frame_busqueda, font=st.FONT_NORMAL, bg=st.BG_CARD, fg="white", 
-                            bd=0, insertbackground="white", width=40)
-entrada_busqueda.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
-entrada_busqueda.bind('<KeyRelease>', actualizar_sugerencias)
-entrada_busqueda.bind('<Return>', lambda e: mostrar_detalle())
+    entrada_busqueda = tk.Entry(frame_busqueda, font=st.FONT_NORMAL, bg=st.BG_CARD, fg="white", 
+                                bd=0, insertbackground="white", width=40)
+    entrada_busqueda.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
+    entrada_busqueda.bind('<KeyRelease>', actualizar_sugerencias)
+    entrada_busqueda.bind('<Return>', lambda e: mostrar_detalle())
 
-btn_buscar = tk.Button(frame_busqueda, text=" 🔍 BUSCAR ", command=mostrar_detalle, **st.estilo_boton(st.ACCENT))
-st.configurar_hover(btn_buscar, st.ACCENT, st.BG_CARD)
-btn_buscar.pack(side=tk.RIGHT)
+    btn_buscar = tk.Button(frame_busqueda, text=" 🔍 BUSCAR ", command=mostrar_detalle, **st.estilo_boton(st.ACCENT))
+    st.configurar_hover(btn_buscar, st.ACCENT, st.BG_CARD)
+    btn_buscar.pack(side=tk.RIGHT)
 
-# Sugerencias flotantes
-lista_sugerencias = tk.Listbox(ventana, font=st.FONT_NORMAL, height=5, width=60, 
-                               bg=st.BG_CARD, fg="white", selectbackground=st.ACCENT, bd=0)
-lista_sugerencias.bind('<<ListboxSelect>>', seleccionar_producto)
+    # Sugerencias flotantes
+    lista_sugerencias = tk.Listbox(ventana, font=st.FONT_NORMAL, height=5, width=60, 
+                                   bg=st.BG_CARD, fg="white", selectbackground=st.ACCENT, bd=0)
+    lista_sugerencias.bind('<<ListboxSelect>>', seleccionar_producto)
 
-tk.Frame(ventana, height=2, bg=st.BG_CARD).pack(fill=tk.X, pady=20)
+    tk.Frame(ventana, height=2, bg=st.BG_CARD).pack(fill=tk.X, pady=20)
 
-# Datos del producto
-label_desc = tk.Label(ventana, text="Esperando búsqueda...", font=st.FONT_TITLE, wraplength=550,
-                      bg=st.BG_MAIN, fg=st.TEXT_PRIMARY)
-label_desc.pack(pady=5)
+    # Datos del producto
+    label_desc = tk.Label(ventana, text="Esperando búsqueda...", font=st.FONT_TITLE, wraplength=550,
+                          bg=st.BG_MAIN, fg=st.TEXT_PRIMARY)
+    label_desc.pack(pady=5)
 
-label_codigo_info = tk.Label(ventana, text="Código: ---", font=st.FONT_LABEL, 
-                             bg=st.BG_MAIN, fg=st.TEXT_SECONDARY)
-label_codigo_info.pack()
+    label_codigo_info = tk.Label(ventana, text="Código: ---", font=st.FONT_LABEL, 
+                                 bg=st.BG_MAIN, fg=st.TEXT_SECONDARY)
+    label_codigo_info.pack()
 
-label_precio = tk.Label(ventana, text="$ 0.00", font=("Inter", 24, "bold"), 
-                        bg=st.BG_MAIN, fg=st.ACCENT)
-label_precio.pack(pady=15)
+    label_precio = tk.Label(ventana, text="$ 0.00", font=("Inter", 24, "bold"), 
+                            bg=st.BG_MAIN, fg=st.ACCENT)
+    label_precio.pack(pady=15)
 
-# Contenedor de Imagen (Sin anchos fijos para que la imagen mande)
-label_imagen = tk.Label(ventana, text="[ Imagen del Producto ]", font=st.FONT_NORMAL, 
-                        bg=st.BG_CARD, fg=st.TEXT_SECONDARY, relief="flat")
-label_imagen.pack(pady=10, fill=tk.BOTH, expand=True)
+    # Contenedor de Imagen (Sin anchos fijos para que la imagen mande)
+    label_imagen = tk.Label(ventana, text="[ Imagen del Producto ]", font=st.FONT_NORMAL, 
+                            bg=st.BG_CARD, fg=st.TEXT_SECONDARY, relief="flat")
+    label_imagen.pack(pady=10, fill=tk.BOTH, expand=True)
+    
+    return ventana
 
 if __name__ == '__main__':
-    ventana.mainloop()
+    root = tk.Tk()
+    st.aplicar_estilo_ventana(root)
+    app = montar_interfaz(root)
+    app.pack(fill="both", expand=True)
+    root.mainloop()

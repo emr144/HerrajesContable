@@ -117,75 +117,81 @@ def on_tabla_click(event):
         eliminar_cliente_por_id(valores[0], valores[1])
 
 # --- INTERFAZ SOBRIA ---
-ventana = tk.Tk()
-ventana.title("Agenda de Clientes Pro")
-ventana.geometry("700x650")
-st.aplicar_estilo_ventana(ventana) # Fondo oscuro
+def montar_interfaz(parent):
+    global ent_nombre, ent_tel, ent_email, ent_cuit, btn_guardar, ent_buscar, tabla, label_contador
+    
+    ventana = tk.Frame(parent, bg=st.BG_MAIN)
 
-# Título
-tk.Label(ventana, text="GESTIÓN DE CLIENTES", font=st.FONT_TITLE, 
-         bg=st.BG_MAIN, fg=st.TEXT_PRIMARY).pack(pady=30)
+    # Título
+    tk.Label(ventana, text="GESTIÓN DE CLIENTES", font=st.FONT_TITLE, 
+             bg=st.BG_MAIN, fg=st.TEXT_PRIMARY).pack(pady=30)
 
-# Contador de clientes
-label_contador = tk.Label(ventana, text="Total Clientes: 0", font=st.FONT_LABEL, bg=st.BG_MAIN, fg=st.ACCENT)
-label_contador.pack()
+    # Contador de clientes
+    label_contador = tk.Label(ventana, text="Total Clientes: 0", font=st.FONT_LABEL, bg=st.BG_MAIN, fg=st.ACCENT)
+    label_contador.pack()
 
-# Formulario (Tarjeta)
-frame_form = tk.Frame(ventana, bg=st.BG_CARD, padx=20, pady=20)
-frame_form.pack(padx=40, fill=tk.X)
+    # Formulario (Tarjeta)
+    frame_form = tk.Frame(ventana, bg=st.BG_CARD, padx=20, pady=20)
+    frame_form.pack(padx=40, fill=tk.X)
 
-def crear_campo(label, fila):
-    tk.Label(frame_form, text=label, font=st.FONT_LABEL, bg=st.BG_CARD, fg=st.TEXT_SECONDARY).grid(row=fila, column=0, sticky="w", pady=5)
-    entry = tk.Entry(frame_form, font=st.FONT_NORMAL, bg=st.BG_MAIN, fg="white", bd=0, insertbackground="white")
-    entry.grid(row=fila, column=1, sticky="ew", padx=10, pady=5)
-    return entry
+    def crear_campo(label, fila):
+        tk.Label(frame_form, text=label, font=st.FONT_LABEL, bg=st.BG_CARD, fg=st.TEXT_SECONDARY).grid(row=fila, column=0, sticky="w", pady=5)
+        entry = tk.Entry(frame_form, font=st.FONT_NORMAL, bg=st.BG_MAIN, fg="white", bd=0, insertbackground="white")
+        entry.grid(row=fila, column=1, sticky="ew", padx=10, pady=5)
+        return entry
 
-frame_form.columnconfigure(1, weight=1)
-ent_nombre = crear_campo("Nombre:", 0)
-ent_tel = crear_campo("Teléfono:", 1)
-ent_email = crear_campo("Email:", 2)
-ent_cuit = crear_campo("CUIT/DNI:", 3)
+    frame_form.columnconfigure(1, weight=1)
+    ent_nombre = crear_campo("Nombre:", 0)
+    ent_tel = crear_campo("Teléfono:", 1)
+    ent_email = crear_campo("Email:", 2)
+    ent_cuit = crear_campo("CUIT/DNI:", 3)
 
-# Botones Formulario (Guardar y Limpiar)
-frame_btn_form = tk.Frame(ventana, bg=st.BG_MAIN)
-frame_btn_form.pack(pady=20, padx=40, fill=tk.X)
+    # Botones Formulario (Guardar y Limpiar)
+    frame_btn_form = tk.Frame(ventana, bg=st.BG_MAIN)
+    frame_btn_form.pack(pady=20, padx=40, fill=tk.X)
 
-btn_guardar = tk.Button(frame_btn_form, text="➕ GUARDAR NUEVO CLIENTE", command=guardar_cliente, **st.estilo_boton())
-btn_guardar.pack(fill=tk.X, expand=True)
-st.configurar_hover(btn_guardar)
+    btn_guardar = tk.Button(frame_btn_form, text="➕ GUARDAR NUEVO CLIENTE", command=guardar_cliente, **st.estilo_boton())
+    btn_guardar.pack(fill=tk.X, expand=True)
+    st.configurar_hover(btn_guardar)
 
-# Buscador
-frame_buscar = tk.Frame(ventana, bg=st.BG_MAIN)
-frame_buscar.pack(fill=tk.X, padx=40, pady=(10, 0))
-tk.Label(frame_buscar, text="🔍 Buscar Cliente:", font=st.FONT_LABEL, bg=st.BG_MAIN, fg="white").pack(side=tk.LEFT)
-ent_buscar = tk.Entry(frame_buscar, font=st.FONT_NORMAL, bg=st.BG_CARD, fg="white", bd=0, insertbackground="white")
-ent_buscar.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=10)
-ent_buscar.bind("<KeyRelease>", lambda e: cargar_clientes(ent_buscar.get()))
+    # Buscador
+    frame_buscar = tk.Frame(ventana, bg=st.BG_MAIN)
+    frame_buscar.pack(fill=tk.X, padx=40, pady=(10, 0))
+    tk.Label(frame_buscar, text="🔍 Buscar Cliente:", font=st.FONT_LABEL, bg=st.BG_MAIN, fg="white").pack(side=tk.LEFT)
+    ent_buscar = tk.Entry(frame_buscar, font=st.FONT_NORMAL, bg=st.BG_CARD, fg="white", bd=0, insertbackground="white")
+    ent_buscar.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=10)
+    ent_buscar.bind("<KeyRelease>", lambda e: cargar_clientes(ent_buscar.get()))
 
-# Tabla de Clientes
-style_tabla = ttk.Style()
-style_tabla.theme_use("clam")
-# Configuramos la fuente para las filas y la cabecera
-style_tabla.configure("Treeview", background=st.BG_CARD, foreground="white", fieldbackground=st.BG_CARD, borderwidth=0, rowheight=30, font=st.FONT_NORMAL)
-style_tabla.map("Treeview", background=[('selected', st.ACCENT)])
-style_tabla.configure("Treeview.Heading", font=st.FONT_LABEL)
+    # Tabla de Clientes
+    style_tabla = ttk.Style()
+    style_tabla.theme_use("clam")
+    # Configuramos la fuente para las filas y la cabecera
+    style_tabla.configure("Treeview", background=st.BG_CARD, foreground="white", fieldbackground=st.BG_CARD, borderwidth=0, rowheight=30, font=st.FONT_NORMAL)
+    style_tabla.map("Treeview", background=[('selected', st.ACCENT)])
+    style_tabla.configure("Treeview.Heading", font=st.FONT_LABEL)
 
-columnas = ("id", "nombre", "tel", "email", "cuit", "editar", "eliminar")
-tabla = ttk.Treeview(ventana, columns=columnas, show="headings")
-for col in columnas: 
-    tabla.heading(col, text=col.upper())
-    tabla.column(col, width=100)
+    columnas = ("id", "nombre", "tel", "email", "cuit", "editar", "eliminar")
+    tabla = ttk.Treeview(ventana, columns=columnas, show="headings")
+    for col in columnas: 
+        tabla.heading(col, text=col.upper())
+        tabla.column(col, width=100)
 
-# Ajustamos el ancho de las columnas de acción
-tabla.column("id", width=60, anchor="center")
-tabla.column("editar", width=80, anchor="center")
-tabla.column("eliminar", width=80, anchor="center")
+    # Ajustamos el ancho de las columnas de acción
+    tabla.column("id", width=60, anchor="center")
+    tabla.column("editar", width=80, anchor="center")
+    tabla.column("eliminar", width=80, anchor="center")
 
-tabla.pack(fill=tk.BOTH, expand=True, padx=40, pady=20)
+    tabla.pack(fill=tk.BOTH, expand=True, padx=40, pady=20)
 
-# El botón de modificar general se elimina. La acción ahora está en cada fila.
+    # Usamos <Button-1> para que la acción sea inmediata al hacer clic
+    tabla.bind("<Button-1>", on_tabla_click)
+    cargar_clientes()
+    
+    return ventana
 
-# Usamos <Button-1> para que la acción sea inmediata al hacer clic
-tabla.bind("<Button-1>", on_tabla_click)
-cargar_clientes()
-ventana.mainloop()
+if __name__ == '__main__':
+    root = tk.Tk()
+    st.aplicar_estilo_ventana(root)
+    app = montar_interfaz(root)
+    app.pack(fill="both", expand=True)
+    root.mainloop()
