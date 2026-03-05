@@ -11,7 +11,8 @@ def crear_base_datos():
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         nombre TEXT NOT NULL,
         contacto TEXT,
-        descuento_global REAL DEFAULT 0.0 -- Ej: 0.10 para un 10% de descuento de gremio que te hacen a vos
+        descuento_global REAL DEFAULT 0.0, -- Ej: 0.10 para un 10% de descuento de gremio que te hacen a vos
+        fecha_modif_coeficiente DATE
     )
     ''')
 
@@ -27,6 +28,8 @@ def crear_base_datos():
         iva REAL DEFAULT 0.21, -- 21% de IVA por defecto
         estado TEXT DEFAULT 'ACTIVO', -- Por si dejan de fabricarlo
         ultima_actualizacion DATE DEFAULT CURRENT_DATE,
+        numero_lista TEXT,
+        fecha_lista DATE,
         FOREIGN KEY (proveedor_id) REFERENCES proveedores (id)
     )
     ''')

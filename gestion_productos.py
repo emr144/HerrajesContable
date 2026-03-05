@@ -15,8 +15,8 @@ def cargar_productos(filtro=""):
     cursor = conexion.cursor()
     
     query = """
-        SELECT p.id, p.codigo_proveedor, p.descripcion, pr.nombre, p.costo_base, 
-               p.coeficiente_ganancia, p.iva, p.estado
+        SELECT p.id, p.codigo_proveedor, p.descripcion, pr.nombre, p.costo_base,
+               p.coeficiente_ganancia, p.iva, p.estado, p.numero_lista, p.fecha_lista
         FROM productos p
         JOIN proveedores pr ON p.proveedor_id = pr.id
     """
@@ -33,11 +33,15 @@ def cargar_productos(filtro=""):
         
     registros = cursor.fetchall()
     for prod in registros:
-        p_id, cod, desc, prov, costo, coef, iva, estado = prod
+        p_id, cod, desc, prov, costo, coef, iva, estado, num_lista, fecha_lista = prod
         precio_venta = costo * coef * (1 + iva)
         
-        valores_display = (p_id, cod, desc, prov, f"$ {costo:.2f}", coef, f"$ {precio_venta:.2f}", estado)
-        valores_con_accion = valores_display + ('✏️', '🗑️')
+        # Preparamos los valores para que se vean bien en la tabla
+        num_lista_disp = num_lista if num_lista else "---"
+        fecha_lista_disp = fecha_lista if fecha_lista else "---"
+        
+        valores_display = (p_id, cod, desc, prov, f"$ {costo:.2f}", coef, f"$ {precio_venta:.2f}", estado, num_lista_disp, fecha_lista_disp)
+        valores_con_accion = valores_display + ('✏️', '🗑️') # Los íconos de acción
         
         tabla.insert("", "end", values=valores_con_accion, iid=p_id)
 
@@ -121,6 +125,84 @@ def eliminar_producto_por_id(producto_id, descripcion):
         except Exception as e:
             messagebox.showerror("Error", f"No se pudo eliminar el producto: {e}")
 
+def modificar_coef_por_proveedor_dialogo():
+    """Abre un diálogo para cambiar el coeficiente de todos los productos de un proveedor."""
+    dialog = tk.Toplevel(ventana)
+    dialog.title("Modificar Coeficiente por Proveedor")
+    dialog.geometry("450x300")
+    st.aplicar_estilo_ventana(dialog)
+    dialog.config(padx=20, pady=20)
+
+    tk.Label(dialog, text="Cambiar coeficiente para un proveedor", 
+             font=st.FONT_LABEL, bg=st.BG_MAIN, fg=st.TEXT_SECONDARY).pack(pady=10)
+
+    # --- Frame para selección de proveedor ---
+    frame_prov = tk.Frame(dialog, bg=st.BG_MAIN)
+    frame_prov.pack(fill='x', pady=5)
+    tk.Label(frame_prov, text="1. Seleccione Proveedor:", font=st.FONT_NORMAL, bg=st.BG_MAIN, fg='white').pack(anchor='w')
+    
+    conexion = sqlite3.connect('herrajes.db')
+    cursor = conexion.cursor()
+    cursor.execute("SELECT id, nombre FROM proveedores ORDER BY nombre")
+    proveedores = cursor.fetchall()
+    conexion.close()
+    
+    proveedor_map = {nombre: pid for pid, nombre in proveedores}
+    combo = ttk.Combobox(dialog, values=[p[1] for p in proveedores], state="readonly", font=st.FONT_NORMAL)
+    combo.pack(fill="x", pady=5)
+
+    # --- Frame para nuevo coeficiente ---
+    frame_coef = tk.Frame(dialog, bg=st.BG_MAIN)
+    frame_coef.pack(fill='x', pady=10)
+    tk.Label(frame_coef, text="2. Ingrese Nuevo Coeficiente:", font=st.FONT_NORMAL, bg=st.BG_MAIN, fg='white').pack(anchor='w')
+    ent_nuevo_coef = tk.Entry(frame_coef, font=st.FONT_NORMAL, bg=st.BG_CARD, fg="white", bd=0, insertbackground="white")
+    ent_nuevo_coef.pack(fill="x", pady=5)
+    ent_nuevo_coef.insert(0, "1.6")
+
+    def confirmar_cambio():
+        nombre_prov = combo.get()
+        nuevo_coef_str = ent_nuevo_coef.get().strip()
+
+        if not nombre_prov or not nuevo_coef_str:
+            messagebox.showwarning("Datos incompletos", "Debe seleccionar un proveedor e ingresar un coeficiente.", parent=dialog)
+            return
+        
+        try:
+            nuevo_coef = float(nuevo_coef_str)
+        except ValueError:
+            messagebox.showerror("Error de formato", "El coeficiente debe ser un número (ej: 1.6).", parent=dialog)
+            return
+
+        proveedor_id = proveedor_map[nombre_prov]
+        
+        msg = (f"¿Confirma que desea cambiar el coeficiente de ganancia a '{nuevo_coef}' "
+               f"para TODOS los productos del proveedor '{nombre_prov}'?")
+        
+        if messagebox.askyesno("Confirmar Cambio Masivo", msg, parent=dialog):
+            try:
+                conn = sqlite3.connect('herrajes.db')
+                cur = conn.cursor()
+                
+                # 1. Actualizar productos
+                cur.execute("UPDATE productos SET coeficiente_ganancia = ? WHERE proveedor_id = ?", (nuevo_coef, proveedor_id))
+                actualizados = cur.rowcount
+                
+                # 2. Actualizar fecha en proveedor
+                cur.execute("UPDATE proveedores SET fecha_modif_coeficiente = CURRENT_DATE WHERE id = ?", (proveedor_id,))
+                
+                conn.commit()
+                conn.close()
+                
+                messagebox.showinfo("Éxito", f"Se actualizaron {actualizados} productos de '{nombre_prov}'.", parent=ventana)
+                dialog.destroy()
+                cargar_productos() # Recargar la tabla principal
+            except Exception as e:
+                messagebox.showerror("Error", f"No se pudieron actualizar los productos: {e}", parent=dialog)
+
+    btn_confirmar = tk.Button(dialog, text="📈 APLICAR CAMBIO", command=confirmar_cambio, **st.estilo_boton(st.ACCENT))
+    st.configurar_hover(btn_confirmar, st.ACCENT, st.BG_CARD)
+    btn_confirmar.pack(fill="x", pady=20)
+
 def eliminar_por_proveedor_dialogo():
     """Abre un diálogo para seleccionar un proveedor y borrar todos sus productos."""
     dialog = tk.Toplevel(ventana)
@@ -183,9 +265,9 @@ def on_tabla_click(event):
         
     valores = tabla.item(item_id, 'values')
     
-    if columna_id_str == "#9": # Columna "Editar"
+    if columna_id_str == "#11": # Columna "Editar"
         cargar_datos_para_editar(item_id)
-    elif columna_id_str == "#10": # Columna "Eliminar"
+    elif columna_id_str == "#12": # Columna "Eliminar"
         eliminar_producto_por_id(item_id, valores[2]) # Pasamos ID y descripción
 
 # --- INTERFAZ GRÁFICA ---
@@ -220,6 +302,10 @@ def montar_interfaz(parent):
     tk.Label(frame_izquierdo, text="ACCIONES MASIVAS", font=st.FONT_TITLE, bg=st.BG_MAIN, fg=st.TEXT_PRIMARY).pack(pady=10, anchor="w")
     btn_eliminar_prov = tk.Button(frame_izquierdo, text="🗑️ Eliminar por Proveedor", command=eliminar_por_proveedor_dialogo, **st.estilo_boton(st.RED_ERROR)); btn_eliminar_prov.pack(fill=tk.X, pady=10); st.configurar_hover(btn_eliminar_prov, st.RED_ERROR, st.BG_CARD)
 
+    btn_modif_coef = tk.Button(frame_izquierdo, text="📈 Modificar Coeficiente por Proveedor", command=modificar_coef_por_proveedor_dialogo, **st.estilo_boton(st.ACCENT))
+    st.configurar_hover(btn_modif_coef, st.ACCENT, st.BG_CARD)
+    btn_modif_coef.pack(fill=tk.X, pady=10)
+
     # --- Panel Derecho (Buscador y Tabla) ---
     frame_buscar = tk.Frame(frame_derecho, bg=st.BG_MAIN); frame_buscar.pack(fill=tk.X, pady=(0, 10))
     tk.Label(frame_buscar, text="🔍 Buscar Producto o Proveedor:", font=st.FONT_LABEL, bg=st.BG_MAIN, fg="white").pack(side=tk.LEFT)
@@ -229,11 +315,23 @@ def montar_interfaz(parent):
 
     style_tabla = ttk.Style(); style_tabla.theme_use("clam"); style_tabla.configure("Treeview", background=st.BG_CARD, foreground="white", fieldbackground=st.BG_CARD, borderwidth=0, rowheight=30, font=st.FONT_NORMAL); style_tabla.map("Treeview", background=[('selected', st.ACCENT)]); style_tabla.configure("Treeview.Heading", font=st.FONT_LABEL)
 
-    columnas = ("id", "código", "descripción", "proveedor", "costo", "coef", "p_venta", "estado", "editar", "eliminar")
+    columnas = ("id", "código", "descripción", "proveedor", "costo", "coef", "p_venta", "estado", "nro_lista", "fecha_lista", "editar", "eliminar")
     tabla = ttk.Treeview(frame_derecho, columns=columnas, show="headings"); tabla.pack(fill=tk.BOTH, expand=True)
     for col in columnas: tabla.heading(col, text=col.upper())
 
-    tabla.column("id", width=50, anchor="center"); tabla.column("código", width=100); tabla.column("descripción", width=250); tabla.column("proveedor", width=120); tabla.column("costo", width=90, anchor="e"); tabla.column("coef", width=60, anchor="center"); tabla.column("p_venta", width=100, anchor="e"); tabla.column("estado", width=80, anchor="center"); tabla.column("editar", width=60, anchor="center"); tabla.column("eliminar", width=60, anchor="center")
+    # Ajuste de anchos de columnas
+    tabla.column("id", width=40, anchor="center")
+    tabla.column("código", width=100)
+    tabla.column("descripción", width=250)
+    tabla.column("proveedor", width=120)
+    tabla.column("costo", width=90, anchor="e")
+    tabla.column("coef", width=60, anchor="center")
+    tabla.column("p_venta", width=100, anchor="e")
+    tabla.column("estado", width=80, anchor="center")
+    tabla.column("nro_lista", width=80, anchor="center")
+    tabla.column("fecha_lista", width=100, anchor="center")
+    tabla.column("editar", width=60, anchor="center")
+    tabla.column("eliminar", width=60, anchor="center")
 
     tabla.bind("<Button-1>", on_tabla_click)
     cargar_productos()

@@ -12,8 +12,8 @@ def cargar_proveedores(filtro=""):
         tabla.delete(row)
     conexion = sqlite3.connect('herrajes.db')
     cursor = conexion.cursor()
-    
-    query_base = "SELECT id, nombre, contacto, descuento_global FROM proveedores"
+    # Agregamos la nueva columna de fecha de modificación
+    query_base = "SELECT id, nombre, contacto, descuento_global, fecha_modif_coeficiente FROM proveedores"
     
     if filtro:
         query = f"{query_base} WHERE nombre LIKE ? OR contacto LIKE ? ORDER BY nombre ASC"
@@ -27,7 +27,8 @@ def cargar_proveedores(filtro=""):
     for proveedor in registros:
         # Formatear descuento como un string de porcentaje para mostrarlo
         descuento_str = f"{proveedor[3] * 100:.2f}%" if proveedor[3] is not None else "0.00%"
-        valores_display = proveedor[:3] + (descuento_str,)
+        fecha_modif_coef = proveedor[4] if proveedor[4] else "---"
+        valores_display = proveedor[:3] + (descuento_str, fecha_modif_coef)
         # Añadimos los iconos de acción al final
         valores_con_accion = valores_display + ('✏️', '🗑️')
         # Usamos el ID de la DB como el ID del item en la tabla (más robusto)
@@ -100,7 +101,8 @@ def cargar_datos_para_editar(item_id):
     ent_nombre.insert(0, valores[1])
     ent_contacto.insert(0, str(valores[2] or ''))
     # Convertimos el descuento de 0.1 a 10.0 para mostrarlo en el campo
-    ent_descuento.insert(0, f"{valores[3] * 100:.2f}")
+    descuento_val = valores[3] if valores[3] is not None else 0.0
+    ent_descuento.insert(0, f"{descuento_val * 100:.2f}")
     
     btn_guardar.config(text="💾 GUARDAR CAMBIOS")
 
@@ -128,23 +130,25 @@ def eliminar_proveedor_por_id(proveedor_id, nombre):
 
 def on_tabla_click(event):
     """Manejador de clics en la tabla para disparar acciones de editar o eliminar."""
-    region = tabla.identify_region(event.x, event.y)
-    if region != "cell":
-        return
+    try:
+        region = tabla.identify_region(event.x, event.y)
+        if region != "cell":
+            return
 
-    columna_id = tabla.identify_column(event.x)
-    item_id = tabla.identify_row(event.y)
-    if not item_id:
-        return
-        
-    valores = tabla.item(item_id, 'values')
-    # Obtenemos el nombre de la columna para que el código sea más legible
-    nombre_columna = tabla.heading(columna_id)['text']
-    
-    if nombre_columna == "EDITAR":
-        cargar_datos_para_editar(item_id)
-    elif nombre_columna == "ELIMINAR":
-        eliminar_proveedor_por_id(item_id, valores[1])
+        columna_id = tabla.identify_column(event.x)
+        item_id = tabla.identify_row(event.y)
+        if not item_id:
+            return
+            
+        # Se usan los índices de columna para mayor consistencia con otros módulos.
+        # La columna #6 es "EDITAR" y la #7 es "ELIMINAR".
+        if columna_id == "#6":
+            cargar_datos_para_editar(item_id)
+        elif columna_id == "#7":
+            valores = tabla.item(item_id, 'values')
+            eliminar_proveedor_por_id(item_id, valores[1])
+    except Exception as e:
+        messagebox.showerror("Error", f"Error al procesar acción: {e}")
 
 # --- INTERFAZ GRÁFICA ---
 def montar_interfaz(parent):
@@ -180,11 +184,17 @@ def montar_interfaz(parent):
 
     style_tabla = ttk.Style(); style_tabla.theme_use("clam"); style_tabla.configure("Treeview", background=st.BG_CARD, foreground="white", fieldbackground=st.BG_CARD, borderwidth=0, rowheight=30, font=st.FONT_NORMAL); style_tabla.map("Treeview", background=[('selected', st.ACCENT)]); style_tabla.configure("Treeview.Heading", font=st.FONT_LABEL)
 
-    columnas = ("id", "nombre", "contacto", "descuento", "editar", "eliminar")
+    columnas = ("id", "nombre", "contacto", "descuento", "ult_modif_coef", "editar", "eliminar")
     tabla = ttk.Treeview(ventana, columns=columnas, show="headings"); tabla.pack(fill=tk.BOTH, expand=True, padx=40, pady=20)
-    for col in columnas: tabla.heading(col, text=col.upper())
+    tabla.heading("id", text="ID"); tabla.heading("nombre", text="NOMBRE"); tabla.heading("contacto", text="CONTACTO"); tabla.heading("descuento", text="DESCUENTO"); tabla.heading("ult_modif_coef", text="MODIF. COEF."); tabla.heading("editar", text="EDITAR"); tabla.heading("eliminar", text="ELIMINAR")
 
-    tabla.column("id", width=60, anchor="center"); tabla.column("descuento", width=100, anchor="center"); tabla.column("editar", width=80, anchor="center"); tabla.column("eliminar", width=80, anchor="center")
+    tabla.column("id", width=50, anchor="center")
+    tabla.column("nombre", width=200)
+    tabla.column("contacto", width=200)
+    tabla.column("descuento", width=100, anchor="center")
+    tabla.column("ult_modif_coef", width=120, anchor="center")
+    tabla.column("editar", width=80, anchor="center")
+    tabla.column("eliminar", width=80, anchor="center")
 
     tabla.bind("<Button-1>", on_tabla_click)
     cargar_proveedores()

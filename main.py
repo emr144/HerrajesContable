@@ -1,6 +1,12 @@
 import tkinter as tk
 from tkinter import ttk
 import styles as st  # Importamos tu archivo de estilos
+import migracion_actualizar_listas # Migración existente
+import migracion_pedidos # Nueva migración para pedidos
+
+# Aplicar migraciones al inicio para asegurar que la DB esté actualizada
+migracion_actualizar_listas.aplicar_migracion()
+migracion_pedidos.aplicar_migracion()
 
 # Importamos los módulos como librerías en lugar de ejecutarlos
 import presupuesto_visual
@@ -10,6 +16,7 @@ import gestion_proveedores
 import gestion_productos
 import historial_ventas
 import importar_excel
+import pedidos_fabrica # Nuevo módulo de pedidos
 
 # --- CONFIGURACIÓN DE LA VENTANA PRINCIPAL ---
 
@@ -68,6 +75,27 @@ agregar_pestana("🚚 PROVEEDORES", gestion_proveedores)
 
 # 7. Importar Excel
 agregar_pestana("📦 IMPORTAR EXCEL", importar_excel)
+
+# 8. Pedidos a Fábrica
+agregar_pestana("🏭 PEDIDOS A FÁBRICA", pedidos_fabrica)
+
+# --- RECARGA AUTOMÁTICA AL CAMBIAR DE PESTAÑA ---
+# Mapa: índice de pestaña -> función de recarga
+_recargas = {
+    1: lambda: gestion_productos.cargar_productos(),
+    2: lambda: gestion_clientes.cargar_clientes(),
+    3: lambda: historial_ventas.cargar_historial(),
+    5: lambda: gestion_proveedores.cargar_proveedores(),
+    7: lambda: pedidos_fabrica.cargar_pedidos_pendientes(), # Recarga para la nueva pestaña
+}
+
+def _on_tab_changed(_):
+    tab_index = notebook.index(notebook.select())
+    recarga = _recargas.get(tab_index)
+    if recarga:
+        recarga()
+
+notebook.bind("<<NotebookTabChanged>>", _on_tab_changed)
 
 if __name__ == "__main__":
     root.mainloop()

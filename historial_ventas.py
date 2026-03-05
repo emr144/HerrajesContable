@@ -42,11 +42,11 @@ def generar_ticket_pdf(presupuesto_id):
 
         cliente, fecha, total = datos_venta
         
-        # 3. Construimos el PDF (Formato Ticket 80mm)
+        # 3. Construimos el PDF (Formato Ticket 58mm)
         altura_ticket = 80 + (len(items) * 10)
         
-        pdf = FPDF(orientation='P', unit='mm', format=(80, altura_ticket))
-        pdf.set_margins(3, 3, 3)
+        pdf = FPDF(orientation='P', unit='mm', format=(58, altura_ticket))
+        pdf.set_margins(2, 2, 2)
         pdf.add_page()
         
         # Encabezado
@@ -65,27 +65,27 @@ def generar_ticket_pdf(presupuesto_id):
         
         # Tabla
         pdf.set_fill_color(230, 230, 230)
-        pdf.set_font("Arial", "B", 7)
-        pdf.cell(32, 5, "Descripcion", 1, 0, 'C', 1)
-        pdf.cell(8, 5, "Cant", 1, 0, 'C', 1)
-        pdf.cell(15, 5, "Precio", 1, 0, 'C', 1)
-        pdf.cell(17, 5, "Total", 1, 1, 'C', 1)
+        pdf.set_font("Arial", "B", 6)
+        pdf.cell(22, 5, "Desc", 1, 0, 'C', 1)
+        pdf.cell(6, 5, "Cant", 1, 0, 'C', 1)
+        pdf.cell(12, 5, "Precio", 1, 0, 'C', 1)
+        pdf.cell(14, 5, "Total", 1, 1, 'C', 1)
         
-        pdf.set_font("Arial", size=7)
+        pdf.set_font("Arial", size=6)
         for desc, cant, precio in items:
             subtotal = cant * precio
-            desc_fmt = (desc[:18] + '..') if len(desc) > 20 else desc
+            desc_fmt = (desc[:12] + '..') if len(desc) > 14 else desc
             
-            pdf.cell(32, 5, desc_fmt, 1)
-            pdf.cell(8, 5, str(cant), 1, 0, 'C')
-            pdf.cell(15, 5, f"{precio:.2f}", 1, 0, 'R')
-            pdf.cell(17, 5, f"{subtotal:.2f}", 1, 1, 'R')
+            pdf.cell(22, 5, desc_fmt, 1)
+            pdf.cell(6, 5, str(cant), 1, 0, 'C')
+            pdf.cell(12, 5, f"{precio:.2f}", 1, 0, 'R')
+            pdf.cell(14, 5, f"{subtotal:.2f}", 1, 1, 'R')
             
         # Total
         pdf.ln(4)
-        pdf.set_font("Arial", "B", 11)
-        pdf.cell(45, 6, "TOTAL:", 0, 0, 'R')
-        pdf.cell(27, 6, f"$ {total:.2f}", 0, 1, 'R')
+        pdf.set_font("Arial", "B", 10)
+        pdf.cell(38, 6, "TOTAL:", 0, 0, 'R')
+        pdf.cell(16, 6, f"$ {total:.2f}", 0, 1, 'R')
 
         # Pie
         pdf.ln(4)

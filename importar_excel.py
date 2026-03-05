@@ -18,10 +18,11 @@ except ImportError:
         print("Ejecuta en tu terminal: pip install pandas openpyxl", file=sys.stderr)
     sys.exit(1)
 
-def _ejecutar_importacion(proveedor_id, archivo_excel):
+def _ejecutar_importacion(proveedor_id, archivo_excel, numero_lista, fecha_lista):
     """
     Importa o actualiza productos desde un Excel para un proveedor específico.
     Utiliza una operación UPSERT para mayor eficiencia.
+    Incluye número y fecha de lista.
     """
     db_nombre = 'herrajes.db'
     if not os.path.exists(archivo_excel):
@@ -56,7 +57,8 @@ def _ejecutar_importacion(proveedor_id, archivo_excel):
             if not cod or cod == 'nan':
                 continue
             
-            productos_a_procesar.append((proveedor_id, cod, desc, prec, 1.6))
+            # Añadimos numero_lista y fecha_lista a la tupla
+            productos_a_procesar.append((proveedor_id, cod, desc, prec, 1.6, numero_lista, fecha_lista or None))
             
     except Exception as e:
         return f"❌ Error leyendo o procesando el Excel: {e}"
@@ -75,13 +77,15 @@ def _ejecutar_importacion(proveedor_id, archivo_excel):
 
         # 3. Usar UPSERT para insertar o actualizar en bloque
         upsert_query = """
-            INSERT INTO productos (proveedor_id, codigo_proveedor, descripcion, costo_base, coeficiente_ganancia, estado, ultima_actualizacion)
-            VALUES (?, ?, ?, ?, ?, 'ACTIVO', CURRENT_DATE)
+            INSERT INTO productos (proveedor_id, codigo_proveedor, descripcion, costo_base, coeficiente_ganancia, estado, ultima_actualizacion, numero_lista, fecha_lista)
+            VALUES (?, ?, ?, ?, ?, 'ACTIVO', CURRENT_DATE, ?, ?)
             ON CONFLICT(codigo_proveedor, proveedor_id) DO UPDATE SET
                 descripcion = excluded.descripcion,
                 costo_base = excluded.costo_base,
                 estado = 'ACTIVO',
-                ultima_actualizacion = CURRENT_DATE;
+                ultima_actualizacion = CURRENT_DATE,
+                numero_lista = excluded.numero_lista,
+                fecha_lista = excluded.fecha_lista;
         """
         cursor.executemany(upsert_query, productos_a_procesar)
         
@@ -154,10 +158,24 @@ def montar_interfaz(parent):
             messagebox.showerror("Error", "Proveedor no válido.")
             return
 
+        numero_lista = entry_numero_lista.get().strip()
+        fecha_lista = entry_fecha_lista.get().strip()
+
+        fecha_para_db = None
+        # Validación simple de formato de fecha
+        if fecha_lista:
+            try:
+                # Convertimos de DD-MM-AAAA (Visual) a AAAA-MM-DD (Base de Datos)
+                fecha_dt = pd.to_datetime(fecha_lista, format='%d-%m-%Y')
+                fecha_para_db = fecha_dt.strftime('%Y-%m-%d')
+            except ValueError:
+                messagebox.showerror("Error de Formato", "La fecha debe tener el formato DD-MM-AAAA.")
+                return
+
         btn_importar.config(state="disabled", text="Importando...")
         ventana.update_idletasks()
         
-        resultado = _ejecutar_importacion(proveedor_id, archivo)
+        resultado = _ejecutar_importacion(proveedor_id, archivo, numero_lista, fecha_para_db)
         
         messagebox.showinfo("Resultado de Importación", resultado)
         btn_importar.config(state="normal", text="Iniciar Importación")
@@ -177,9 +195,27 @@ def montar_interfaz(parent):
     combo_proveedores = ttk.Combobox(frame_proveedor, values=[nombre for pid, nombre in proveedores_lista], state="readonly", font=st.FONT_NORMAL)
     combo_proveedores.pack(fill="x", pady=5)
 
+    # --- Nuevos campos para número y fecha de lista ---
+    frame_datos_lista = tk.Frame(ventana, bg=st.BG_MAIN)
+    frame_datos_lista.pack(fill="x", pady=10)
+    tk.Label(frame_datos_lista, text="2. Datos de la Lista de Precios (Opcional):", font=st.FONT_LABEL, bg=st.BG_MAIN, fg=st.TEXT_SECONDARY).pack(anchor="w")
+
+    sub_frame = tk.Frame(frame_datos_lista, bg=st.BG_CARD, padx=10, pady=10)
+    sub_frame.pack(fill="x")
+    sub_frame.columnconfigure(1, weight=1)
+
+    tk.Label(sub_frame, text="N° de Lista:", font=st.FONT_NORMAL, bg=st.BG_CARD, fg="white").grid(row=0, column=0, sticky="w", pady=2)
+    entry_numero_lista = tk.Entry(sub_frame, font=st.FONT_NORMAL, bg=st.BG_MAIN, fg="white", bd=0, insertbackground="white")
+    entry_numero_lista.grid(row=0, column=1, sticky="ew", padx=10, pady=2)
+
+    tk.Label(sub_frame, text="Fecha (DD-MM-AAAA):", font=st.FONT_NORMAL, bg=st.BG_CARD, fg="white").grid(row=1, column=0, sticky="w", pady=2)
+    entry_fecha_lista = tk.Entry(sub_frame, font=st.FONT_NORMAL, bg=st.BG_MAIN, fg="white", bd=0, insertbackground="white")
+    entry_fecha_lista.grid(row=1, column=1, sticky="ew", padx=10, pady=2)
+    entry_fecha_lista.insert(0, pd.Timestamp.now().strftime('%d-%m-%Y'))
+
     frame_archivo = tk.Frame(ventana, bg=st.BG_MAIN)
     frame_archivo.pack(fill="x", pady=15)
-    tk.Label(frame_archivo, text="2. Seleccionar Archivo Excel:", font=st.FONT_LABEL, bg=st.BG_MAIN, fg=st.TEXT_SECONDARY).pack(anchor="w")
+    tk.Label(frame_archivo, text="3. Seleccionar Archivo Excel:", font=st.FONT_LABEL, bg=st.BG_MAIN, fg=st.TEXT_SECONDARY).pack(anchor="w")
     
     ruta_archivo = tk.StringVar()
     btn_seleccionar = tk.Button(frame_archivo, text="📂 Elegir Archivo (.xlsx)", command=seleccionar_archivo, **st.estilo_boton(st.ACCENT))
