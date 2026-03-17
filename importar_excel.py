@@ -3,7 +3,8 @@ import sys
 import os
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
-import styles as st # Para mantener la consistencia visual
+import styles as st
+import database # Importamos para obtener la ruta
 
 try:
     import pandas as pd
@@ -24,7 +25,7 @@ def _ejecutar_importacion(proveedor_id, archivo_excel, numero_lista, fecha_lista
     Utiliza una operación UPSERT para mayor eficiencia.
     Incluye número y fecha de lista.
     """
-    db_nombre = 'herrajes.db'
+    db_path = database.get_db_path()
     if not os.path.exists(archivo_excel):
         return f"❌ ERROR: No se encuentra el archivo '{archivo_excel}'"
 
@@ -66,7 +67,7 @@ def _ejecutar_importacion(proveedor_id, archivo_excel, numero_lista, fecha_lista
     # --- FASE 2: TRANSACCIÓN RÁPIDA EN BASE DE DATOS ---
     conexion = None
     try:
-        conexion = sqlite3.connect(db_nombre)
+        conexion = sqlite3.connect(db_path)
         cursor = conexion.cursor()
         
         # 1. Aseguramos índice (DDL)
@@ -126,7 +127,7 @@ def montar_interfaz(parent):
     
     def obtener_proveedores():
         try:
-            conexion = sqlite3.connect('herrajes.db')
+            conexion = sqlite3.connect(database.get_db_path())
             cursor = conexion.cursor()
             cursor.execute("SELECT id, nombre FROM proveedores ORDER BY nombre")
             proveedores = cursor.fetchall()

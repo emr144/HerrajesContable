@@ -2,6 +2,7 @@ import sqlite3
 import tkinter as tk
 from tkinter import ttk, messagebox
 import styles as st  # Importamos tu archivo de estilos
+import database # Importamos para obtener la ruta
 
 # Variable global para controlar edición
 cliente_seleccionado_id = None
@@ -9,7 +10,7 @@ cliente_seleccionado_id = None
 def cargar_clientes(filtro=""):
     for row in tabla.get_children():
         tabla.delete(row)
-    conexion = sqlite3.connect('herrajes.db')
+    conexion = sqlite3.connect(database.get_db_path())
     cursor = conexion.cursor()
     
     # Seleccionamos explícitamente las columnas para evitar problemas si la tabla cambia
@@ -49,7 +50,7 @@ def guardar_cliente():
         messagebox.showwarning("Atención", "El nombre es obligatorio")
         return
     
-    conexion = sqlite3.connect('herrajes.db')
+    conexion = sqlite3.connect(database.get_db_path())
     cursor = conexion.cursor()
     
     if cliente_seleccionado_id:
@@ -90,7 +91,7 @@ def cargar_datos_para_editar(valores):
 def eliminar_cliente_por_id(cliente_id, nombre):
     """Elimina un cliente específico usando su ID y recarga la tabla."""
     if messagebox.askyesno("Confirmar", f"¿Eliminar a '{nombre}'?"):
-        conexion = sqlite3.connect('herrajes.db')
+        conexion = sqlite3.connect(database.get_db_path())
         cursor = conexion.cursor()
         cursor.execute("DELETE FROM clientes WHERE id = ?", (cliente_id,))
         conexion.commit()

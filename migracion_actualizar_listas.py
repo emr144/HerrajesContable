@@ -1,4 +1,5 @@
 import sqlite3
+import database # Importamos para obtener la ruta
 
 def aplicar_migracion():
     """
@@ -6,7 +7,7 @@ def aplicar_migracion():
     modificaciones de coeficientes.
     Este script se puede ejecutar de forma segura varias veces.
     """
-    conexion = sqlite3.connect('herrajes.db')
+    conexion = sqlite3.connect(database.get_db_path())
     cursor = conexion.cursor()
     print("Aplicando migraciones a la base de datos 'herrajes.db'...")
 

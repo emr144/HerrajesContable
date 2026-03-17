@@ -2,6 +2,7 @@ import sqlite3
 import tkinter as tk
 from tkinter import ttk, messagebox
 import styles as st
+import database # Importamos para obtener la ruta
 
 # Variable global para controlar edición
 proveedor_seleccionado_id = None
@@ -10,7 +11,7 @@ def cargar_proveedores(filtro=""):
     """Carga los proveedores en la tabla, aplicando un filtro si se provee."""
     for row in tabla.get_children():
         tabla.delete(row)
-    conexion = sqlite3.connect('herrajes.db')
+    conexion = sqlite3.connect(database.get_db_path())
     cursor = conexion.cursor()
     # Agregamos la nueva columna de fecha de modificación
     query_base = "SELECT id, nombre, contacto, descuento_global, fecha_modif_coeficiente FROM proveedores"
@@ -65,7 +66,7 @@ def guardar_proveedor():
         messagebox.showerror("Error de Formato", "El descuento debe ser un número válido (ej: 10 o 10.5).")
         return
 
-    conexion = sqlite3.connect('herrajes.db')
+    conexion = sqlite3.connect(database.get_db_path())
     cursor = conexion.cursor()
     
     if proveedor_seleccionado_id:
@@ -87,7 +88,7 @@ def cargar_datos_para_editar(item_id):
     """Carga los datos de un proveedor en el formulario para su edición."""
     global proveedor_seleccionado_id
     
-    conexion = sqlite3.connect('herrajes.db')
+    conexion = sqlite3.connect(database.get_db_path())
     cursor = conexion.cursor()
     cursor.execute("SELECT id, nombre, contacto, descuento_global FROM proveedores WHERE id=?", (item_id,))
     valores = cursor.fetchone()
@@ -112,7 +113,7 @@ def eliminar_proveedor_por_id(proveedor_id, nombre):
            "ADVERTENCIA: Esta acción no se puede deshacer.")
     if messagebox.askyesno("Confirmar Eliminación", msg):
         try:
-            conexion = sqlite3.connect('herrajes.db')
+            conexion = sqlite3.connect(database.get_db_path())
             cursor = conexion.cursor()
             # Habilitar claves foráneas para que la restricción funcione
             cursor.execute("PRAGMA foreign_keys = ON")

@@ -4,10 +4,11 @@ from tkinter import messagebox, ttk
 import os
 from PIL import Image, ImageTk
 import styles as st # Importamos los estilos
+import database # Importamos para obtener la ruta
 
 def obtener_productos(filtro=""):
     """Consulta la DB buscando por código o por descripción"""
-    conexion = sqlite3.connect('herrajes.db')
+    conexion = sqlite3.connect(database.get_db_path())
     cursor = conexion.cursor()
     query = "SELECT codigo_proveedor, descripcion FROM productos WHERE (codigo_proveedor LIKE ? OR descripcion LIKE ?) AND estado = 'ACTIVO' LIMIT 10"
     cursor.execute(query, (f'%{filtro}%', f'%{filtro}%'))
@@ -55,7 +56,9 @@ def mostrar_detalle(codigo_buscado=None):
     if not codigo_buscado:
         codigo_buscado = entrada_busqueda.get().strip().upper()
 
-    conexion = sqlite3.connect('herrajes.db')
+    if not codigo_buscado: return
+
+    conexion = sqlite3.connect(database.get_db_path())
     cursor = conexion.cursor()
     cursor.execute('''
         SELECT descripcion, costo_base, coeficiente_ganancia, iva 

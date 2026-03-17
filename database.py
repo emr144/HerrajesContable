@@ -1,8 +1,42 @@
 import sqlite3
+import os
+import sys
+
+def get_db_path():
+    """
+    Devuelve la ruta completa a la base de datos.
+    La crea en AppData para evitar problemas de permisos en C:\Program Files.
+    """
+    # 1. Determinar dónde estamos ejecutando (Script o EXE)
+    if getattr(sys, 'frozen', False):
+        base_path = os.path.dirname(sys.executable)
+    else:
+        base_path = os.path.dirname(os.path.abspath(__file__))
+    
+    # 2. Verificar si ya existe una base de datos local (Tu caso actual)
+    local_db = os.path.join(base_path, 'herrajes.db')
+    
+    # Intentamos ver si la local existe y es escribible
+    if os.path.exists(local_db):
+        try:
+            # Prueba rápida de escritura
+            f = open(local_db, 'a'); f.close()
+            return local_db # Si funciona, usamos la local (Recuperas tus datos)
+        except PermissionError:
+            pass # Si falla (está en Program Files), seguimos a AppData
+
+    # 3. Si no hay local o no se puede escribir, usar AppData (Modo Instalado Seguro)
+    app_data_dir = os.getenv('APPDATA')
+    if not app_data_dir:
+        return local_db
+    
+    herrajes_dir = os.path.join(app_data_dir, 'HerrajesContable')
+    os.makedirs(herrajes_dir, exist_ok=True)
+    
+    return os.path.join(herrajes_dir, 'herrajes.db')
 
 def crear_base_datos():
-    # Esto crea un archivo llamado 'herrajes.db' en tu carpeta actual
-    conexion = sqlite3.connect('herrajes.db')
+    conexion = sqlite3.connect(get_db_path())
     cursor = conexion.cursor()
 
     # 1. Tabla Proveedores
@@ -75,6 +109,20 @@ def crear_base_datos():
         FOREIGN KEY (id_proveedor) REFERENCES proveedores(id)
     )
     ''')
+
+    # 5. Tabla Clientes
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS clientes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nombre TEXT NOT NULL,
+        telefono TEXT,
+        direccion TEXT,
+        email TEXT,
+        cuit_dni TEXT
+    )
+    ''')
+    # Insertamos un cliente por defecto
+    cursor.execute("INSERT OR IGNORE INTO clientes (id, nombre) VALUES (1, 'Consumidor Final')")
 
     conexion.commit()
     conexion.close()

@@ -2,6 +2,8 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
 import styles as st 
+import database # Importamos para obtener la ruta
+from datetime import datetime
 
 def montar_interfaz(notebook):
     frame = tk.Frame(notebook, bg=st.BG_MAIN)
@@ -13,6 +15,7 @@ def montar_interfaz(notebook):
     var_tipo_mov = tk.StringVar(value="Factura")
     var_monto = tk.StringVar(value="0")
     var_desc = tk.StringVar()
+    var_fecha = tk.StringVar(value=datetime.now().strftime("%d-%m-%Y"))
 
     # --- Título y Selector de Fábrica ---
     header = tk.Frame(frame, bg=st.BG_MAIN)
@@ -31,21 +34,24 @@ def montar_interfaz(notebook):
     form = tk.Frame(frame, bg=st.BG_CARD, padx=15, pady=10)
     form.pack(padx=20, fill="x", pady=5)
 
-    tk.Label(form, text="Acción:", fg="white", bg=st.BG_CARD).grid(row=0, column=0, padx=5)
-    ttk.OptionMenu(form, var_tipo_mov, "Factura", "Factura", "Pago", "Saldo Inicial").grid(row=0, column=1, padx=5)
+    tk.Label(form, text="Fecha:", fg="white", bg=st.BG_CARD).grid(row=0, column=0, padx=5)
+    tk.Entry(form, textvariable=var_fecha, width=12, **st.estilo_entrada()).grid(row=0, column=1, padx=5)
 
-    tk.Label(form, text="Monto $:", fg="white", bg=st.BG_CARD).grid(row=0, column=2, padx=5)
-    tk.Entry(form, textvariable=var_monto, width=15, **st.estilo_entrada()).grid(row=0, column=3, padx=5)
+    tk.Label(form, text="Acción:", fg="white", bg=st.BG_CARD).grid(row=0, column=2, padx=5)
+    ttk.OptionMenu(form, var_tipo_mov, "Factura", "Factura", "Pago", "Saldo Inicial").grid(row=0, column=3, padx=5)
 
-    tk.Label(form, text="Detalle:", fg="white", bg=st.BG_CARD).grid(row=0, column=4, padx=5)
-    tk.Entry(form, textvariable=var_desc, width=25, **st.estilo_entrada()).grid(row=0, column=5, padx=5)
+    tk.Label(form, text="Monto $:", fg="white", bg=st.BG_CARD).grid(row=0, column=4, padx=5)
+    tk.Entry(form, textvariable=var_monto, width=15, **st.estilo_entrada()).grid(row=0, column=5, padx=5)
+
+    tk.Label(form, text="Detalle:", fg="white", bg=st.BG_CARD).grid(row=0, column=6, padx=5)
+    tk.Entry(form, textvariable=var_desc, width=25, **st.estilo_entrada()).grid(row=0, column=7, padx=5)
     
     # Definimos los botones aquí para poder configurarlos luego
     btn_registrar = tk.Button(form, text="REGISTRAR", bg=st.ACCENT, fg="white", font=("Inter", 9, "bold"))
-    btn_registrar.grid(row=0, column=6, padx=10)
+    btn_registrar.grid(row=0, column=8, padx=10)
     
     btn_cancelar = tk.Button(form, text="CANCELAR", bg=st.RED_ERROR, fg="white", font=("Inter", 9, "bold"))
-    # El botón cancelar lo ocultamos inicialmente (.grid_forget() se llamará al resetear)
+    # btn_cancelar se oculta o muestra en cargar_edicion/reset_form
 
     # --- Tabla Tipo "Libro Mayor" ---
     tree_frame = tk.Frame(frame, bg=st.BG_MAIN)
@@ -73,6 +79,7 @@ def montar_interfaz(notebook):
         frame.editando_id = None
         var_monto.set("0")
         var_desc.set("")
+        var_fecha.set(datetime.now().strftime("%d-%m-%Y"))
         var_tipo_mov.set("Factura")
         btn_registrar.config(text="REGISTRAR", bg=st.ACCENT)
         btn_cancelar.grid_forget()
@@ -86,7 +93,7 @@ def montar_interfaz(notebook):
         if not prov_nombre: return
 
         try:
-            conn = sqlite3.connect('herrajes.db')
+            conn = sqlite3.connect(database.get_db_path())
             cursor = conn.cursor()
             
             # Buscamos el ID
@@ -100,13 +107,20 @@ def montar_interfaz(notebook):
                 SELECT id, fecha, tipo_movimiento, monto, descripcion 
                 FROM cuenta_corriente_proveedores 
                 WHERE id_proveedor = ? AND tipo_cuenta = ?
-                ORDER BY id ASC
+                ORDER BY fecha ASC, id ASC
             """, (prov_id, t_cuenta))
             
             saldo_acumulado = 0.0
             for row_id, fecha, tipo, monto, desc in cursor.fetchall():
                 debe = ""
                 haber = ""
+                
+                # Convertimos fecha YYYY-MM-DD a DD-MM-YYYY para mostrar bonito
+                fecha_mostrar = fecha
+                try:
+                    f_obj = datetime.strptime(fecha, "%Y-%m-%d")
+                    fecha_mostrar = f_obj.strftime("%d-%m-%Y")
+                except: pass
                 
                 if tipo in ['Factura', 'Saldo Inicial']:
                     debe = f"$ {monto:,.2f}"
@@ -116,7 +130,7 @@ def montar_interfaz(notebook):
                     saldo_acumulado -= monto
                 
                 # Insertamos la fila, usando el ID de base de datos como el ID del item (iid)
-                tree.insert("", "end", iid=row_id, values=(fecha, desc, debe, haber, f"$ {saldo_acumulado:,.2f}", "✏️", "🗑️"))
+                tree.insert("", "end", iid=row_id, values=(fecha_mostrar, desc, debe, haber, f"$ {saldo_acumulado:,.2f}", "✏️", "🗑️"))
             
             conn.close()
         except Exception as e:
@@ -125,9 +139,9 @@ def montar_interfaz(notebook):
     def cargar_edicion(row_id):
         """Carga los datos de la fila seleccionada en el formulario"""
         try:
-            conn = sqlite3.connect('herrajes.db')
+            conn = sqlite3.connect(database.get_db_path())
             cursor = conn.cursor()
-            cursor.execute("SELECT tipo_movimiento, monto, descripcion FROM cuenta_corriente_proveedores WHERE id=?", (row_id,))
+            cursor.execute("SELECT tipo_movimiento, monto, descripcion, fecha FROM cuenta_corriente_proveedores WHERE id=?", (row_id,))
             row = cursor.fetchone()
             conn.close()
             
@@ -137,9 +151,16 @@ def montar_interfaz(notebook):
                 var_monto.set(str(row[1]))
                 var_desc.set(row[2])
                 
+                # Convertir YYYY-MM-DD a DD-MM-YYYY para el input
+                try:
+                    fecha_dt = datetime.strptime(row[3], "%Y-%m-%d")
+                    var_fecha.set(fecha_dt.strftime("%d-%m-%Y"))
+                except:
+                    var_fecha.set(row[3])
+                
                 # Cambiamos visualmente el botón para indicar edición
                 btn_registrar.config(text="💾 GUARDAR CAMBIOS", bg="#D97706") # Naranja
-                btn_cancelar.grid(row=0, column=7, padx=5) # Mostramos botón cancelar
+                btn_cancelar.grid(row=0, column=9, padx=5) # Mostramos botón cancelar
         except Exception as e:
             messagebox.showerror("Error", f"No se pudo cargar para editar: {e}")
 
@@ -147,7 +168,7 @@ def montar_interfaz(notebook):
         """Elimina el registro de la DB"""
         if messagebox.askyesno("Confirmar", "¿Eliminar este movimiento?\nEsto recalculará el saldo."):
             try:
-                conn = sqlite3.connect('herrajes.db')
+                conn = sqlite3.connect(database.get_db_path())
                 cursor = conn.cursor()
                 cursor.execute("DELETE FROM cuenta_corriente_proveedores WHERE id=?", (row_id,))
                 conn.commit()
@@ -194,7 +215,17 @@ def montar_interfaz(notebook):
             desc = var_desc.get()
             tipo = var_tipo_mov.get()
 
-            conn = sqlite3.connect('herrajes.db')
+            # Validar y convertir fecha
+            fecha_input = var_fecha.get().strip()
+            try:
+                # Intentamos parsear DD-MM-YYYY y convertir a YYYY-MM-DD para la DB
+                f_obj = datetime.strptime(fecha_input, "%d-%m-%Y")
+                fecha_db = f_obj.strftime("%Y-%m-%d")
+            except ValueError:
+                messagebox.showerror("Error de Fecha", "Formato de fecha inválido.\nUse: DD-MM-AAAA (Ej: 25-12-2023)")
+                return
+
+            conn = sqlite3.connect(database.get_db_path())
             cursor = conn.cursor()
             cursor.execute("SELECT id FROM proveedores WHERE nombre=?", (prov_nombre,))
             res = cursor.fetchone()
@@ -209,16 +240,16 @@ def montar_interfaz(notebook):
                 # MODO EDICIÓN: ACTUALIZAR
                 cursor.execute("""
                     UPDATE cuenta_corriente_proveedores 
-                    SET tipo_movimiento=?, monto=?, descripcion=?, tipo_cuenta=?
+                    SET tipo_movimiento=?, monto=?, descripcion=?, tipo_cuenta=?, fecha=?
                     WHERE id=?
-                """, (tipo, monto_f, desc, var_tipo_cuenta.get(), frame.editando_id))
+                """, (tipo, monto_f, desc, var_tipo_cuenta.get(), fecha_db, frame.editando_id))
             else:
                 # MODO NUEVO: INSERTAR
                 cursor.execute("""
                     INSERT INTO cuenta_corriente_proveedores 
-                    (id_proveedor, tipo_cuenta, tipo_movimiento, monto, metodo_pago, descripcion)
-                    VALUES (?, ?, ?, ?, 'N/A', ?)
-                """, (prov_id, var_tipo_cuenta.get(), tipo, monto_f, desc))
+                    (id_proveedor, tipo_cuenta, tipo_movimiento, monto, metodo_pago, descripcion, fecha)
+                    VALUES (?, ?, ?, ?, 'N/A', ?, ?)
+                """, (prov_id, var_tipo_cuenta.get(), tipo, monto_f, desc, fecha_db))
             
             conn.commit()
             
@@ -234,7 +265,7 @@ def montar_interfaz(notebook):
 
     def cargar_provs():
         try:
-            conn = sqlite3.connect('herrajes.db')
+            conn = sqlite3.connect(database.get_db_path())
             cursor = conn.cursor()
             cursor.execute("SELECT nombre FROM proveedores")
             combo_prov['values'] = [r[0] for r in cursor.fetchall()]

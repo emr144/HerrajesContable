@@ -2,6 +2,7 @@ import sqlite3
 import tkinter as tk
 from tkinter import ttk, messagebox
 import styles as st
+import database # Importamos para obtener la ruta
 
 # Variable global para controlar edición
 producto_seleccionado_id = None
@@ -11,7 +12,7 @@ def cargar_productos(filtro=""):
     for row in tabla.get_children():
         tabla.delete(row)
     
-    conexion = sqlite3.connect('herrajes.db')
+    conexion = sqlite3.connect(database.get_db_path())
     cursor = conexion.cursor()
     
     query = """
@@ -76,7 +77,7 @@ def guardar_producto():
         messagebox.showwarning("Atención", "La descripción no puede estar vacía.")
         return
 
-    conexion = sqlite3.connect('herrajes.db')
+    conexion = sqlite3.connect(database.get_db_path())
     cursor = conexion.cursor()
     cursor.execute("""
         UPDATE productos SET descripcion=?, costo_base=?, coeficiente_ganancia=? 
@@ -93,7 +94,7 @@ def cargar_datos_para_editar(item_id):
     """Carga los datos de un producto en el formulario para su edición."""
     global producto_seleccionado_id
     
-    conexion = sqlite3.connect('herrajes.db')
+    conexion = sqlite3.connect(database.get_db_path())
     cursor = conexion.cursor()
     cursor.execute("SELECT descripcion, costo_base, coeficiente_ganancia FROM productos WHERE id=?", (item_id,))
     valores = cursor.fetchone()
@@ -115,7 +116,7 @@ def eliminar_producto_por_id(producto_id, descripcion):
     msg = f"¿Eliminar el producto '{descripcion}' (ID: {producto_id})?"
     if messagebox.askyesno("Confirmar Eliminación", msg):
         try:
-            conexion = sqlite3.connect('herrajes.db')
+            conexion = sqlite3.connect(database.get_db_path())
             cursor = conexion.cursor()
             cursor.execute("DELETE FROM productos WHERE id = ?", (producto_id,))
             conexion.commit()
@@ -141,7 +142,7 @@ def modificar_coef_por_proveedor_dialogo():
     frame_prov.pack(fill='x', pady=5)
     tk.Label(frame_prov, text="1. Seleccione Proveedor:", font=st.FONT_NORMAL, bg=st.BG_MAIN, fg='white').pack(anchor='w')
     
-    conexion = sqlite3.connect('herrajes.db')
+    conexion = sqlite3.connect(database.get_db_path())
     cursor = conexion.cursor()
     cursor.execute("SELECT id, nombre FROM proveedores ORDER BY nombre")
     proveedores = cursor.fetchall()
@@ -180,7 +181,7 @@ def modificar_coef_por_proveedor_dialogo():
         
         if messagebox.askyesno("Confirmar Cambio Masivo", msg, parent=dialog):
             try:
-                conn = sqlite3.connect('herrajes.db')
+                conn = sqlite3.connect(database.get_db_path())
                 cur = conn.cursor()
                 
                 # 1. Actualizar productos
@@ -215,7 +216,7 @@ def eliminar_por_proveedor_dialogo():
              font=st.FONT_LABEL, bg=st.BG_MAIN, fg=st.TEXT_SECONDARY).pack(pady=10)
 
     # Obtener proveedores
-    conexion = sqlite3.connect('herrajes.db')
+    conexion = sqlite3.connect(database.get_db_path())
     cursor = conexion.cursor()
     cursor.execute("SELECT id, nombre FROM proveedores ORDER BY nombre")
     proveedores = cursor.fetchall()
@@ -239,7 +240,7 @@ def eliminar_por_proveedor_dialogo():
         
         if messagebox.askyesno("Confirmación Final Requerida", msg, icon='error', parent=dialog):
             try:
-                conn = sqlite3.connect('herrajes.db')
+                conn = sqlite3.connect(database.get_db_path())
                 cur = conn.cursor()
                 cur.execute("DELETE FROM productos WHERE proveedor_id = ?", (proveedor_id,))
                 conn.commit()

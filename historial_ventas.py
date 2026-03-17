@@ -3,14 +3,15 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import os
 from fpdf import FPDF
-import styles as st # Importamos los estilos
+import styles as st
+import database # Importamos para obtener la ruta
 
 def cargar_historial():
     """Refresca la tabla con las ventas de la base de datos"""
     for row in tabla.get_children():
         tabla.delete(row)
     
-    conexion = sqlite3.connect('herrajes.db')
+    conexion = sqlite3.connect(database.get_db_path())
     cursor = conexion.cursor()
     # Traemos ID, Fecha, Cliente y Total
     cursor.execute("SELECT id, fecha, cliente_nombre, total FROM presupuestos ORDER BY id DESC")
@@ -21,7 +22,7 @@ def cargar_historial():
 def generar_ticket_pdf(presupuesto_id):
     """Genera un PDF con el detalle de la venta y lo abre automáticamente"""
     try:
-        conexion = sqlite3.connect('herrajes.db')
+        conexion = sqlite3.connect(database.get_db_path())
         cursor = conexion.cursor()
         
         # 1. Recuperamos datos de la cabecera
@@ -133,7 +134,7 @@ def eliminar_venta():
     
     if confirmar:
         try:
-            conexion = sqlite3.connect('herrajes.db')
+            conexion = sqlite3.connect(database.get_db_path())
             cursor = conexion.cursor()
             
             # 1. Borramos los detalles de la venta (productos)

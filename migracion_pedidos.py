@@ -1,8 +1,9 @@
 import sqlite3
+import database # Importamos para obtener la ruta
 
 def aplicar_migracion():
     """Crea las tablas para la gestión de pedidos a fábrica si no existen."""
-    conexion = sqlite3.connect('herrajes.db')
+    conexion = sqlite3.connect(database.get_db_path())
     cursor = conexion.cursor()
 
     # Tabla para la cabecera de cada pedido

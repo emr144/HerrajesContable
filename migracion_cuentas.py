@@ -1,9 +1,10 @@
 import sqlite3
+import database # Importamos para obtener la ruta
 
 def aplicar_migracion():
     """Asegura que la tabla de cuentas corrientes exista y tenga las columnas correctas."""
     print("Verificando tabla 'cuenta_corriente_proveedores'...")
-    conexion = sqlite3.connect('herrajes.db')
+    conexion = sqlite3.connect(database.get_db_path())
     cursor = conexion.cursor()
 
     # 1. Crear la tabla si no existe

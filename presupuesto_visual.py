@@ -5,6 +5,7 @@ import os
 from datetime import datetime
 from fpdf import FPDF
 import styles as st # Importamos los estilos
+import database # Importamos para obtener la ruta
 
 # Variables globales
 carrito = []
@@ -13,7 +14,7 @@ total_sin_descuento = 0.0
 # --- FUNCIONES DE LÓGICA ---
 
 def obtener_clientes():
-    conexion = sqlite3.connect('herrajes.db')
+    conexion = sqlite3.connect(database.get_db_path())
     cursor = conexion.cursor()
     cursor.execute("SELECT nombre FROM clientes ORDER BY nombre ASC")
     filas = cursor.fetchall()
@@ -21,7 +22,7 @@ def obtener_clientes():
     return [f[0] for f in filas]
 
 def buscar_productos_db(termino):
-    conexion = sqlite3.connect('herrajes.db')
+    conexion = sqlite3.connect(database.get_db_path())
     cursor = conexion.cursor()
     query = '''
         SELECT p.codigo_proveedor, p.descripcion, pr.nombre
@@ -84,7 +85,7 @@ def agregar_producto(event=None):
 
     if not codigo or cantidad <= 0: return
 
-    conexion = sqlite3.connect('herrajes.db')
+    conexion = sqlite3.connect(database.get_db_path())
     cursor = conexion.cursor()
     cursor.execute('SELECT id, descripcion, costo_base, coeficiente_ganancia, iva FROM productos WHERE codigo_proveedor = ?', (codigo,))
     producto = cursor.fetchone()
@@ -137,7 +138,7 @@ def borrar_item():
 def generar_ticket_pdf(presupuesto_id):
     """Genera un PDF con el detalle de la venta y lo abre automáticamente"""
     try:
-        conexion = sqlite3.connect('herrajes.db')
+        conexion = sqlite3.connect(database.get_db_path())
         cursor = conexion.cursor()
         
         # 1. Recuperamos datos de la cabecera
@@ -231,7 +232,7 @@ def guardar_presupuesto():
     total_final = total_sin_descuento * 0.9 if check_desc_var.get() else total_sin_descuento
     nombre_cliente = combo_cliente.get().strip() or "Consumidor Final"
     
-    conexion = sqlite3.connect('herrajes.db')
+    conexion = sqlite3.connect(database.get_db_path())
     cursor = conexion.cursor()
     cursor.execute("INSERT INTO presupuestos (cliente_nombre, total) VALUES (?, ?)", (nombre_cliente, total_final))
     presupuesto_id = cursor.lastrowid

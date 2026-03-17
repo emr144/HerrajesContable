@@ -1,4 +1,6 @@
 import tkinter as tk
+import os
+import sys
 from tkinter import ttk
 import styles as st  
 import migracion_actualizar_listas 
@@ -23,6 +25,21 @@ class App(tk.Tk):
         st.aplicar_estilo_ventana(self)
         self.title("Herrajes Contable - Panel de Gestión")
         self.geometry("1200x800")
+        
+        # --- Configuración del Ícono (Avocado) ---
+        # Intenta cargar el icono .ico o .png de la carpeta img
+        try:
+            # Rutina robusta para encontrar la ruta (funciona en dev y en exe instalado)
+            if getattr(sys, 'frozen', False):
+                base_path = sys._MEIPASS if hasattr(sys, '_MEIPASS') else os.path.dirname(sys.executable)
+            else:
+                base_path = os.path.dirname(os.path.abspath(__file__))
+            
+            ruta_icono = os.path.join(base_path, "img", "avocado.ico")
+            if os.path.exists(ruta_icono):
+                self.iconbitmap(ruta_icono)
+            # Si tuvieras un .png en lugar de .ico, usarías: tk.PhotoImage(file="img/avocado.png")
+        except Exception: pass
 
         # --- Estilos Globales para Pestañas ---
         style = ttk.Style()

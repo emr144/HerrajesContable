@@ -4,6 +4,7 @@ from tkinter import ttk, messagebox
 import os
 from fpdf import FPDF
 import styles as st
+import database # Importamos para obtener la ruta
 
 # --- Variables Globales ---
 ventana_principal = None
@@ -26,7 +27,7 @@ def cargar_pedidos_pendientes():
     for row in tabla_pedidos.get_children():
         tabla_pedidos.delete(row)
     try:
-        conexion = sqlite3.connect('herrajes.db')
+        conexion = sqlite3.connect(database.get_db_path())
         cursor = conexion.cursor()
         query = """
             SELECT pf.id, prov.nombre, strftime('%d-%m-%Y', pf.fecha_creacion),
@@ -60,7 +61,7 @@ def guardar_cambios():
         return
 
     try:
-        conn = sqlite3.connect('herrajes.db')
+        conn = sqlite3.connect(database.get_db_path())
         cursor = conn.cursor()
         
         if pedido_id_actual:
@@ -102,7 +103,7 @@ def eliminar_pedido_completo():
     confirmar = messagebox.askyesno("Confirmar", f"¿Desea ELIMINAR permanentemente el pedido N° {pedido_id_actual}?")
     if confirmar:
         try:
-            conn = sqlite3.connect('herrajes.db')
+            conn = sqlite3.connect(database.get_db_path())
             cursor = conn.cursor()
             cursor.execute("DELETE FROM pedidos_fabrica_detalle WHERE pedido_id = ?", (pedido_id_actual,))
             cursor.execute("DELETE FROM pedidos_fabrica WHERE id = ?", (pedido_id_actual,))
@@ -118,7 +119,7 @@ def eliminar_pedido_desde_lista(pedido_id):
     confirmar = messagebox.askyesno("Confirmar", f"¿Desea ELIMINAR permanentemente el pedido N° {pedido_id}?")
     if confirmar:
         try:
-            conn = sqlite3.connect('herrajes.db')
+            conn = sqlite3.connect(database.get_db_path())
             cursor = conn.cursor()
             cursor.execute("DELETE FROM pedidos_fabrica_detalle WHERE pedido_id = ?", (pedido_id,))
             cursor.execute("DELETE FROM pedidos_fabrica WHERE id = ?", (pedido_id,))
@@ -184,7 +185,7 @@ def generar_pdf_pedido():
 
 def cargar_proveedores():
     global proveedor_map
-    conn = sqlite3.connect('herrajes.db')
+    conn = sqlite3.connect(database.get_db_path())
     cursor = conn.cursor()
     cursor.execute("SELECT id, nombre FROM proveedores ORDER BY nombre")
     proveedor_map = {nombre: pid for pid, nombre in cursor.fetchall()}
@@ -196,7 +197,7 @@ def cargar_productos_proveedor(event=None):
     prov_id = proveedor_map.get(combo_proveedores.get())
     productos_proveedor_lista = []
     if prov_id:
-        conn = sqlite3.connect('herrajes.db')
+        conn = sqlite3.connect(database.get_db_path())
         cursor = conn.cursor()
         cursor.execute(
             "SELECT id, codigo_proveedor, descripcion FROM productos WHERE proveedor_id = ? AND estado = 'ACTIVO' ORDER BY descripcion",
@@ -246,7 +247,7 @@ def mostrar_vista_edicion(event=None):
         btn_imprimir_pdf.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=5)
         btn_borrar_pedido.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=5)
         try:
-            conn = sqlite3.connect('herrajes.db')
+            conn = sqlite3.connect(database.get_db_path())
             cursor = conn.cursor()
             cursor.execute("""
                 SELECT p.id, p.codigo_proveedor, p.descripcion, pfd.cantidad, prov.nombre, pfd.unidad_medida 
