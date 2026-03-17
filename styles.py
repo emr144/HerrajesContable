@@ -3,6 +3,7 @@
 # Paleta de Colores "Minimalist Slate"
 BG_MAIN = "#0F172A"      # Fondo profundo
 BG_CARD = "#1E293B"      # Gris azulado para contenedores
+BG_INPUT = "#333D5A"     # Azul Intenso para inputs (NUEVO)
 ACCENT = "#10B981"       # Verde Esmeralda (Éxito/Acción)
 TEXT_PRIMARY = "#F8FAFC" # Blanco puro
 TEXT_SECONDARY = "#94A3B8"# Gris frío para subtítulos
@@ -12,6 +13,21 @@ RED_ERROR = "#EF4444"    # Rojo moderno para borrar
 FONT_TITLE = ("Inter", 26, "bold")
 FONT_LABEL = ("Inter", 13, "bold")
 FONT_NORMAL = ("Inter", 12)
+FONT_INPUT = ("Inter", 14) # Fuente más grande para inputs
+
+# Estilo para Entradas de Texto (Inputs)
+def estilo_entrada():
+    return {
+        "bg": BG_INPUT,
+        "fg": "white",
+        "font": FONT_INPUT,
+        "bd": 0,
+        "insertbackground": "white", # Color del cursor
+        "relief": "flat",
+        "highlightthickness": 1,
+        "highlightbackground": "#3B82F6", # Borde azul claro
+        "highlightcolor": "#60A5FA"       # Borde al hacer click
+    }
 
 # Estilo de Botones (Diccionario de configuración)
 def get_btn_style(color=BG_CARD):

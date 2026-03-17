@@ -103,8 +103,7 @@ def montar_interfaz(parent):
     frame_busqueda = tk.Frame(ventana, bg=st.BG_MAIN)
     frame_busqueda.pack(fill=tk.X, pady=5)
 
-    entrada_busqueda = tk.Entry(frame_busqueda, font=st.FONT_NORMAL, bg=st.BG_CARD, fg="white", 
-                                bd=0, insertbackground="white", width=40)
+    entrada_busqueda = tk.Entry(frame_busqueda, width=40, **st.estilo_entrada())
     entrada_busqueda.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
     entrada_busqueda.bind('<KeyRelease>', actualizar_sugerencias)
     entrada_busqueda.bind('<Return>', lambda e: mostrar_detalle())

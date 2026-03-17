@@ -148,14 +148,14 @@ def modificar_coef_por_proveedor_dialogo():
     conexion.close()
     
     proveedor_map = {nombre: pid for pid, nombre in proveedores}
-    combo = ttk.Combobox(dialog, values=[p[1] for p in proveedores], state="readonly", font=st.FONT_NORMAL)
+    combo = ttk.Combobox(dialog, values=[p[1] for p in proveedores], state="readonly", font=st.FONT_INPUT)
     combo.pack(fill="x", pady=5)
 
     # --- Frame para nuevo coeficiente ---
     frame_coef = tk.Frame(dialog, bg=st.BG_MAIN)
     frame_coef.pack(fill='x', pady=10)
     tk.Label(frame_coef, text="2. Ingrese Nuevo Coeficiente:", font=st.FONT_NORMAL, bg=st.BG_MAIN, fg='white').pack(anchor='w')
-    ent_nuevo_coef = tk.Entry(frame_coef, font=st.FONT_NORMAL, bg=st.BG_CARD, fg="white", bd=0, insertbackground="white")
+    ent_nuevo_coef = tk.Entry(frame_coef, **st.estilo_entrada())
     ent_nuevo_coef.pack(fill="x", pady=5)
     ent_nuevo_coef.insert(0, "1.6")
 
@@ -222,7 +222,7 @@ def eliminar_por_proveedor_dialogo():
     conexion.close()
     
     proveedor_map = {nombre: pid for pid, nombre in proveedores}
-    combo = ttk.Combobox(dialog, values=[p[1] for p in proveedores], state="readonly", font=st.FONT_NORMAL)
+    combo = ttk.Combobox(dialog, values=[p[1] for p in proveedores], state="readonly", font=st.FONT_INPUT)
     combo.pack(fill="x", pady=5)
 
     def confirmar_borrado():
@@ -286,7 +286,7 @@ def montar_interfaz(parent):
     frame_form = tk.Frame(frame_izquierdo, bg=st.BG_CARD, padx=20, pady=20); frame_form.pack(fill=tk.X)
     def crear_campo(label, fila):
         tk.Label(frame_form, text=label, font=st.FONT_LABEL, bg=st.BG_CARD, fg=st.TEXT_SECONDARY).grid(row=fila, column=0, sticky="w", pady=8)
-        entry = tk.Entry(frame_form, font=st.FONT_NORMAL, bg=st.BG_MAIN, fg="white", bd=0, insertbackground="white")
+        entry = tk.Entry(frame_form, **st.estilo_entrada())
         entry.grid(row=fila, column=1, sticky="ew", padx=10, pady=8)
         return entry
     frame_form.columnconfigure(1, weight=1)
@@ -309,7 +309,7 @@ def montar_interfaz(parent):
     # --- Panel Derecho (Buscador y Tabla) ---
     frame_buscar = tk.Frame(frame_derecho, bg=st.BG_MAIN); frame_buscar.pack(fill=tk.X, pady=(0, 10))
     tk.Label(frame_buscar, text="🔍 Buscar Producto o Proveedor:", font=st.FONT_LABEL, bg=st.BG_MAIN, fg="white").pack(side=tk.LEFT)
-    ent_buscar = tk.Entry(frame_buscar, font=st.FONT_NORMAL, bg=st.BG_CARD, fg="white", bd=0, insertbackground="white"); ent_buscar.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=10)
+    ent_buscar = tk.Entry(frame_buscar, **st.estilo_entrada()); ent_buscar.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=10)
     ent_buscar.bind("<KeyRelease>", lambda e: cargar_productos(ent_buscar.get()))
     label_contador = tk.Label(frame_buscar, text="Total: 0", font=st.FONT_LABEL, bg=st.BG_MAIN, fg=st.ACCENT); label_contador.pack(side=tk.RIGHT)
 

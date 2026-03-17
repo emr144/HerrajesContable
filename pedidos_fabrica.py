@@ -40,7 +40,8 @@ def cargar_pedidos_pendientes():
         """
         cursor.execute(query)
         for reg in cursor.fetchall():
-            tabla_pedidos.insert("", "end", values=reg)
+            # reg contiene: (id, nombre_prov, fecha, count_items, sum_cantidad)
+            tabla_pedidos.insert("", "end", values=reg + ("✏️", "🗑️"), iid=reg[0])
         conexion.close()
     except Exception as e:
         messagebox.showerror("Error", f"No se pudieron cargar los pedidos: {e}")
@@ -109,6 +110,22 @@ def eliminar_pedido_completo():
             conn.close()
             messagebox.showinfo("Eliminado", "El pedido ha sido borrado.")
             mostrar_vista_lista()
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo eliminar: {e}")
+
+def eliminar_pedido_desde_lista(pedido_id):
+    """Borra un pedido desde la vista de lista (botón tachito)"""
+    confirmar = messagebox.askyesno("Confirmar", f"¿Desea ELIMINAR permanentemente el pedido N° {pedido_id}?")
+    if confirmar:
+        try:
+            conn = sqlite3.connect('herrajes.db')
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM pedidos_fabrica_detalle WHERE pedido_id = ?", (pedido_id,))
+            cursor.execute("DELETE FROM pedidos_fabrica WHERE id = ?", (pedido_id,))
+            conn.commit()
+            conn.close()
+            messagebox.showinfo("Eliminado", "El pedido ha sido borrado.")
+            cargar_pedidos_pendientes() 
         except Exception as e:
             messagebox.showerror("Error", f"No se pudo eliminar: {e}")
 
@@ -307,6 +324,25 @@ def agregar_producto_al_pedido():
     ent_cantidad.insert(0, "1")
     combo_producto.focus()
 
+def on_tabla_click(event):
+    """Manejador de clics en la tabla de lista de pedidos"""
+    region = tabla_pedidos.identify_region(event.x, event.y)
+    if region != "cell": return
+
+    col_id = tabla_pedidos.identify_column(event.x)
+    row_id = tabla_pedidos.identify_row(event.y)
+    
+    if not row_id: return
+
+    # Columnas: #1=id, #2=prov, #3=fecha, #4=#items, #5=total_unidades, #6=EDITAR, #7=ELIMINAR
+    if col_id == "#6": # Editar
+        # Seleccionamos la fila y abrimos la edición
+        tabla_pedidos.selection_set(row_id)
+        mostrar_vista_edicion(event)
+    elif col_id == "#7": # Eliminar
+        # row_id es el ID del pedido porque usamos iid=id en el insert
+        eliminar_pedido_desde_lista(row_id)
+
 def montar_interfaz(parent):
     global ventana_principal, frame_lista, frame_edicion, tabla_pedidos, tabla_temporal
     global combo_proveedores, combo_producto, ent_cantidad, combo_unidad_medida, proveedor_map
@@ -320,11 +356,23 @@ def montar_interfaz(parent):
     f_botones_lista.pack(fill=tk.X, pady=10)
     tk.Button(f_botones_lista, text="➕ Nuevo Pedido", command=mostrar_vista_edicion, **st.estilo_boton()).pack(side=tk.LEFT)
 
-    columnas_lista = ("id", "prov", "fecha", "#items", "total_unidades")
+    columnas_lista = ("id", "prov", "fecha", "#items", "total_unidades", "editar", "eliminar")
     tabla_pedidos = ttk.Treeview(frame_lista, columns=columnas_lista, show="headings")
-    for col in columnas_lista: tabla_pedidos.heading(col, text=col.upper())
+    
+    for col in columnas_lista: 
+        if col in ["editar", "eliminar"]:
+            tabla_pedidos.heading(col, text=col.replace("editar", "✏️").replace("eliminar", "🗑️"))
+            tabla_pedidos.column(col, width=50, anchor="center")
+        else:
+            tabla_pedidos.heading(col, text=col.upper())
+            
+    tabla_pedidos.column("id", width=50, anchor="center")
+    tabla_pedidos.column("prov", width=250)
+    tabla_pedidos.column("fecha", width=120, anchor="center")
+    
     tabla_pedidos.pack(fill=tk.BOTH, expand=True, pady=10)
     tabla_pedidos.bind("<Double-1>", mostrar_vista_edicion)
+    tabla_pedidos.bind("<Button-1>", on_tabla_click)
 
     # --- VISTA EDICIÓN ---
     frame_edicion = tk.Frame(ventana_principal, bg=st.BG_MAIN)
@@ -335,24 +383,24 @@ def montar_interfaz(parent):
     f_controles.pack(fill=tk.X, pady=10)
 
     tk.Label(f_controles, text="Proveedor:", bg=st.BG_CARD, fg="white").grid(row=0, column=0, sticky='w')
-    combo_proveedores = ttk.Combobox(f_controles, values=[], state="readonly", width=30)
+    combo_proveedores = ttk.Combobox(f_controles, values=[], state="readonly", width=30, font=st.FONT_INPUT)
     combo_proveedores.grid(row=0, column=1, sticky='w', padx=5)
     combo_proveedores.bind("<<ComboboxSelected>>", cargar_productos_proveedor)
 
     tk.Label(f_controles, text="Producto:", bg=st.BG_CARD, fg="white").grid(row=1, column=0, pady=10, sticky='w')
     # Definimos combo_producto con altura para ver más resultados
-    combo_producto = ttk.Combobox(f_controles, values=[], width=35, height=12) 
+    combo_producto = ttk.Combobox(f_controles, values=[], width=35, height=12, font=st.FONT_INPUT) 
     combo_producto.grid(row=1, column=1, sticky='w', padx=5)
     combo_producto.bind("<KeyRelease>", filtrar_productos)
 
     tk.Label(f_controles, text="Cant:", bg=st.BG_CARD, fg="white").grid(row=1, column=2, padx=5)
-    ent_cantidad = tk.Entry(f_controles, width=5)
+    ent_cantidad = tk.Entry(f_controles, width=5, **st.estilo_entrada())
     ent_cantidad.insert(0, "1")
     ent_cantidad.grid(row=1, column=3, sticky='w')
 
     tk.Label(f_controles, text="Unidad:", bg=st.BG_CARD, fg="white").grid(row=1, column=4, padx=(10, 0))
     unidades_medida = ["Unidad", "Decena", "Docena", "Dcpa", "Millar", "Caja", "Cajon", "Bulto"]
-    combo_unidad_medida = ttk.Combobox(f_controles, values=unidades_medida, state="readonly", width=8)
+    combo_unidad_medida = ttk.Combobox(f_controles, values=unidades_medida, state="readonly", width=8, font=st.FONT_INPUT)
     combo_unidad_medida.set("Unidad")
     combo_unidad_medida.grid(row=1, column=5, sticky='w')
 

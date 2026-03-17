@@ -61,6 +61,21 @@ def crear_base_datos():
     )
     ''')
 
+    # Nueva Tabla para Cuentas Corrientes de Fábricas (Proveedores)
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS cuenta_corriente_proveedores (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id_proveedor INTEGER,
+        fecha DATE DEFAULT CURRENT_DATE,
+        tipo_cuenta TEXT NOT NULL,      -- 'Formal' o 'Informal'
+        tipo_movimiento TEXT NOT NULL,  -- 'Factura', 'Pago', 'Saldo Inicial'
+        monto REAL NOT NULL,
+        metodo_pago TEXT,               -- 'Efectivo', 'Transferencia' o 'N/A'
+        descripcion TEXT,
+        FOREIGN KEY (id_proveedor) REFERENCES proveedores(id)
+    )
+    ''')
+
     conexion.commit()
     conexion.close()
     print("¡Base de datos 'herrajes.db' y tablas creadas con éxito!")

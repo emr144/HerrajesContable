@@ -270,24 +270,20 @@ def montar_interfaz(parent):
     style.configure("Treeview", background=st.BG_CARD, foreground="white", fieldbackground=st.BG_CARD, borderwidth=0, rowheight=25)
     style.map("Treeview", background=[('selected', st.ACCENT)])
     style.configure("Treeview.Heading", background=st.BG_CARD, foreground=st.TEXT_SECONDARY, font=st.FONT_LABEL, padding=10)
-    # Combobox
-    parent.option_add('*TCombobox*Listbox.background', st.BG_CARD)
-    parent.option_add('*TCombobox*Listbox.foreground', 'white')
-    parent.option_add('*TCombobox*Listbox.selectBackground', st.ACCENT)
-    style.configure("TCombobox", fieldbackground=st.BG_MAIN, background=st.BG_CARD, foreground='white', borderwidth=0, padding=5)
+    # Nota: Los estilos globales de Combobox ya se cargan desde main.py
 
     # Buscador y Cliente (Frames superiores)
     frame_top = tk.Frame(ventana, pady=10, bg=st.BG_MAIN); frame_top.pack(fill=tk.X, padx=15)
     tk.Label(frame_top, text="Cliente:", bg=st.BG_MAIN, fg=st.TEXT_SECONDARY, font=st.FONT_LABEL).pack(side=tk.LEFT)
-    combo_cliente = ttk.Combobox(frame_top, values=obtener_clientes(), width=30, font=st.FONT_NORMAL); combo_cliente.pack(side=tk.LEFT, padx=10)
+    combo_cliente = ttk.Combobox(frame_top, values=obtener_clientes(), width=30, font=st.FONT_INPUT); combo_cliente.pack(side=tk.LEFT, padx=10)
 
     frame_busqueda = tk.Frame(ventana, pady=10, bg=st.BG_MAIN); frame_busqueda.pack(fill=tk.X, padx=15)
     tk.Label(frame_busqueda, text="Producto:", bg=st.BG_MAIN, fg=st.TEXT_SECONDARY, font=st.FONT_LABEL).pack(side=tk.LEFT)
-    entrada_codigo = tk.Entry(frame_busqueda, width=40, font=st.FONT_NORMAL, bg=st.BG_CARD, fg="white", bd=0, insertbackground="white"); entrada_codigo.pack(side=tk.LEFT, padx=5)
+    entrada_codigo = tk.Entry(frame_busqueda, width=40, **st.estilo_entrada()); entrada_codigo.pack(side=tk.LEFT, padx=5)
     entrada_codigo.bind('<KeyRelease>', actualizar_sugerencias)
 
     tk.Label(frame_busqueda, text="Cant:", bg=st.BG_MAIN, fg=st.TEXT_SECONDARY, font=st.FONT_LABEL).pack(side=tk.LEFT, padx=5)
-    entrada_cantidad = tk.Entry(frame_busqueda, width=5, font=st.FONT_NORMAL, bg=st.BG_CARD, fg="white", bd=0, insertbackground="white"); entrada_cantidad.insert(0, "1"); entrada_cantidad.pack(side=tk.LEFT, padx=5)
+    entrada_cantidad = tk.Entry(frame_busqueda, width=5, **st.estilo_entrada()); entrada_cantidad.insert(0, "1"); entrada_cantidad.pack(side=tk.LEFT, padx=5)
 
     btn_agregar = tk.Button(frame_busqueda, text="➕ Agregar", command=agregar_producto, **st.estilo_boton(st.ACCENT))
     st.configurar_hover(btn_agregar, st.ACCENT, st.BG_CARD)

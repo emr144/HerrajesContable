@@ -165,7 +165,7 @@ def montar_interfaz(parent):
 
     def crear_campo(label, fila):
         tk.Label(frame_form, text=label, font=st.FONT_LABEL, bg=st.BG_CARD, fg=st.TEXT_SECONDARY).grid(row=fila, column=0, sticky="w", pady=5)
-        entry = tk.Entry(frame_form, font=st.FONT_NORMAL, bg=st.BG_MAIN, fg="white", bd=0, insertbackground="white")
+        entry = tk.Entry(frame_form, **st.estilo_entrada())
         entry.grid(row=fila, column=1, sticky="ew", padx=10, pady=5)
         return entry
 
@@ -179,7 +179,7 @@ def montar_interfaz(parent):
 
     frame_buscar = tk.Frame(ventana, bg=st.BG_MAIN); frame_buscar.pack(fill=tk.X, padx=40, pady=(10, 0))
     tk.Label(frame_buscar, text="🔍 Buscar Proveedor:", font=st.FONT_LABEL, bg=st.BG_MAIN, fg="white").pack(side=tk.LEFT)
-    ent_buscar = tk.Entry(frame_buscar, font=st.FONT_NORMAL, bg=st.BG_CARD, fg="white", bd=0, insertbackground="white"); ent_buscar.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=10)
+    ent_buscar = tk.Entry(frame_buscar, **st.estilo_entrada()); ent_buscar.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=10)
     ent_buscar.bind("<KeyRelease>", lambda e: cargar_proveedores(ent_buscar.get()))
 
     style_tabla = ttk.Style(); style_tabla.theme_use("clam"); style_tabla.configure("Treeview", background=st.BG_CARD, foreground="white", fieldbackground=st.BG_CARD, borderwidth=0, rowheight=30, font=st.FONT_NORMAL); style_tabla.map("Treeview", background=[('selected', st.ACCENT)]); style_tabla.configure("Treeview.Heading", font=st.FONT_LABEL)

@@ -192,7 +192,7 @@ def montar_interfaz(parent):
     
     proveedores_lista = obtener_proveedores()
     proveedor_map = {nombre: pid for pid, nombre in proveedores_lista}
-    combo_proveedores = ttk.Combobox(frame_proveedor, values=[nombre for pid, nombre in proveedores_lista], state="readonly", font=st.FONT_NORMAL)
+    combo_proveedores = ttk.Combobox(frame_proveedor, values=[nombre for pid, nombre in proveedores_lista], state="readonly", font=st.FONT_INPUT)
     combo_proveedores.pack(fill="x", pady=5)
 
     # --- Nuevos campos para número y fecha de lista ---
@@ -205,11 +205,11 @@ def montar_interfaz(parent):
     sub_frame.columnconfigure(1, weight=1)
 
     tk.Label(sub_frame, text="N° de Lista:", font=st.FONT_NORMAL, bg=st.BG_CARD, fg="white").grid(row=0, column=0, sticky="w", pady=2)
-    entry_numero_lista = tk.Entry(sub_frame, font=st.FONT_NORMAL, bg=st.BG_MAIN, fg="white", bd=0, insertbackground="white")
+    entry_numero_lista = tk.Entry(sub_frame, **st.estilo_entrada())
     entry_numero_lista.grid(row=0, column=1, sticky="ew", padx=10, pady=2)
 
     tk.Label(sub_frame, text="Fecha (DD-MM-AAAA):", font=st.FONT_NORMAL, bg=st.BG_CARD, fg="white").grid(row=1, column=0, sticky="w", pady=2)
-    entry_fecha_lista = tk.Entry(sub_frame, font=st.FONT_NORMAL, bg=st.BG_MAIN, fg="white", bd=0, insertbackground="white")
+    entry_fecha_lista = tk.Entry(sub_frame, **st.estilo_entrada())
     entry_fecha_lista.grid(row=1, column=1, sticky="ew", padx=10, pady=2)
     entry_fecha_lista.insert(0, pd.Timestamp.now().strftime('%d-%m-%Y'))
 
