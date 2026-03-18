@@ -23,9 +23,9 @@ Source: "C:\Users\herra\HerrajesContable\dist\HerrajesContable\*"; DestDir: "{ap
 
 [Icons]
 ; Acceso directo en el Menú Inicio
-Name: "{group}\HerrajesContable"; Filename: "{app}\HerrajesContable.exe"; IconFilename: "{app}\img\avocado.ico"
+Name: "{group}\HerrajesContable"; Filename: "{app}\HerrajesContable.exe"
 ; Acceso directo en el Escritorio (si el usuario lo elige)
-Name: "{commondesktop}\HerrajesContable"; Filename: "{app}\HerrajesContable.exe"; Tasks: desktopicon; IconFilename: "{app}\img\avocado.ico"
+Name: "{commondesktop}\HerrajesContable"; Filename: "{app}\HerrajesContable.exe"; Tasks: desktopicon
 
 [Run]
 Filename: "{app}\HerrajesContable.exe"; Description: "{cm:LaunchProgram,HerrajesContable}"; Flags: nowait postinstall skipifsilent
