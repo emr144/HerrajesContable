@@ -267,7 +267,7 @@ def montar_interfaz(notebook):
         try:
             conn = sqlite3.connect(database.get_db_path())
             cursor = conn.cursor()
-            cursor.execute("SELECT nombre FROM proveedores")
+            cursor.execute("SELECT nombre FROM proveedores ORDER BY nombre ASC")
             combo_prov['values'] = [r[0] for r in cursor.fetchall()]
             conn.close()
         except: pass

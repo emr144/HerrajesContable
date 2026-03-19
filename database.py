@@ -13,6 +13,21 @@ def get_db_path():
     else:
         base_path = os.path.dirname(os.path.abspath(__file__))
     
+    # --- NUEVO: SOPORTE PARA NUBE (Google Drive, OneDrive, etc.) ---
+    # Buscamos si hay un archivo 'ruta_db.txt' junto al programa
+    archivo_config = os.path.join(base_path, 'ruta_db.txt')
+    
+    if os.path.exists(archivo_config):
+        try:
+            with open(archivo_config, 'r') as f:
+                # Leemos la ruta y quitamos comillas o espacios
+                ruta_nube = f.read().strip().strip('"') 
+            # Si la carpeta destino existe, usamos esa ruta obligatoriamente
+            if ruta_nube and os.path.exists(os.path.dirname(ruta_nube)):
+                return ruta_nube
+        except: pass
+    # ---------------------------------------------------------------
+
     # 2. Verificar si ya existe una base de datos local (Tu caso actual)
     local_db = os.path.join(base_path, 'herrajes.db')
     
