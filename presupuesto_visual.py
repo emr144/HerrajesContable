@@ -10,6 +10,7 @@ import database # Importamos para obtener la ruta
 # Variables globales
 carrito = []
 total_sin_descuento = 0.0
+combo_fabrica = None # Variable global para el filtro
 
 # --- FUNCIONES DE LÓGICA ---
 
@@ -21,7 +22,15 @@ def obtener_clientes():
     conexion.close()
     return [f[0] for f in filas]
 
-def buscar_productos_db(termino):
+def obtener_proveedores_lista():
+    conexion = sqlite3.connect(database.get_db_path())
+    cursor = conexion.cursor()
+    cursor.execute("SELECT nombre FROM proveedores ORDER BY nombre ASC")
+    filas = cursor.fetchall()
+    conexion.close()
+    return [f[0] for f in filas]
+
+def buscar_productos_db(termino, filtro_proveedor=None):
     conexion = sqlite3.connect(database.get_db_path())
     cursor = conexion.cursor()
     query = '''
@@ -32,10 +41,15 @@ def buscar_productos_db(termino):
            OR p.descripcion LIKE ? 
            OR pr.nombre LIKE ?)
            AND p.estado = 'ACTIVO'
-        LIMIT 10
+        LIMIT 60
     '''
-    patron = f'%{termino}%'
-    cursor.execute(query, (patron, patron, patron))
+    args = [f'%{termino}%', f'%{termino}%', f'%{termino}%']
+    
+    if filtro_proveedor:
+        query = query.replace("LIMIT 60", "AND pr.nombre = ? LIMIT 60")
+        args.append(filtro_proveedor)
+
+    cursor.execute(query, tuple(args))
     resultados = cursor.fetchall()
     conexion.close()
     return resultados
@@ -61,12 +75,18 @@ def seleccionar_producto(event=None):
 
 def actualizar_sugerencias(event=None):
     texto = entrada_codigo.get().strip()
+    prov_filtro = combo_fabrica.get().strip() if combo_fabrica else None
+    
     lista_sugerencias.delete(0, tk.END)
     if len(texto) < 2:
         lista_sugerencias.place_forget()
         return
-    productos = buscar_productos_db(texto)
+    productos = buscar_productos_db(texto, prov_filtro)
     if productos:
+        # Ajustamos dinámicamente la altura y ancho de la lista
+        # "3 veces más largo" -> Aumentamos el límite visual a 40 renglones y el ancho a 100 caracteres
+        lista_sugerencias.config(height=min(len(productos), 40), width=100)
+        
         for p in productos:
             lista_sugerencias.insert(tk.END, f"{p[0]} | {p[1]} | {p[2]}")
         lista_sugerencias.place(x=entrada_codigo.winfo_x(), y=entrada_codigo.winfo_y() + entrada_codigo.winfo_height())
@@ -257,7 +277,7 @@ def guardar_presupuesto():
 
 # --- INTERFAZ ---
 def montar_interfaz(parent):
-    global combo_cliente, entrada_codigo, entrada_cantidad, lista_sugerencias, tabla, label_total, check_desc_var, label_info_desc
+    global combo_cliente, combo_fabrica, entrada_codigo, entrada_cantidad, lista_sugerencias, tabla, label_total, check_desc_var, label_info_desc
     
     ventana = tk.Frame(parent, bg=st.BG_MAIN)
     # ventana.title("Punto de Venta - HerrajesContable") -> Ya no es necesario
@@ -270,23 +290,38 @@ def montar_interfaz(parent):
     # Solo configuramos columnas específicas aquí si es necesario.
 
     # Buscador y Cliente (Frames superiores)
-    frame_top = tk.Frame(ventana, pady=10, bg=st.BG_MAIN); frame_top.pack(fill=tk.X, padx=15)
+    frame_top = tk.Frame(ventana, pady=10, bg=st.BG_MAIN)
+    frame_top.pack(fill=tk.X, padx=15)
+    
     tk.Label(frame_top, text="Cliente:", bg=st.BG_MAIN, fg=st.TEXT_SECONDARY, font=st.FONT_LABEL).pack(side=tk.LEFT)
     combo_cliente = ttk.Combobox(frame_top, values=obtener_clientes(), width=30, font=st.FONT_INPUT); combo_cliente.pack(side=tk.LEFT, padx=10)
 
-    frame_busqueda = tk.Frame(ventana, pady=10, bg=st.BG_MAIN); frame_busqueda.pack(fill=tk.X, padx=15)
+    # Filtro de Fábrica (Opcional)
+    tk.Label(frame_top, text="Fábrica (Filtro):", bg=st.BG_MAIN, fg=st.TEXT_SECONDARY, font=st.FONT_LABEL).pack(side=tk.LEFT, padx=(20, 5))
+    combo_fabrica = ttk.Combobox(frame_top, values=obtener_proveedores_lista(), width=25, font=st.FONT_INPUT)
+    combo_fabrica.pack(side=tk.LEFT, padx=5)
+
+    frame_busqueda = tk.Frame(ventana, pady=10, bg=st.BG_MAIN)
+    frame_busqueda.pack(fill=tk.X, padx=15)
+    
     tk.Label(frame_busqueda, text="Producto:", bg=st.BG_MAIN, fg=st.TEXT_SECONDARY, font=st.FONT_LABEL).pack(side=tk.LEFT)
-    entrada_codigo = tk.Entry(frame_busqueda, width=40, **st.estilo_entrada()); entrada_codigo.pack(side=tk.LEFT, padx=5)
+    
+    # Entrada de código/producto que ocupa todo el ancho disponible
+    entrada_codigo = tk.Entry(frame_busqueda, **st.estilo_entrada())
+    entrada_codigo.pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
     entrada_codigo.bind('<KeyRelease>', actualizar_sugerencias)
 
     tk.Label(frame_busqueda, text="Cant:", bg=st.BG_MAIN, fg=st.TEXT_SECONDARY, font=st.FONT_LABEL).pack(side=tk.LEFT, padx=5)
-    entrada_cantidad = tk.Entry(frame_busqueda, width=5, **st.estilo_entrada()); entrada_cantidad.insert(0, "1"); entrada_cantidad.pack(side=tk.LEFT, padx=5)
+    entrada_cantidad = tk.Entry(frame_busqueda, width=8, **st.estilo_entrada())
+    entrada_cantidad.insert(0, "1")
+    entrada_cantidad.pack(side=tk.LEFT, padx=5)
 
     btn_agregar = tk.Button(frame_busqueda, text="➕ Agregar", command=agregar_producto, **st.estilo_boton(st.ACCENT))
     st.configurar_hover(btn_agregar, st.ACCENT, st.BG_CARD)
     btn_agregar.pack(side=tk.LEFT, padx=10)
 
-    lista_sugerencias = tk.Listbox(ventana, font=st.FONT_NORMAL, width=50, height=6, bg=st.BG_CARD, fg="white", selectbackground=st.ACCENT, bd=0)
+    # Aumentamos el ancho base de la lista a 100 para que se vean bien las descripciones largas
+    lista_sugerencias = tk.Listbox(ventana, font=st.FONT_NORMAL, width=100, height=6, bg=st.BG_CARD, fg="white", selectbackground=st.ACCENT, bd=0)
     lista_sugerencias.bind('<<ListboxSelect>>', seleccionar_producto)
 
     # TABLA CON COLUMNA SUBTOTAL

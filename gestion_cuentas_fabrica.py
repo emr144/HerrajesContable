@@ -40,11 +40,12 @@ def montar_interfaz(notebook):
     tk.Label(form, text="Acción:", fg="white", bg=st.BG_CARD).grid(row=0, column=2, padx=5)
     ttk.OptionMenu(form, var_tipo_mov, "Factura", "Factura", "Pago", "Saldo Inicial").grid(row=0, column=3, padx=5)
 
-    tk.Label(form, text="Monto $:", fg="white", bg=st.BG_CARD).grid(row=0, column=4, padx=5)
-    tk.Entry(form, textvariable=var_monto, width=15, **st.estilo_entrada()).grid(row=0, column=5, padx=5)
+    # Intercambiado: Primero Detalle, luego Monto
+    tk.Label(form, text="Detalle:", fg="white", bg=st.BG_CARD).grid(row=0, column=4, padx=5)
+    tk.Entry(form, textvariable=var_desc, width=30, **st.estilo_entrada()).grid(row=0, column=5, padx=5)
 
-    tk.Label(form, text="Detalle:", fg="white", bg=st.BG_CARD).grid(row=0, column=6, padx=5)
-    tk.Entry(form, textvariable=var_desc, width=25, **st.estilo_entrada()).grid(row=0, column=7, padx=5)
+    tk.Label(form, text="Monto $:", fg="white", bg=st.BG_CARD).grid(row=0, column=6, padx=5)
+    tk.Entry(form, textvariable=var_monto, width=15, **st.estilo_entrada()).grid(row=0, column=7, padx=5)
     
     # Definimos los botones aquí para poder configurarlos luego
     btn_registrar = tk.Button(form, text="REGISTRAR", bg=st.ACCENT, fg="white", font=("Inter", 9, "bold"))
