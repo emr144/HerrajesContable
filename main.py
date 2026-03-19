@@ -32,32 +32,33 @@ class App(tk.Tk):
         self.geometry("1200x800")
         
         # --- Configuración del Ícono (Avocado) ---
-        # Intenta cargar el icono .ico o .png de la carpeta img
+        self.configurar_icono_app()
+
+    def configurar_icono_app(self):
+        """Carga el ícono de forma robusta para evitar la pluma por defecto."""
         try:
-            # Rutina robusta para encontrar la ruta (funciona en dev y en exe instalado)
             if getattr(sys, 'frozen', False):
-                base_path = sys._MEIPASS if hasattr(sys, '_MEIPASS') else os.path.dirname(sys.executable)
+                base_dir = sys._MEIPASS if hasattr(sys, '_MEIPASS') else os.path.dirname(sys.executable)
             else:
-                base_path = os.path.dirname(os.path.abspath(__file__))
+                base_dir = os.path.dirname(os.path.abspath(__file__))
             
-            ruta_icono = os.path.join(base_path, "img", "avocado.ico")
-            if os.path.exists(ruta_icono):
-                self.iconbitmap(ruta_icono)
-            # Si tuvieras un .png en lugar de .ico, usarías: tk.PhotoImage(file="img/avocado.png")
-        except Exception: pass
+            ruta_ico = os.path.join(base_dir, "img", "avocado.ico")
+            
+            if os.path.exists(ruta_ico):
+                # 1. Icono Barra de Tareas (Este es el importante para quitar la pluma)
+                img = Image.open(ruta_ico)
+                self.icono_ref = ImageTk.PhotoImage(img) # Guardamos referencia para que no se borre
+                self.iconphoto(True, self.icono_ref)
+
+                # 2. Icono Ventana (Secundario, lo ponemos en try por si el formato ico falla)
+                try: self.iconbitmap(ruta_ico)
+                except: pass
+        except Exception as e:
+            print(f"⚠️ Error cargando icono: {e}")
 
         # --- Estilos Globales para Pestañas ---
-        style = ttk.Style()
-        style.theme_use("clam")
-        style.configure("TNotebook", background=st.BG_MAIN, borderwidth=0)
-        style.configure("TNotebook.Tab", 
-                        background=st.BG_CARD, 
-                        foreground="white",
-                        padding=[15, 8], # Padding ajustado para íconos
-                        font=("Inter", 11, "bold"))
-        style.map("TNotebook.Tab", 
-                  background=[("selected", st.ACCENT)], 
-                  foreground=[("selected", "white")])
+        # Aplicamos la configuración moderna centralizada en styles.py
+        st.configurar_estilos_ttk()
         
         # Diccionario para mantener una referencia a los íconos y evitar que el recolector de basura los borre
         self.tab_icons = {}
@@ -69,6 +70,7 @@ class App(tk.Tk):
         self.option_add('*TCombobox*Listbox.selectBackground', st.ACCENT)
         self.option_add('*TCombobox*Listbox.font', st.FONT_INPUT)
         
+        style = ttk.Style()
         style.configure("TCombobox", fieldbackground=st.BG_INPUT, background=st.BG_MAIN, 
                         foreground='white', arrowcolor='white', borderwidth=0)
         style.map("TCombobox", fieldbackground=[('readonly', st.BG_INPUT)])

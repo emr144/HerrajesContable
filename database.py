@@ -3,52 +3,37 @@ import os
 import sys
 
 def get_db_path():
-    """
+    r"""
     Devuelve la ruta completa a la base de datos.
-    La crea en AppData para evitar problemas de permisos en C:\Program Files.
+    Configurada para usar Google Drive: C:\Users\herra\Desktop\DbHerrajesDrive\herrajes.db
     """
-    # 1. Determinar dónde estamos ejecutando (Script o EXE)
-    if getattr(sys, 'frozen', False):
-        base_path = os.path.dirname(sys.executable)
-    else:
-        base_path = os.path.dirname(os.path.abspath(__file__))
+    # --- RUTA DE GOOGLE DRIVE ---
+    ruta_drive = r"C:\Users\herra\Desktop\DbHerrajesDrive\herrajes.db"
     
-    # --- NUEVO: SOPORTE PARA NUBE (Google Drive, OneDrive, etc.) ---
-    # Buscamos si hay un archivo 'ruta_db.txt' junto al programa
-    archivo_config = os.path.join(base_path, 'ruta_db.txt')
-    
-    if os.path.exists(archivo_config):
+    # Si la carpeta existe, usamos esta ruta
+    if os.path.exists(os.path.dirname(ruta_drive)):
+        # LIMPIEZA: Intentamos borrar la DB local vieja si existe
         try:
-            with open(archivo_config, 'r') as f:
-                # Leemos la ruta y quitamos comillas o espacios
-                ruta_nube = f.read().strip().strip('"') 
-            # Si la carpeta destino existe, usamos esa ruta obligatoriamente
-            if ruta_nube and os.path.exists(os.path.dirname(ruta_nube)):
-                return ruta_nube
+            if getattr(sys, 'frozen', False):
+                local_dir = os.path.dirname(sys.executable)
+            else:
+                local_dir = os.path.dirname(os.path.abspath(__file__))
+            
+            db_vieja = os.path.join(local_dir, 'herrajes.db')
+            
+            # Verificamos que no sea la misma ruta antes de borrar para no borrar la del drive
+            if os.path.exists(db_vieja) and os.path.abspath(db_vieja).lower() != os.path.abspath(ruta_drive).lower():
+                os.remove(db_vieja)
+                print("🗑️ Base de datos local antigua eliminada.")
         except: pass
-    # ---------------------------------------------------------------
-
-    # 2. Verificar si ya existe una base de datos local (Tu caso actual)
-    local_db = os.path.join(base_path, 'herrajes.db')
+        
+        return ruta_drive
     
-    # Intentamos ver si la local existe y es escribible
-    if os.path.exists(local_db):
-        try:
-            # Prueba rápida de escritura
-            f = open(local_db, 'a'); f.close()
-            return local_db # Si funciona, usamos la local (Recuperas tus datos)
-        except PermissionError:
-            pass # Si falla (está en Program Files), seguimos a AppData
-
-    # 3. Si no hay local o no se puede escribir, usar AppData (Modo Instalado Seguro)
-    app_data_dir = os.getenv('APPDATA')
-    if not app_data_dir:
-        return local_db
-    
-    herrajes_dir = os.path.join(app_data_dir, 'HerrajesContable')
-    os.makedirs(herrajes_dir, exist_ok=True)
-    
-    return os.path.join(herrajes_dir, 'herrajes.db')
+    # --- FALLBACK: Si no encuentra la carpeta Drive, usa local ---
+    if getattr(sys, 'frozen', False):
+        return os.path.join(os.path.dirname(sys.executable), 'herrajes.db')
+    else:
+        return os.path.join(os.path.dirname(os.path.abspath(__file__)), 'herrajes.db')
 
 def crear_base_datos():
     conexion = sqlite3.connect(get_db_path())

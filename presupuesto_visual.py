@@ -265,13 +265,9 @@ def montar_interfaz(parent):
     # st.aplicar_estilo_ventana(ventana) -> El frame ya tiene bg=st.BG_MAIN
 
     # --- Estilos para widgets TTK ---
-    style = ttk.Style()
-    style.theme_use("clam")
-    # Treeview
-    style.configure("Treeview", background=st.BG_CARD, foreground="white", fieldbackground=st.BG_CARD, borderwidth=0, rowheight=25)
-    style.map("Treeview", background=[('selected', st.ACCENT)])
-    style.configure("Treeview.Heading", background=st.BG_CARD, foreground=st.TEXT_SECONDARY, font=st.FONT_LABEL, padding=10)
-    # Nota: Los estilos globales de Combobox ya se cargan desde main.py
+    # Los estilos globales (Treeview, Notebook) ahora se cargan desde styles.py / main.py
+    # para mantener consistencia y el look moderno.
+    # Solo configuramos columnas específicas aquí si es necesario.
 
     # Buscador y Cliente (Frames superiores)
     frame_top = tk.Frame(ventana, pady=10, bg=st.BG_MAIN); frame_top.pack(fill=tk.X, padx=15)
@@ -295,7 +291,7 @@ def montar_interfaz(parent):
 
     # TABLA CON COLUMNA SUBTOTAL
     columnas = ("cod", "desc", "cant", "p_unit", "subtotal")
-    tabla = ttk.Treeview(ventana, columns=columnas, show="headings", style="Treeview")
+    tabla = ttk.Treeview(ventana, columns=columnas, show="headings")
     tabla.heading("cod", text="CÓDIGO")
     tabla.heading("desc", text="DESCRIPCIÓN")
     tabla.heading("cant", text="CANT.")
