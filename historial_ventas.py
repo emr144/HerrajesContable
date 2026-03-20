@@ -26,7 +26,7 @@ def generar_ticket_pdf(presupuesto_id):
         cursor = conexion.cursor()
         
         # 1. Recuperamos datos de la cabecera
-        cursor.execute("SELECT cliente_nombre, fecha, total FROM presupuestos WHERE id = ?", (presupuesto_id,))
+        cursor.execute("SELECT cliente_nombre, fecha, total, cliente_tipo FROM presupuestos WHERE id = ?", (presupuesto_id,))
         datos_venta = cursor.fetchone()
         
         # 2. Recuperamos los productos
@@ -41,7 +41,7 @@ def generar_ticket_pdf(presupuesto_id):
         
         if not datos_venta: return
 
-        cliente, fecha, total = datos_venta
+        cliente, fecha, total, tipo_cliente = datos_venta
         
         # 3. Construimos el PDF (Formato Ticket 58mm)
         altura_ticket = 80 + (len(items) * 10)
@@ -87,6 +87,12 @@ def generar_ticket_pdf(presupuesto_id):
         pdf.set_font("Arial", "B", 10)
         pdf.cell(38, 6, "TOTAL:", 0, 0, 'R')
         pdf.cell(16, 6, f"$ {total:.2f}", 0, 1, 'R')
+
+        # Mensaje condicional (Nuevo sistema de precios)
+        if tipo_cliente and "Profesional" in tipo_cliente:
+            pdf.ln(2)
+            pdf.set_font("Arial", "I", 6)
+            pdf.cell(0, 4, "** Descuento Cliente Frecuente / Gremio **", ln=True, align="C")
 
         # Pie
         pdf.ln(4)

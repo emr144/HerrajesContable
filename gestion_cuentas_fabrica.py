@@ -23,8 +23,27 @@ def montar_interfaz(notebook):
     
     tk.Label(header, text="ESTADO DE CUENTA:", font=("Inter", 14, "bold"), fg="white", bg=st.BG_MAIN).pack(side="left")
     
-    combo_prov = ttk.Combobox(header, textvariable=var_proveedor, state="readonly", font=st.FONT_INPUT)
+    # Variables para filtrado
+    lista_proveedores_cache = []
+
+    def filtrar_proveedores(event):
+        if event.keysym in ('Down', 'Up', 'Return', 'Escape', 'Tab', 'Left', 'Right', 'Control_L', 'Control_R'): return
+        
+        texto = combo_prov.get().lower()
+        
+        if not texto:
+            combo_prov['values'] = lista_proveedores_cache
+        else:
+            filtrados = [p for p in lista_proveedores_cache if texto in p.lower()]
+            filtrados.sort(key=str.lower) # Forzar orden A-Z al filtrar
+            combo_prov['values'] = filtrados
+            if filtrados:
+                combo_prov.event_generate('<Down>')
+
+    combo_prov = ttk.Combobox(header, textvariable=var_proveedor, font=st.FONT_INPUT)
     combo_prov.pack(side="left", padx=10)
+    combo_prov.bind("<KeyRelease>", filtrar_proveedores)
+    combo_prov.bind("<Return>", lambda e: calcular_y_mostrar())
     
     tk.Label(header, text="Cuenta:", fg="white", bg=st.BG_MAIN).pack(side="left", padx=5)
     selector_cuenta = ttk.OptionMenu(header, var_tipo_cuenta, "Formal", "Formal", "Informal")
@@ -269,7 +288,10 @@ def montar_interfaz(notebook):
             conn = sqlite3.connect(database.get_db_path())
             cursor = conn.cursor()
             cursor.execute("SELECT nombre FROM proveedores ORDER BY nombre ASC")
-            combo_prov['values'] = [r[0] for r in cursor.fetchall()]
+            lista = [r[0] for r in cursor.fetchall()]
+            lista.sort(key=str.lower) # Asegurar orden A-Z ignorando mayúsculas
+            combo_prov['values'] = lista
+            lista_proveedores_cache.clear(); lista_proveedores_cache.extend(lista)
             conn.close()
         except: pass
 

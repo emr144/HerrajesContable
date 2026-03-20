@@ -10,7 +10,9 @@ import database # Importamos para obtener la ruta
 # Variables globales
 carrito = []
 total_sin_descuento = 0.0
-combo_fabrica = None # Variable global para el filtro
+combo_fabrica = None 
+combo_lista_precios = None # Nuevo selector de lista de precios
+lista_proveedores_cache = [] # Cache para filtrado
 
 # --- FUNCIONES DE LÓGICA ---
 
@@ -28,7 +30,9 @@ def obtener_proveedores_lista():
     cursor.execute("SELECT nombre FROM proveedores ORDER BY nombre ASC")
     filas = cursor.fetchall()
     conexion.close()
-    return [f[0] for f in filas]
+    global lista_proveedores_cache
+    lista_proveedores_cache = [f[0] for f in filas]
+    return lista_proveedores_cache
 
 def buscar_productos_db(termino, filtro_proveedor=None):
     conexion = sqlite3.connect(database.get_db_path())
@@ -54,15 +58,63 @@ def buscar_productos_db(termino, filtro_proveedor=None):
     conexion.close()
     return resultados
 
+def obtener_multiplicador_precio():
+    """Devuelve el factor de multiplicación según la lista seleccionada"""
+    if not combo_lista_precios: return 1.0
+    seleccion = combo_lista_precios.get()
+    
+    if "15%" in seleccion:
+        return 1.15
+    elif "30%" in seleccion:
+        return 1.30
+    else:
+        return 1.0 # Profesional (Precio de lista estándar)
+
 def actualizar_total_visual():
     global total_sin_descuento
-    if check_desc_var.get():
-        total_con_descuento = total_sin_descuento * 0.90
-        label_total.config(text=f"TOTAL: $ {total_con_descuento:.2f}", fg="red")
-        label_info_desc.config(text="(Descuento 10% Aplicado)")
-    else:
-        label_total.config(text=f"TOTAL: $ {total_sin_descuento:.2f}", fg="darkgreen")
-        label_info_desc.config(text="")
+    # Ahora el total es simplemente la suma de los items (que ya tienen el aumento aplicado si corresponde)
+    label_total.config(text=f"TOTAL: $ {total_sin_descuento:.2f}", fg="darkgreen")
+
+def recalcular_carrito(event=None):
+    """Recalcula los precios de todo el carrito cuando se cambia la lista de precios"""
+    global total_sin_descuento
+    
+    # Limpiamos la tabla visual y el total
+    for item in tabla.get_children():
+        tabla.delete(item)
+    total_sin_descuento = 0.0
+
+    multiplicador = obtener_multiplicador_precio()
+
+    # Recorremos el carrito y actualizamos precios
+    for item in carrito:
+        # Recuperamos el precio base original que guardamos
+        precio_base = item['precio_base_lista']
+        
+        # Calculamos nuevo precio final
+        nuevo_precio_unitario = precio_base * multiplicador
+        nuevo_subtotal = nuevo_precio_unitario * item['cantidad']
+        
+        # Actualizamos el diccionario del carrito
+        item['precio_unitario'] = nuevo_precio_unitario
+        
+        # Re-insertamos en la tabla visual
+        # Necesitamos recuperar codigo y descripcion. 
+        # Nota: Idealmente deberíamos guardarlos en el dict carrito para no consultar DB,
+        # pero para mantener compatibilidad rápida, usaremos los datos que ya tenemos o consultamos si faltan.
+        # En este código, 'carrito' solo tiene IDs. 
+        # Para evitar re-consultar DB masivamente, usaremos los valores almacenados en 'item' si los agregamos.
+        
+        # Mejor estrategia: Al agregar al carrito, guardamos descripcion y codigo tambien.
+        # Ver funcion agregar_producto abajo modificada.
+        
+        codigo = item.get('codigo', '---')
+        desc = item.get('descripcion', '---')
+        
+        tabla.insert("", "end", values=(codigo, desc, item['cantidad'], f"$ {nuevo_precio_unitario:.2f}", f"$ {nuevo_subtotal:.2f}"))
+        total_sin_descuento += nuevo_subtotal
+
+    actualizar_total_visual()
 
 def seleccionar_producto(event=None):
     if not lista_sugerencias.curselection(): return
@@ -113,10 +165,18 @@ def agregar_producto(event=None):
 
     if producto:
         prod_id, desc, costo, coef, iva = producto
-        precio_unitario = costo * coef * (1 + iva)
+        
+        # Precio base (Profesional / Lista)
+        precio_base = costo * coef * (1 + iva)
+        
+        # Precio final con el aumento seleccionado
+        multiplicador = obtener_multiplicador_precio()
+        precio_unitario = precio_base * multiplicador
+        
         subtotal = precio_unitario * cantidad
         
-        carrito.append({'prod_id': prod_id, 'cantidad': cantidad, 'precio_unitario': precio_unitario})
+        # Guardamos precio_base_lista para poder recalcular si cambiamos de categoria
+        carrito.append({'prod_id': prod_id, 'cantidad': cantidad, 'precio_unitario': precio_unitario, 'precio_base_lista': precio_base, 'codigo': codigo, 'descripcion': desc})
         
         # INSERTAMOS EN LA TABLA CON LA COLUMNA SUBTOTAL
         tabla.insert("", "end", values=(codigo, desc, cantidad, f"$ {precio_unitario:.2f}", f"$ {subtotal:.2f}"))
@@ -162,7 +222,8 @@ def generar_ticket_pdf(presupuesto_id):
         cursor = conexion.cursor()
         
         # 1. Recuperamos datos de la cabecera
-        cursor.execute("SELECT cliente_nombre, fecha, total FROM presupuestos WHERE id = ?", (presupuesto_id,))
+        # Agregamos cliente_tipo para saber si mostrar leyenda
+        cursor.execute("SELECT cliente_nombre, fecha, total, cliente_tipo FROM presupuestos WHERE id = ?", (presupuesto_id,))
         datos_venta = cursor.fetchone()
         
         # 2. Recuperamos los productos
@@ -177,7 +238,7 @@ def generar_ticket_pdf(presupuesto_id):
         
         if not datos_venta: return
 
-        cliente, fecha, total = datos_venta
+        cliente, fecha, total, tipo_cliente = datos_venta
         
         # 3. Construimos el PDF (Formato Ticket 58mm)
         # Calculamos altura dinámica: Base 80mm + 10mm por producto
@@ -227,6 +288,12 @@ def generar_ticket_pdf(presupuesto_id):
         pdf.cell(38, 6, "TOTAL:", 0, 0, 'R')
         pdf.cell(16, 6, f"$ {total:.2f}", 0, 1, 'R')
 
+        # Mensaje condicional según categoría
+        if tipo_cliente and "Profesional" in tipo_cliente:
+            pdf.ln(2)
+            pdf.set_font("Arial", "I", 6)
+            pdf.cell(0, 4, "** Descuento Cliente Frecuente / Gremio **", ln=True, align="C")
+
         # Pie
         pdf.ln(4)
         pdf.set_font("Arial", "I", 7)
@@ -249,12 +316,14 @@ def guardar_presupuesto():
     global total_sin_descuento, carrito
     if not carrito: return
     
-    total_final = total_sin_descuento * 0.9 if check_desc_var.get() else total_sin_descuento
+    total_final = total_sin_descuento # El total ya incluye los aumentos/precios finales
     nombre_cliente = combo_cliente.get().strip() or "Consumidor Final"
+    tipo_cliente = combo_lista_precios.get() # Guardamos qué lista se usó
     
     conexion = sqlite3.connect(database.get_db_path())
     cursor = conexion.cursor()
-    cursor.execute("INSERT INTO presupuestos (cliente_nombre, total) VALUES (?, ?)", (nombre_cliente, total_final))
+    # Guardamos el tipo de cliente (Profesional, Particular 15%, etc)
+    cursor.execute("INSERT INTO presupuestos (cliente_nombre, total, cliente_tipo) VALUES (?, ?, ?)", (nombre_cliente, total_final, tipo_cliente))
     presupuesto_id = cursor.lastrowid
     
     for item in carrito:
@@ -271,13 +340,30 @@ def guardar_presupuesto():
     # Reset
     carrito.clear()
     total_sin_descuento = 0.0
-    check_desc_var.set(False)
     actualizar_total_visual()
     for row in tabla.get_children(): tabla.delete(row)
 
+def filtrar_combo_proveedores(event):
+    """Filtra la lista de fábricas al escribir"""
+    # Ignoramos teclas de navegación para no interferir
+    if event.keysym in ('Down', 'Up', 'Return', 'Escape', 'Tab', 'Left', 'Right', 'Control_L', 'Control_R'): 
+        return
+    
+    texto = combo_fabrica.get().lower()
+    
+    if not texto:
+        combo_fabrica['values'] = lista_proveedores_cache
+    else:
+        filtrados = [p for p in lista_proveedores_cache if texto in p.lower()]
+        combo_fabrica['values'] = filtrados
+        
+        # Solo abrimos si hay resultados y no está vacía la búsqueda
+        if filtrados:
+            combo_fabrica.event_generate('<Down>')
+
 # --- INTERFAZ ---
 def montar_interfaz(parent):
-    global combo_cliente, combo_fabrica, entrada_codigo, entrada_cantidad, lista_sugerencias, tabla, label_total, check_desc_var, label_info_desc
+    global combo_cliente, combo_fabrica, entrada_codigo, entrada_cantidad, lista_sugerencias, tabla, label_total, combo_lista_precios
     
     ventana = tk.Frame(parent, bg=st.BG_MAIN)
     # ventana.title("Punto de Venta - HerrajesContable") -> Ya no es necesario
@@ -300,6 +386,7 @@ def montar_interfaz(parent):
     tk.Label(frame_top, text="Fábrica (Filtro):", bg=st.BG_MAIN, fg=st.TEXT_SECONDARY, font=st.FONT_LABEL).pack(side=tk.LEFT, padx=(20, 5))
     combo_fabrica = ttk.Combobox(frame_top, values=obtener_proveedores_lista(), width=25, font=st.FONT_INPUT)
     combo_fabrica.pack(side=tk.LEFT, padx=5)
+    combo_fabrica.bind("<KeyRelease>", filtrar_combo_proveedores)
 
     frame_busqueda = tk.Frame(ventana, pady=10, bg=st.BG_MAIN)
     frame_busqueda.pack(fill=tk.X, padx=15)
@@ -350,14 +437,14 @@ def montar_interfaz(parent):
     label_total = tk.Label(frame_bot, text="TOTAL: $ 0.00", font=("Inter", 28, "bold"), fg="darkgreen", bg=st.BG_MAIN)
     label_total.pack(side=tk.LEFT)
 
-    check_desc_var = tk.BooleanVar()
-    check_descuento = tk.Checkbutton(frame_bot, text="Descuento 10% (Gremio)", variable=check_desc_var, 
-                                     command=actualizar_total_visual, font=st.FONT_NORMAL, bg=st.BG_MAIN, fg="white",
-                                     selectcolor=st.BG_CARD, activebackground=st.BG_MAIN, activeforeground="white")
-    check_descuento.pack(side=tk.LEFT, padx=20)
-
-    label_info_desc = tk.Label(frame_bot, text="", fg=st.RED_ERROR, bg=st.BG_MAIN, font=st.FONT_NORMAL)
-    label_info_desc.pack(side=tk.LEFT)
+    # SECTOR LISTA DE PRECIOS (NUEVO)
+    tk.Label(frame_bot, text="Lista de Precios:", font=st.FONT_LABEL, bg=st.BG_MAIN, fg=st.TEXT_SECONDARY).pack(side=tk.LEFT, padx=(20, 5))
+    
+    opciones_precios = ["Profesional", "Particular 15%", "Particular 30%"]
+    combo_lista_precios = ttk.Combobox(frame_bot, values=opciones_precios, state="readonly", font=st.FONT_INPUT, width=15)
+    combo_lista_precios.set("Particular 15%") # Valor por defecto seguro (Particular)
+    combo_lista_precios.pack(side=tk.LEFT)
+    combo_lista_precios.bind("<<ComboboxSelected>>", recalcular_carrito)
 
     btn_guardar = tk.Button(frame_bot, text="💾 GUARDAR VENTA", command=guardar_presupuesto, **st.estilo_boton())
     st.configurar_hover(btn_guardar)

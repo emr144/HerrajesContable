@@ -192,9 +192,25 @@ def montar_interfaz(parent):
     tk.Label(frame_proveedor, text="1. Seleccionar Proveedor:", font=st.FONT_LABEL, bg=st.BG_MAIN, fg=st.TEXT_SECONDARY).pack(anchor="w")
     
     proveedores_lista = obtener_proveedores()
+    lista_nombres_prov = [nombre for pid, nombre in proveedores_lista]
     proveedor_map = {nombre: pid for pid, nombre in proveedores_lista}
-    combo_proveedores = ttk.Combobox(frame_proveedor, values=[nombre for pid, nombre in proveedores_lista], state="readonly", font=st.FONT_INPUT)
+    
+    def filtrar_proveedores(event):
+        if event.keysym in ('Down', 'Up', 'Return', 'Escape', 'Tab', 'Left', 'Right'): return
+        
+        texto = combo_proveedores.get().lower()
+        
+        if not texto:
+            combo_proveedores['values'] = lista_nombres_prov
+        else:
+            filtrados = [p for p in lista_nombres_prov if texto in p.lower()]
+            combo_proveedores['values'] = filtrados
+            if filtrados:
+                combo_proveedores.event_generate('<Down>')
+
+    combo_proveedores = ttk.Combobox(frame_proveedor, values=lista_nombres_prov, font=st.FONT_INPUT)
     combo_proveedores.pack(fill="x", pady=5)
+    combo_proveedores.bind("<KeyRelease>", filtrar_proveedores)
 
     # --- Nuevos campos para número y fecha de lista ---
     frame_datos_lista = tk.Frame(ventana, bg=st.BG_MAIN)

@@ -7,6 +7,10 @@ import database # Importamos para obtener la ruta
 # Variable global para controlar edición
 producto_seleccionado_id = None
 
+# --- Variables globales para el buscador de edición ---
+sugerencias_map = {}
+lista_sugerencias_edicion = None
+
 def cargar_productos(filtro=""):
     """Carga y muestra los productos en la tabla, con JOIN a proveedores."""
     for row in tabla.get_children():
@@ -148,9 +152,23 @@ def modificar_coef_por_proveedor_dialogo():
     proveedores = cursor.fetchall()
     conexion.close()
     
+    nombres_provs = [p[1] for p in proveedores]
     proveedor_map = {nombre: pid for pid, nombre in proveedores}
-    combo = ttk.Combobox(dialog, values=[p[1] for p in proveedores], state="readonly", font=st.FONT_INPUT)
+    
+    def filtrar_provs(event):
+        if event.keysym in ('Down', 'Up', 'Return', 'Escape', 'Tab', 'Left', 'Right'): return
+        texto = combo.get().lower()
+        if not texto:
+            combo['values'] = nombres_provs
+        else:
+            filtrados = [p for p in nombres_provs if texto in p.lower()]
+            combo['values'] = filtrados
+            if filtrados:
+                combo.event_generate('<Down>')
+
+    combo = ttk.Combobox(dialog, values=nombres_provs, font=st.FONT_INPUT)
     combo.pack(fill="x", pady=5)
+    combo.bind("<KeyRelease>", filtrar_provs)
 
     # --- Frame para nuevo coeficiente ---
     frame_coef = tk.Frame(dialog, bg=st.BG_MAIN)
@@ -222,9 +240,23 @@ def eliminar_por_proveedor_dialogo():
     proveedores = cursor.fetchall()
     conexion.close()
     
+    nombres_provs = [p[1] for p in proveedores]
     proveedor_map = {nombre: pid for pid, nombre in proveedores}
-    combo = ttk.Combobox(dialog, values=[p[1] for p in proveedores], state="readonly", font=st.FONT_INPUT)
+
+    def filtrar_provs(event):
+        if event.keysym in ('Down', 'Up', 'Return', 'Escape', 'Tab', 'Left', 'Right'): return
+        texto = combo.get().lower()
+        if not texto:
+            combo['values'] = nombres_provs
+        else:
+            filtrados = [p for p in nombres_provs if texto in p.lower()]
+            combo['values'] = filtrados
+            if filtrados:
+                combo.event_generate('<Down>')
+
+    combo = ttk.Combobox(dialog, values=nombres_provs, font=st.FONT_INPUT)
     combo.pack(fill="x", pady=5)
+    combo.bind("<KeyRelease>", filtrar_provs)
 
     def confirmar_borrado():
         nombre_prov = combo.get()
@@ -271,9 +303,70 @@ def on_tabla_click(event):
     elif columna_id_str == "#12": # Columna "Eliminar"
         eliminar_producto_por_id(item_id, valores[2]) # Pasamos ID y descripción
 
+# --- FUNCIONES PARA BUSCADOR EN FORMULARIO DE EDICIÓN ---
+
+def buscar_productos_para_edicion(termino):
+    """Busca productos por descripción o código para el autocompletado de edición."""
+    conexion = sqlite3.connect(database.get_db_path())
+    cursor = conexion.cursor()
+    query = """
+        SELECT id, codigo_proveedor, descripcion
+        FROM productos
+        WHERE (descripcion LIKE ? OR codigo_proveedor LIKE ?)
+        ORDER BY descripcion
+        LIMIT 15
+    """
+    cursor.execute(query, (f'%{termino}%', f'%{termino}%'))
+    resultados = cursor.fetchall()
+    conexion.close()
+    return resultados
+
+def actualizar_sugerencias_edicion(event=None):
+    """Actualiza la lista de sugerencias debajo del campo de descripción."""
+    if event.keysym in ('Down', 'Up', 'Return', 'Escape', 'Tab'):
+        return
+
+    texto = ent_desc.get().strip()
+    
+    lista_sugerencias_edicion.delete(0, tk.END)
+    if len(texto) < 2:
+        lista_sugerencias_edicion.place_forget()
+        return
+
+    productos = buscar_productos_para_edicion(texto)
+    if productos:
+        sugerencias_map.clear()
+        
+        for p_id, cod, desc in productos:
+            display_text = f"{cod} | {desc}"
+            lista_sugerencias_edicion.insert(tk.END, display_text)
+            sugerencias_map[display_text] = p_id
+
+        # Posicionar la lista de sugerencias usando coordenadas relativas a la ventana de la pestaña
+        x_root = ent_desc.winfo_rootx() - ventana.winfo_rootx()
+        y_root = ent_desc.winfo_rooty() - ventana.winfo_rooty()
+        
+        lista_sugerencias_edicion.place(x=x_root, 
+                                        y=y_root + ent_desc.winfo_height(),
+                                        width=ent_desc.winfo_width() * 3) # Hacemos la lista 3 veces más ancha
+        lista_sugerencias_edicion.lift()
+    else:
+        lista_sugerencias_edicion.place_forget()
+
+def seleccionar_producto_edicion(event=None):
+    """Maneja la selección de un producto de la lista de sugerencias."""
+    if not lista_sugerencias_edicion.curselection(): return
+    
+    seleccion_texto = lista_sugerencias_edicion.get(lista_sugerencias_edicion.curselection())
+    lista_sugerencias_edicion.place_forget()
+    producto_id_seleccionado = sugerencias_map.get(seleccion_texto)
+    if producto_id_seleccionado:
+        cargar_datos_para_editar(producto_id_seleccionado)
+        ent_costo.focus()
+
 # --- INTERFAZ GRÁFICA ---
 def montar_interfaz(parent):
-    global ent_desc, ent_costo, ent_coef, btn_guardar, ent_buscar, label_contador, tabla, ventana
+    global ent_desc, ent_costo, ent_coef, btn_guardar, ent_buscar, label_contador, tabla, ventana, lista_sugerencias_edicion
     
     ventana = tk.Frame(parent, bg=st.BG_MAIN)
     # Nota: 'ventana' se usa en eliminar_por_proveedor_dialogo como parent, así que debe ser accesible
@@ -282,6 +375,10 @@ def montar_interfaz(parent):
     frame_derecho = tk.Frame(ventana, bg=st.BG_MAIN); frame_derecho.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, pady=20, padx=(0, 20))
 
     # --- Panel Izquierdo (Formulario y Acciones) ---
+    # La lista de sugerencias debe ser hija de 'ventana' para poder flotar sobre todo
+    lista_sugerencias_edicion = tk.Listbox(ventana, font=st.FONT_NORMAL, height=25, bg=st.BG_CARD, fg="white", selectbackground=st.ACCENT, bd=0)
+    lista_sugerencias_edicion.bind('<<ListboxSelect>>', seleccionar_producto_edicion)
+
     tk.Label(frame_izquierdo, text="EDITAR PRODUCTO", font=st.FONT_TITLE, bg=st.BG_MAIN, fg=st.TEXT_PRIMARY).pack(pady=10, anchor="w")
 
     frame_form = tk.Frame(frame_izquierdo, bg=st.BG_CARD, padx=20, pady=20); frame_form.pack(fill=tk.X)
@@ -292,6 +389,7 @@ def montar_interfaz(parent):
         return entry
     frame_form.columnconfigure(1, weight=1)
     ent_desc = crear_campo("Descripción:", 0)
+    ent_desc.bind('<KeyRelease>', actualizar_sugerencias_edicion)
     ent_costo = crear_campo("Costo Base:", 1)
     ent_coef = crear_campo("Coeficiente:", 2)
 

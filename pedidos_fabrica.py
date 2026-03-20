@@ -227,6 +227,21 @@ def filtrar_productos(event):
     if filtrados and texto != "":
         combo_producto.event_generate('<Down>')
 
+def filtrar_proveedores(event):
+    """Filtra el combo de proveedores al escribir"""
+    if event.keysym in ('Down', 'Up', 'Return', 'Escape', 'Tab', 'Left', 'Right'): return
+    
+    texto = combo_proveedores.get().lower()
+    todos = list(proveedor_map.keys())
+    
+    if not texto:
+        combo_proveedores['values'] = todos
+    else:
+        filtrados = [p for p in todos if texto in p.lower()]
+        combo_proveedores['values'] = filtrados
+        if filtrados:
+            combo_proveedores.event_generate('<Down>')
+
 def mostrar_vista_lista():
     frame_edicion.pack_forget()
     frame_lista.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
@@ -275,7 +290,7 @@ def mostrar_vista_edicion(event=None):
         btn_imprimir_pdf.pack_forget()
         btn_borrar_pedido.pack_forget() 
         combo_proveedores.set('')
-        combo_proveedores.config(state="readonly")
+        combo_proveedores.config(state="normal")
         productos_proveedor_lista.clear()
         combo_producto.config(values=[])
 
@@ -384,9 +399,10 @@ def montar_interfaz(parent):
     f_controles.pack(fill=tk.X, pady=10)
 
     tk.Label(f_controles, text="Proveedor:", bg=st.BG_CARD, fg="white").grid(row=0, column=0, sticky='w')
-    combo_proveedores = ttk.Combobox(f_controles, values=[], state="readonly", width=30, font=st.FONT_INPUT)
+    combo_proveedores = ttk.Combobox(f_controles, values=[], width=30, font=st.FONT_INPUT)
     combo_proveedores.grid(row=0, column=1, sticky='w', padx=5)
     combo_proveedores.bind("<<ComboboxSelected>>", cargar_productos_proveedor)
+    combo_proveedores.bind("<KeyRelease>", filtrar_proveedores)
 
     tk.Label(f_controles, text="Producto:", bg=st.BG_CARD, fg="white").grid(row=1, column=0, pady=10, sticky='w')
     # Definimos combo_producto con altura para ver más resultados
