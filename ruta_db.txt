@@ -1,3 +1,1 @@
-
-
-"C:\Users\herra\Desktop\DbHerrajesDrive\herrajes.db"
+"G:\Mi unidad\DbHerrajesDrive\herrajes.db"

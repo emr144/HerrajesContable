@@ -5,10 +5,10 @@ import sys
 def get_db_path():
     r"""
     Devuelve la ruta completa a la base de datos.
-    Configurada para usar Google Drive: C:\Users\herra\Desktop\DbHerrajesDrive\herrajes.db
+    Configurada para usar Google Drive: "G:\Mi unidad\DbHerrajesDrive\herrajes.db"
     """
     # --- RUTA DE GOOGLE DRIVE ---
-    ruta_drive = r"C:\Users\herra\Desktop\DbHerrajesDrive\herrajes.db"
+    ruta_drive = r"G:\Mi unidad\DbHerrajesDrive\herrajes.db"
     
     # Si la carpeta existe, usamos esta ruta
     if os.path.exists(os.path.dirname(ruta_drive)):
