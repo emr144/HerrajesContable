@@ -354,7 +354,7 @@ def filtrar_combo_proveedores(event):
     if not texto:
         combo_fabrica['values'] = lista_proveedores_cache
     else:
-        filtrados = [p for p in lista_proveedores_cache if texto in p.lower()]
+        filtrados = [p for p in lista_proveedores_cache if p.lower().startswith(texto)]
         combo_fabrica['values'] = filtrados
         
         # Solo abrimos si hay resultados y no está vacía la búsqueda

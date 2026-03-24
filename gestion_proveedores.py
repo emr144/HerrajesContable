@@ -18,7 +18,7 @@ def cargar_proveedores(filtro=""):
     
     if filtro:
         query = f"{query_base} WHERE nombre LIKE ? OR contacto LIKE ? ORDER BY nombre ASC"
-        param = f"%{filtro}%"
+        param = f"{filtro}%"
         cursor.execute(query, (param, param))
     else:
         query = f"{query_base} ORDER BY nombre ASC"

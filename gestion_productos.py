@@ -161,7 +161,7 @@ def modificar_coef_por_proveedor_dialogo():
         if not texto:
             combo['values'] = nombres_provs
         else:
-            filtrados = [p for p in nombres_provs if texto in p.lower()]
+            filtrados = [p for p in nombres_provs if p.lower().startswith(texto)]
             combo['values'] = filtrados
             if filtrados:
                 combo.event_generate('<Down>')
@@ -249,7 +249,7 @@ def eliminar_por_proveedor_dialogo():
         if not texto:
             combo['values'] = nombres_provs
         else:
-            filtrados = [p for p in nombres_provs if texto in p.lower()]
+            filtrados = [p for p in nombres_provs if p.lower().startswith(texto)]
             combo['values'] = filtrados
             if filtrados:
                 combo.event_generate('<Down>')
@@ -415,7 +415,17 @@ def montar_interfaz(parent):
     style_tabla = ttk.Style(); style_tabla.theme_use("clam"); style_tabla.configure("Treeview", background=st.BG_CARD, foreground="white", fieldbackground=st.BG_CARD, borderwidth=0, rowheight=30, font=st.FONT_NORMAL); style_tabla.map("Treeview", background=[('selected', st.ACCENT)]); style_tabla.configure("Treeview.Heading", font=st.FONT_LABEL)
 
     columnas = ("id", "código", "descripción", "proveedor", "costo", "coef", "p_venta", "estado", "nro_lista", "fecha_lista", "editar", "eliminar")
-    tabla = ttk.Treeview(frame_derecho, columns=columnas, show="headings"); tabla.pack(fill=tk.BOTH, expand=True)
+    
+    # Frame contenedor para tabla y scrollbar
+    frame_tabla = tk.Frame(frame_derecho, bg=st.BG_MAIN)
+    frame_tabla.pack(fill=tk.BOTH, expand=True)
+
+    scrollbar = ttk.Scrollbar(frame_tabla, orient="vertical")
+    tabla = ttk.Treeview(frame_tabla, columns=columnas, show="headings", yscrollcommand=scrollbar.set)
+    scrollbar.config(command=tabla.yview)
+    scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+    tabla.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+    
     for col in columnas: tabla.heading(col, text=col.upper())
 
     # Ajuste de anchos de columnas

@@ -237,7 +237,7 @@ def filtrar_proveedores(event):
     if not texto:
         combo_proveedores['values'] = todos
     else:
-        filtrados = [p for p in todos if texto in p.lower()]
+        filtrados = [p for p in todos if p.lower().startswith(texto)]
         combo_proveedores['values'] = filtrados
         if filtrados:
             combo_proveedores.event_generate('<Down>')

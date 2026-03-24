@@ -34,7 +34,7 @@ def montar_interfaz(notebook):
         if not texto:
             combo_prov['values'] = lista_proveedores_cache
         else:
-            filtrados = [p for p in lista_proveedores_cache if texto in p.lower()]
+            filtrados = [p for p in lista_proveedores_cache if p.lower().startswith(texto)]
             filtrados.sort(key=str.lower) # Forzar orden A-Z al filtrar
             combo_prov['values'] = filtrados
             if filtrados:

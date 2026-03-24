@@ -203,7 +203,7 @@ def montar_interfaz(parent):
         if not texto:
             combo_proveedores['values'] = lista_nombres_prov
         else:
-            filtrados = [p for p in lista_nombres_prov if texto in p.lower()]
+            filtrados = [p for p in lista_nombres_prov if p.lower().startswith(texto)]
             combo_proveedores['values'] = filtrados
             if filtrados:
                 combo_proveedores.event_generate('<Down>')
