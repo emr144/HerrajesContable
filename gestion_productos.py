@@ -11,8 +11,14 @@ producto_seleccionado_id = None
 sugerencias_map = {}
 lista_sugerencias_edicion = None
 
-def cargar_productos(filtro=""):
-    """Carga y muestra los productos en la tabla, con JOIN a proveedores."""
+# Nuevas variables para filtros de búsqueda
+combo_buscar_prov = None
+ent_buscar_codigo = None
+ent_buscar_desc = None
+lista_proveedores_cache = []
+
+def cargar_productos():
+    """Carga y muestra los productos en la tabla con filtros de proveedor, código y descripción."""
     for row in tabla.get_children():
         tabla.delete(row)
     
@@ -24,14 +30,30 @@ def cargar_productos(filtro=""):
                p.coeficiente_ganancia, p.iva, p.estado, p.numero_lista, p.fecha_lista
         FROM productos p
         JOIN proveedores pr ON p.proveedor_id = pr.id
+        WHERE 1=1
     """
+    params = []
     
-    if filtro:
-        query += " WHERE (p.codigo_proveedor LIKE ? OR p.descripcion LIKE ? OR pr.nombre LIKE ?) "
-        param = f"%{filtro}%"
-        params = (param, param, param)
-    else:
-        params = ()
+    # Filtro por Proveedor
+    if combo_buscar_prov:
+        prov_f = combo_buscar_prov.get()
+        if prov_f and prov_f != "TODOS":
+            query += " AND pr.nombre = ?"
+            params.append(prov_f)
+            
+    # Filtro por Código
+    if ent_buscar_codigo:
+        cod_f = ent_buscar_codigo.get().strip()
+        if cod_f:
+            query += " AND p.codigo_proveedor LIKE ?"
+            params.append(f"%{cod_f}%")
+            
+    # Filtro por Descripción
+    if ent_buscar_desc:
+        desc_f = ent_buscar_desc.get().strip()
+        if desc_f:
+            query += " AND p.descripcion LIKE ?"
+            params.append(f"%{desc_f}%")
         
     query += " ORDER BY p.descripcion ASC"
     cursor.execute(query, params)
@@ -92,7 +114,7 @@ def guardar_producto():
     
     messagebox.showinfo("Éxito", "Producto actualizado correctamente.")
     limpiar_formulario()
-    cargar_productos(ent_buscar.get())
+    cargar_productos()
 
 def cargar_datos_para_editar(item_id):
     """Carga los datos de un producto en el formulario para su edición."""
@@ -125,7 +147,7 @@ def eliminar_producto_por_id(producto_id, descripcion):
             cursor.execute("DELETE FROM productos WHERE id = ?", (producto_id,))
             conexion.commit()
             conexion.close()
-            cargar_productos(ent_buscar.get())
+            cargar_productos()
             limpiar_formulario(deseleccionar=True)
         except Exception as e:
             messagebox.showerror("Error", f"No se pudo eliminar el producto: {e}")
@@ -366,7 +388,7 @@ def seleccionar_producto_edicion(event=None):
 
 # --- INTERFAZ GRÁFICA ---
 def montar_interfaz(parent):
-    global ent_desc, ent_costo, ent_coef, btn_guardar, ent_buscar, label_contador, tabla, ventana, lista_sugerencias_edicion
+    global ent_desc, ent_costo, ent_coef, btn_guardar, ent_buscar_codigo, ent_buscar_desc, combo_buscar_prov, label_contador, tabla, ventana, lista_sugerencias_edicion
     
     ventana = tk.Frame(parent, bg=st.BG_MAIN)
     # Nota: 'ventana' se usa en eliminar_por_proveedor_dialogo como parent, así que debe ser accesible
@@ -406,11 +428,57 @@ def montar_interfaz(parent):
     btn_modif_coef.pack(fill=tk.X, pady=10)
 
     # --- Panel Derecho (Buscador y Tabla) ---
-    frame_buscar = tk.Frame(frame_derecho, bg=st.BG_MAIN); frame_buscar.pack(fill=tk.X, pady=(0, 10))
-    tk.Label(frame_buscar, text="🔍 Buscar Producto o Proveedor:", font=st.FONT_LABEL, bg=st.BG_MAIN, fg="white").pack(side=tk.LEFT)
-    ent_buscar = tk.Entry(frame_buscar, **st.estilo_entrada()); ent_buscar.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=10)
-    ent_buscar.bind("<KeyRelease>", lambda e: cargar_productos(ent_buscar.get()))
-    label_contador = tk.Label(frame_buscar, text="Total: 0", font=st.FONT_LABEL, bg=st.BG_MAIN, fg=st.ACCENT); label_contador.pack(side=tk.RIGHT)
+    frame_filtros = tk.Frame(frame_derecho, bg=st.BG_MAIN)
+    frame_filtros.pack(fill=tk.X, pady=(0, 10))
+    
+    # 1. Filtro Proveedor
+    tk.Label(frame_filtros, text="Fábrica:", font=st.FONT_LABEL, bg=st.BG_MAIN, fg="white").grid(row=0, column=0, sticky="w")
+    combo_buscar_prov = ttk.Combobox(frame_filtros, font=st.FONT_INPUT, width=18)
+    combo_buscar_prov.grid(row=0, column=1, padx=5, sticky="ew")
+    
+    # 2. Filtro Código
+    tk.Label(frame_filtros, text="Código:", font=st.FONT_LABEL, bg=st.BG_MAIN, fg="white").grid(row=0, column=2, sticky="w", padx=(10, 0))
+    ent_buscar_codigo = tk.Entry(frame_filtros, width=12, **st.estilo_entrada())
+    ent_buscar_codigo.grid(row=0, column=3, padx=5, sticky="ew")
+    
+    # 3. Filtro Descripción
+    tk.Label(frame_filtros, text="Producto:", font=st.FONT_LABEL, bg=st.BG_MAIN, fg="white").grid(row=0, column=4, sticky="w", padx=(10, 0))
+    ent_buscar_desc = tk.Entry(frame_filtros, **st.estilo_entrada())
+    ent_buscar_desc.grid(row=0, column=5, padx=5, sticky="ew")
+    
+    label_contador = tk.Label(frame_filtros, text="Total: 0", font=st.FONT_LABEL, bg=st.BG_MAIN, fg=st.ACCENT)
+    label_contador.grid(row=0, column=6, padx=(10, 0))
+    
+    frame_filtros.columnconfigure(5, weight=1)
+
+    def filtrar_provs_busqueda(event):
+        if event.keysym in ('Down', 'Up', 'Return', 'Escape', 'Tab', 'Left', 'Right'): return
+        texto = combo_buscar_prov.get().lower()
+        if not texto or texto == "todos":
+            combo_buscar_prov['values'] = ["TODOS"] + lista_proveedores_cache
+        else:
+            filtrados = [p for p in lista_proveedores_cache if p.lower().startswith(texto)]
+            combo_buscar_prov['values'] = filtrados
+            if filtrados:
+                combo_buscar_prov.event_generate('<Down>')
+    
+    def cargar_proveedores_filtro():
+        conexion = sqlite3.connect(database.get_db_path())
+        cursor = conexion.cursor()
+        cursor.execute("SELECT nombre FROM proveedores ORDER BY nombre")
+        provs = [p[0] for p in cursor.fetchall()]
+        conexion.close()
+        lista_proveedores_cache.clear()
+        lista_proveedores_cache.extend(provs)
+        combo_buscar_prov['values'] = ["TODOS"] + provs
+        combo_buscar_prov.set("TODOS")
+
+    combo_buscar_prov.bind("<KeyRelease>", filtrar_provs_busqueda)
+    combo_buscar_prov.bind("<<ComboboxSelected>>", lambda e: cargar_productos())
+    ent_buscar_codigo.bind("<KeyRelease>", lambda e: cargar_productos())
+    ent_buscar_desc.bind("<KeyRelease>", lambda e: cargar_productos())
+    
+    cargar_proveedores_filtro()
 
     style_tabla = ttk.Style(); style_tabla.theme_use("clam"); style_tabla.configure("Treeview", background=st.BG_CARD, foreground="white", fieldbackground=st.BG_CARD, borderwidth=0, rowheight=30, font=st.FONT_NORMAL); style_tabla.map("Treeview", background=[('selected', st.ACCENT)]); style_tabla.configure("Treeview.Heading", font=st.FONT_LABEL)
 
