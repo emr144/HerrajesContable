@@ -244,6 +244,92 @@ def modificar_coef_por_proveedor_dialogo():
     st.configurar_hover(btn_confirmar, st.ACCENT, st.BG_CARD)
     btn_confirmar.pack(fill="x", pady=20)
 
+def aplicar_inflacion_por_proveedor_dialogo():
+    """Abre un diálogo para aplicar un índice de inflación (multiplicador) al costo base de un proveedor."""
+    dialog = tk.Toplevel(ventana)
+    dialog.title("Índice de Inflación Global")
+    dialog.geometry("450x300")
+    st.aplicar_estilo_ventana(dialog)
+    dialog.config(padx=20, pady=20)
+
+    tk.Label(dialog, text="Aplicar inflación a costos (Multiplicador)", 
+             font=st.FONT_LABEL, bg=st.BG_MAIN, fg=st.TEXT_SECONDARY).pack(pady=10)
+
+    # --- Frame para selección de proveedor ---
+    frame_prov = tk.Frame(dialog, bg=st.BG_MAIN)
+    frame_prov.pack(fill='x', pady=5)
+    tk.Label(frame_prov, text="1. Seleccione Proveedor:", font=st.FONT_NORMAL, bg=st.BG_MAIN, fg='white').pack(anchor='w')
+    
+    conexion = sqlite3.connect(database.get_db_path())
+    cursor = conexion.cursor()
+    cursor.execute("SELECT id, nombre FROM proveedores ORDER BY nombre")
+    proveedores = cursor.fetchall()
+    conexion.close()
+    
+    nombres_provs = [p[1] for p in proveedores]
+    proveedor_map = {nombre: pid for pid, nombre in proveedores}
+    
+    def filtrar_provs(event):
+        if event.keysym in ('Down', 'Up', 'Return', 'Escape', 'Tab', 'Left', 'Right'): return
+        texto = combo.get().lower()
+        if not texto:
+            combo['values'] = nombres_provs
+        else:
+            filtrados = [p for p in nombres_provs if p.lower().startswith(texto)]
+            combo['values'] = filtrados
+            if filtrados:
+                combo.event_generate('<Down>')
+
+    combo = ttk.Combobox(dialog, values=nombres_provs, font=st.FONT_INPUT)
+    combo.pack(fill="x", pady=5)
+    combo.bind("<KeyRelease>", filtrar_provs)
+
+    # --- Frame para índice de inflación ---
+    frame_infla = tk.Frame(dialog, bg=st.BG_MAIN)
+    frame_infla.pack(fill='x', pady=10)
+    tk.Label(frame_infla, text="2. Ingrese Índice (ej: 1.10 para +10%):", font=st.FONT_NORMAL, bg=st.BG_MAIN, fg='white').pack(anchor='w')
+    ent_indice = tk.Entry(frame_infla, **st.estilo_entrada())
+    ent_indice.pack(fill="x", pady=5)
+    ent_indice.insert(0, "1.05")
+
+    def confirmar_inflacion():
+        nombre_prov = combo.get()
+        indice_str = ent_indice.get().strip()
+
+        if not nombre_prov or not indice_str:
+            messagebox.showwarning("Datos incompletos", "Debe seleccionar un proveedor e ingresar un índice.", parent=dialog)
+            return
+        
+        try:
+            indice = float(indice_str)
+        except ValueError:
+            messagebox.showerror("Error de formato", "El índice debe ser un número (ej: 1.05).", parent=dialog)
+            return
+
+        proveedor_id = proveedor_map[nombre_prov]
+        
+        msg = (f"¿Confirma que desea multiplicar el COSTO BASE por '{indice}' "
+               f"para TODOS los productos del proveedor '{nombre_prov}'?")
+        
+        if messagebox.askyesno("Confirmar Aumento por Inflación", msg, parent=dialog):
+            try:
+                conn = sqlite3.connect(database.get_db_path())
+                cur = conn.cursor()
+                cur.execute("UPDATE productos SET costo_base = costo_base * ? WHERE proveedor_id = ?", (indice, proveedor_id))
+                actualizados = cur.rowcount
+                conn.commit()
+                conn.close()
+                
+                messagebox.showinfo("Éxito", f"Se actualizaron los costos de {actualizados} productos de '{nombre_prov}'.", parent=ventana)
+                dialog.destroy()
+                cargar_productos()
+            except Exception as e:
+                messagebox.showerror("Error", f"No se pudieron actualizar los productos: {e}", parent=dialog)
+
+    btn_confirmar = tk.Button(dialog, text="🚀 APLICAR INFLACIÓN", command=confirmar_inflacion, **st.estilo_boton(st.ACCENT))
+    st.configurar_hover(btn_confirmar, st.ACCENT, st.BG_CARD)
+    btn_confirmar.pack(fill="x", pady=20)
+
 def eliminar_por_proveedor_dialogo():
     """Abre un diálogo para seleccionar un proveedor y borrar todos sus productos."""
     dialog = tk.Toplevel(ventana)
@@ -426,6 +512,10 @@ def montar_interfaz(parent):
     btn_modif_coef = tk.Button(frame_izquierdo, text="📈 Modificar Coeficiente por Proveedor", command=modificar_coef_por_proveedor_dialogo, **st.estilo_boton(st.ACCENT))
     st.configurar_hover(btn_modif_coef, st.ACCENT, st.BG_CARD)
     btn_modif_coef.pack(fill=tk.X, pady=10)
+
+    btn_inflacion = tk.Button(frame_izquierdo, text="📈 Índice de Inflación Global", command=aplicar_inflacion_por_proveedor_dialogo, **st.estilo_boton(st.ACCENT))
+    st.configurar_hover(btn_inflacion, st.ACCENT, st.BG_CARD)
+    btn_inflacion.pack(fill=tk.X, pady=10)
 
     # --- Panel Derecho (Buscador y Tabla) ---
     frame_filtros = tk.Frame(frame_derecho, bg=st.BG_MAIN)
