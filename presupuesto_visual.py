@@ -11,6 +11,7 @@ import database # Importamos para obtener la ruta
 carrito = []
 total_sin_descuento = 0.0
 combo_fabrica = None 
+entrada_busqueda = None
 combo_lista_precios = None # Nuevo selector de lista de precios
 lista_proveedores_cache = [] # Cache para filtrado
 
@@ -122,11 +123,13 @@ def seleccionar_producto(event=None):
     codigo = seleccion.split(" | ")[0]
     entrada_codigo.delete(0, tk.END)
     entrada_codigo.insert(0, codigo)
+    if entrada_busqueda:
+        entrada_busqueda.delete(0, tk.END)
     lista_sugerencias.place_forget()
     entrada_cantidad.focus()
 
 def actualizar_sugerencias(event=None):
-    texto = entrada_codigo.get().strip()
+    texto = entrada_busqueda.get().strip()
     prov_filtro = combo_fabrica.get().strip() if combo_fabrica else None
     
     lista_sugerencias.delete(0, tk.END)
@@ -141,7 +144,7 @@ def actualizar_sugerencias(event=None):
         
         for p in productos:
             lista_sugerencias.insert(tk.END, f"{p[0]} | {p[1]} | {p[2]}")
-        lista_sugerencias.place(x=entrada_codigo.winfo_x(), y=entrada_codigo.winfo_y() + entrada_codigo.winfo_height())
+        lista_sugerencias.place(x=entrada_busqueda.winfo_x(), y=entrada_busqueda.winfo_y() + entrada_busqueda.winfo_height())
         lista_sugerencias.lift()
     else:
         lista_sugerencias.place_forget()
@@ -185,6 +188,8 @@ def agregar_producto(event=None):
         actualizar_total_visual()
         
         entrada_codigo.delete(0, tk.END)
+        if entrada_busqueda:
+            entrada_busqueda.delete(0, tk.END)
         entrada_cantidad.delete(0, tk.END)
         entrada_cantidad.insert(0, "1")
         entrada_codigo.focus()
@@ -363,7 +368,7 @@ def filtrar_combo_proveedores(event):
 
 # --- INTERFAZ ---
 def montar_interfaz(parent):
-    global combo_cliente, combo_fabrica, entrada_codigo, entrada_cantidad, lista_sugerencias, tabla, label_total, combo_lista_precios
+    global combo_cliente, combo_fabrica, entrada_codigo, entrada_busqueda, entrada_cantidad, lista_sugerencias, tabla, label_total, combo_lista_precios
     
     ventana = tk.Frame(parent, bg=st.BG_MAIN)
     # ventana.title("Punto de Venta - HerrajesContable") -> Ya no es necesario
@@ -391,12 +396,17 @@ def montar_interfaz(parent):
     frame_busqueda = tk.Frame(ventana, pady=10, bg=st.BG_MAIN)
     frame_busqueda.pack(fill=tk.X, padx=15)
     
-    tk.Label(frame_busqueda, text="Producto:", bg=st.BG_MAIN, fg=st.TEXT_SECONDARY, font=st.FONT_LABEL).pack(side=tk.LEFT)
+    tk.Label(frame_busqueda, text="Código:", bg=st.BG_MAIN, fg=st.TEXT_SECONDARY, font=st.FONT_LABEL).pack(side=tk.LEFT)
     
-    # Entrada de código/producto que ocupa todo el ancho disponible
-    entrada_codigo = tk.Entry(frame_busqueda, **st.estilo_entrada())
-    entrada_codigo.pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
-    entrada_codigo.bind('<KeyRelease>', actualizar_sugerencias)
+    # Entrada de código directo (más corta)
+    entrada_codigo = tk.Entry(frame_busqueda, width=15, **st.estilo_entrada())
+    entrada_codigo.pack(side=tk.LEFT, padx=5)
+    entrada_codigo.bind('<Return>', agregar_producto)
+
+    tk.Label(frame_busqueda, text="Buscador (Nombre):", bg=st.BG_MAIN, fg=st.TEXT_SECONDARY, font=st.FONT_LABEL).pack(side=tk.LEFT, padx=(10, 0))
+    entrada_busqueda = tk.Entry(frame_busqueda, **st.estilo_entrada())
+    entrada_busqueda.pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
+    entrada_busqueda.bind('<KeyRelease>', actualizar_sugerencias)
 
     tk.Label(frame_busqueda, text="Cant:", bg=st.BG_MAIN, fg=st.TEXT_SECONDARY, font=st.FONT_LABEL).pack(side=tk.LEFT, padx=5)
     entrada_cantidad = tk.Entry(frame_busqueda, width=8, **st.estilo_entrada())

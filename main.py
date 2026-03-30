@@ -27,38 +27,17 @@ import database
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
+        
+        # Inicializamos las fuentes dinámicas AHORA que el root (self) existe
+        st.actualizar_fuentes()
+        st.configurar_estilos_ttk()
+        
         st.aplicar_estilo_ventana(self)
         self.title("Herrajes Contable - Panel de Gestión")
         self.geometry("1200x800")
         
         # --- Configuración del Ícono (Avocado) ---
         self.configurar_icono_app()
-
-    def configurar_icono_app(self):
-        """Carga el ícono de forma robusta para evitar la pluma por defecto."""
-        try:
-            if getattr(sys, 'frozen', False):
-                base_dir = sys._MEIPASS if hasattr(sys, '_MEIPASS') else os.path.dirname(sys.executable)
-            else:
-                base_dir = os.path.dirname(os.path.abspath(__file__))
-            
-            ruta_ico = os.path.join(base_dir, "img", "avocado.ico")
-            
-            if os.path.exists(ruta_ico):
-                # 1. Icono Barra de Tareas (Este es el importante para quitar la pluma)
-                img = Image.open(ruta_ico)
-                self.icono_ref = ImageTk.PhotoImage(img) # Guardamos referencia para que no se borre
-                self.iconphoto(True, self.icono_ref)
-
-                # 2. Icono Ventana (Secundario, lo ponemos en try por si el formato ico falla)
-                try: self.iconbitmap(ruta_ico)
-                except: pass
-        except Exception as e:
-            print(f"⚠️ Error cargando icono: {e}")
-
-        # --- Estilos Globales para Pestañas ---
-        # Aplicamos la configuración moderna centralizada en styles.py
-        st.configurar_estilos_ttk()
         
         # Diccionario para mantener una referencia a los íconos y evitar que el recolector de basura los borre
         self.tab_icons = {}
@@ -96,6 +75,25 @@ class App(tk.Tk):
         # --- Menú Superior (NUEVO) ---
         self.crear_menu_superior()
 
+    def configurar_icono_app(self):
+        """Carga el ícono de forma robusta para evitar la pluma por defecto."""
+        try:
+            if getattr(sys, 'frozen', False):
+                base_dir = sys._MEIPASS if hasattr(sys, '_MEIPASS') else os.path.dirname(sys.executable)
+            else:
+                base_dir = os.path.dirname(os.path.abspath(__file__))
+            
+            ruta_ico = os.path.join(base_dir, "img", "avocado.ico")
+            
+            if os.path.exists(ruta_ico):
+                img = Image.open(ruta_ico)
+                self.icono_ref = ImageTk.PhotoImage(img)
+                self.iconphoto(True, self.icono_ref)
+                try: self.iconbitmap(ruta_ico)
+                except: pass
+        except Exception as e:
+            print(f"⚠️ Error cargando icono: {e}")
+
     def crear_menu_superior(self):
         menubar = tk.Menu(self)
         self.config(menu=menubar)
@@ -105,6 +103,24 @@ class App(tk.Tk):
         archivo_menu.add_command(label="💾 Crear Copia de Seguridad", command=self.hacer_backup)
         archivo_menu.add_separator()
         archivo_menu.add_command(label="Salir", command=self.quit)
+
+        # --- Menú de Configuración Visual (Tamaño de Fuente) ---
+        config_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="⚙️ Config", menu=config_menu)
+        
+        # Generar opciones basadas en los niveles predefinidos
+        for nombre, factor in st.NIVELES_FUENTE.items():
+            config_menu.add_command(
+                label=nombre, 
+                command=lambda f=factor: self.cambiar_fuente_predefinida(f)
+            )
+
+    def cambiar_fuente_predefinida(self, factor):
+        """Aplica un tamaño predefinido y actualiza la interfaz al instante."""
+        st.FONT_SIZE_FACTOR = factor
+        st.guardar_factor_fuente(st.FONT_SIZE_FACTOR)
+        st.actualizar_fuentes()
+        st.configurar_estilos_ttk()
 
     def hacer_backup(self):
         """Genera una copia timestamped de la base de datos actual (sea local o nube)"""

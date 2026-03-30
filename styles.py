@@ -1,5 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
+import tkinter.font as tkfont
+import os
 # styles.py
 
 # Paleta de Colores "Minimalist Slate"
@@ -11,12 +13,64 @@ TEXT_PRIMARY = "#F8FAFC" # Blanco puro
 TEXT_SECONDARY = "#94A3B8"# Gris frío para subtítulos
 RED_ERROR = "#EF4444"    # Rojo moderno para borrar
 
+# Medidas predefinidas tipo Word
+NIVELES_FUENTE = {
+    "Pequeño (80%)": 0.8,
+    "Normal (100%)": 1.0,
+    "Grande (120%)": 1.2,
+    "Muy Grande (150%)": 1.5,
+    "Gigante (200%)": 2.0
+}
+
 # Tipografías
-# Usamos "Segoe UI" que es la fuente nativa moderna de Windows.
-FONT_TITLE = ("Segoe UI", 24, "bold")
-FONT_LABEL = ("Segoe UI", 11, "bold")
-FONT_NORMAL = ("Segoe UI", 10)
-FONT_INPUT = ("Segoe UI", 12) # Fuente más grande para inputs
+def cargar_factor_fuente():
+    """Lee el factor de escala de la fuente desde un archivo local."""
+    try:
+        if os.path.exists("font_config.txt"):
+            with open("font_config.txt", "r") as f:
+                return float(f.read().strip())
+    except: pass
+    return 1.0
+
+def guardar_factor_fuente(factor):
+    """Guarda el factor de escala de la fuente para persistencia."""
+    with open("font_config.txt", "w") as f:
+        f.write(str(factor))
+
+FONT_SIZE_FACTOR = cargar_factor_fuente()
+
+# Inicializamos las variables de fuente como None
+FONT_TITLE = None
+FONT_LABEL = None
+FONT_NORMAL = None
+FONT_INPUT = None
+
+def actualizar_fuentes():
+    """Crea o actualiza los objetos de fuente para permitir cambios en tiempo real."""
+    global FONT_TITLE, FONT_LABEL, FONT_NORMAL, FONT_INPUT
+    f = FONT_SIZE_FACTOR
+    
+    try:
+        # Si las fuentes no existen, las creamos. Si existen, las configuramos.
+        # Esto hace que todos los widgets que las usan se actualicen SOLOS.
+        if FONT_TITLE is None:
+            FONT_TITLE = tkfont.Font(family="Segoe UI", size=int(24 * f), weight="bold")
+            FONT_LABEL = tkfont.Font(family="Segoe UI", size=int(11 * f), weight="bold")
+            FONT_NORMAL = tkfont.Font(family="Segoe UI", size=int(10 * f))
+            FONT_INPUT = tkfont.Font(family="Segoe UI", size=int(12 * f))
+        else:
+            FONT_TITLE.configure(size=int(24 * f))
+            FONT_LABEL.configure(size=int(11 * f))
+            FONT_NORMAL.configure(size=int(10 * f))
+            FONT_INPUT.configure(size=int(12 * f))
+    except:
+        # Fallback por si se llama antes de que exista el root de TK
+        FONT_TITLE = ("Segoe UI", int(24 * f), "bold")
+        FONT_LABEL = ("Segoe UI", int(11 * f), "bold")
+        FONT_NORMAL = ("Segoe UI", int(10 * f))
+        FONT_INPUT = ("Segoe UI", int(12 * f))
+
+actualizar_fuentes()
 
 # Estilo para Entradas de Texto (Inputs)
 def estilo_entrada():
@@ -37,7 +91,7 @@ def get_btn_style(color=BG_CARD):
     return {
         "bg": color,
         "fg": TEXT_PRIMARY,
-        "font": ("Segoe UI", 11, "bold"),
+        "font": FONT_LABEL,
         "bd": 0,
         "height": 2,
         "cursor": "hand2",
@@ -69,7 +123,7 @@ def configurar_estilos_ttk():
                     background=BG_CARD, 
                     foreground="#94A3B8",
                     padding=[25, 12],       # Pestañas más grandes y cómodas
-                    font=("Segoe UI", 11, "bold"),
+                    font=FONT_LABEL,
                     borderwidth=0,
                     focuscolor=BG_MAIN)
     
@@ -82,7 +136,7 @@ def configurar_estilos_ttk():
     style.configure("Treeview.Heading", 
                     background=BG_CARD, 
                     foreground="white", 
-                    font=("Segoe UI", 10, "bold"), 
+                    font=FONT_LABEL, 
                     padding=[10, 10], # Cabecera más alta
                     borderwidth=0)
     
@@ -93,7 +147,7 @@ def configurar_estilos_ttk():
                     fieldbackground="#1E293B", 
                     borderwidth=0, 
                     rowheight=35, # FILAS MÁS ALTAS (Look moderno)
-                    font=("Segoe UI", 10))
+                    font=FONT_NORMAL)
     
     style.map("Treeview", background=[("selected", ACCENT)], foreground=[("selected", "white")])
 
