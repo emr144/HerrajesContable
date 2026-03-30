@@ -27,7 +27,8 @@ def cargar_productos():
     
     query = """
         SELECT p.id, p.codigo_proveedor, p.descripcion, pr.nombre, p.costo_base,
-               p.coeficiente_ganancia, p.iva, p.estado, p.numero_lista, p.fecha_lista
+               p.coeficiente_ganancia, p.iva, p.estado, p.numero_lista, p.fecha_lista,
+               pr.descuento_global, pr.fecha_modif_coeficiente
         FROM productos p
         JOIN proveedores pr ON p.proveedor_id = pr.id
         WHERE 1=1
@@ -60,14 +61,16 @@ def cargar_productos():
         
     registros = cursor.fetchall()
     for prod in registros:
-        p_id, cod, desc, prov, costo, coef, iva, estado, num_lista, fecha_lista = prod
+        p_id, cod, desc, prov, costo, coef, iva, estado, num_lista, fecha_lista, desc_g, f_mod_coef = prod
         precio_venta = costo * coef * (1 + iva)
         
         # Preparamos los valores para que se vean bien en la tabla
         num_lista_disp = num_lista if num_lista else "---"
         fecha_lista_disp = fecha_lista if fecha_lista else "---"
+        desc_fab_disp = f"{desc_g * 100:.1f}%" if desc_g else "0%"
+        f_mod_coef_disp = f_mod_coef if f_mod_coef else "---"
         
-        valores_display = (p_id, cod, desc, prov, f"$ {costo:.2f}", coef, f"$ {precio_venta:.2f}", estado, num_lista_disp, fecha_lista_disp)
+        valores_display = (p_id, cod, desc, prov, f"$ {costo:.2f}", coef, f"$ {precio_venta:.2f}", estado, num_lista_disp, fecha_lista_disp, desc_fab_disp, f_mod_coef_disp)
         valores_con_accion = valores_display + ('✏️', '🗑️') # Los íconos de acción
         
         tabla.insert("", "end", values=valores_con_accion, iid=p_id)
@@ -188,9 +191,25 @@ def modificar_coef_por_proveedor_dialogo():
             if filtrados:
                 combo.event_generate('<Down>')
 
+    def actualizar_valor_actual(event):
+        """Busca el coeficiente actual de los productos de este proveedor."""
+        nombre_prov = combo.get()
+        if nombre_prov in proveedor_map:
+            prov_id = proveedor_map[nombre_prov]
+            conn = sqlite3.connect(database.get_db_path())
+            cur = conn.cursor()
+            # Buscamos el coeficiente del primer producto activo que encontremos
+            cur.execute("SELECT coeficiente_ganancia FROM productos WHERE proveedor_id = ? AND estado = 'ACTIVO' LIMIT 1", (prov_id,))
+            res = cur.fetchone()
+            conn.close()
+            if res:
+                ent_nuevo_coef.delete(0, tk.END)
+                ent_nuevo_coef.insert(0, str(res[0]))
+
     combo = ttk.Combobox(dialog, values=nombres_provs, font=st.FONT_INPUT)
     combo.pack(fill="x", pady=5)
     combo.bind("<KeyRelease>", filtrar_provs)
+    combo.bind("<<ComboboxSelected>>", actualizar_valor_actual)
 
     # --- Frame para nuevo coeficiente ---
     frame_coef = tk.Frame(dialog, bg=st.BG_MAIN)
@@ -280,9 +299,24 @@ def aplicar_inflacion_por_proveedor_dialogo():
             if filtrados:
                 combo.event_generate('<Down>')
 
+    def actualizar_descuento_actual(event):
+        """Busca el descuento global (Índice de Inflación) actual del proveedor."""
+        nombre_prov = combo.get()
+        if nombre_prov in proveedor_map:
+            prov_id = proveedor_map[nombre_prov]
+            conn = sqlite3.connect(database.get_db_path())
+            cur = conn.cursor()
+            cur.execute("SELECT descuento_global FROM proveedores WHERE id = ?", (prov_id,))
+            res = cur.fetchone()
+            conn.close()
+            if res:
+                ent_indice.delete(0, tk.END)
+                ent_indice.insert(0, str(res[0] if res[0] is not None else 0.0))
+
     combo = ttk.Combobox(dialog, values=nombres_provs, font=st.FONT_INPUT)
     combo.pack(fill="x", pady=5)
     combo.bind("<KeyRelease>", filtrar_provs)
+    combo.bind("<<ComboboxSelected>>", actualizar_descuento_actual)
 
     # --- Frame para índice de inflación ---
     frame_infla = tk.Frame(dialog, bg=st.BG_MAIN)
@@ -316,6 +350,10 @@ def aplicar_inflacion_por_proveedor_dialogo():
                 conn = sqlite3.connect(database.get_db_path())
                 cur = conn.cursor()
                 cur.execute("UPDATE productos SET costo_base = costo_base * ? WHERE proveedor_id = ?", (indice, proveedor_id))
+                
+                # Actualizamos también la fecha de modificación en el proveedor para dejar rastro de la inflación aplicada
+                cur.execute("UPDATE proveedores SET fecha_modif_coeficiente = CURRENT_DATE WHERE id = ?", (proveedor_id,))
+                
                 actualizados = cur.rowcount
                 conn.commit()
                 conn.close()
@@ -406,9 +444,9 @@ def on_tabla_click(event):
         
     valores = tabla.item(item_id, 'values')
     
-    if columna_id_str == "#11": # Columna "Editar"
+    if columna_id_str == "#13": # Columna "Editar"
         cargar_datos_para_editar(item_id)
-    elif columna_id_str == "#12": # Columna "Eliminar"
+    elif columna_id_str == "#14": # Columna "Eliminar"
         eliminar_producto_por_id(item_id, valores[2]) # Pasamos ID y descripción
 
 # --- FUNCIONES PARA BUSCADOR EN FORMULARIO DE EDICIÓN ---
@@ -572,7 +610,7 @@ def montar_interfaz(parent):
 
     style_tabla = ttk.Style(); style_tabla.theme_use("clam"); style_tabla.configure("Treeview", background=st.BG_CARD, foreground="white", fieldbackground=st.BG_CARD, borderwidth=0, rowheight=30, font=st.FONT_NORMAL); style_tabla.map("Treeview", background=[('selected', st.ACCENT)]); style_tabla.configure("Treeview.Heading", font=st.FONT_LABEL)
 
-    columnas = ("id", "código", "descripción", "proveedor", "costo", "coef", "p_venta", "estado", "nro_lista", "fecha_lista", "editar", "eliminar")
+    columnas = ("id", "código", "descripción", "proveedor", "costo", "coef", "p_venta", "estado", "nro_lista", "fecha_lista", "desc_fab", "mod_coef", "editar", "eliminar")
     
     # Frame contenedor para tabla y scrollbar
     frame_tabla = tk.Frame(frame_derecho, bg=st.BG_MAIN)
@@ -597,6 +635,8 @@ def montar_interfaz(parent):
     tabla.column("estado", width=80, anchor="center")
     tabla.column("nro_lista", width=80, anchor="center")
     tabla.column("fecha_lista", width=100, anchor="center")
+    tabla.column("desc_fab", width=80, anchor="center")
+    tabla.column("mod_coef", width=100, anchor="center")
     tabla.column("editar", width=60, anchor="center")
     tabla.column("eliminar", width=60, anchor="center")
 
