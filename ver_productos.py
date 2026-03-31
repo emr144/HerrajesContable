@@ -14,7 +14,8 @@ def ver_productos():
             p.costo_base, 
             p.coeficiente_ganancia, 
             p.iva,
-            p.stock
+            p.stock,
+            pr.descuento_global
         FROM productos p
         JOIN proveedores pr ON p.proveedor_id = pr.id
     '''
@@ -29,10 +30,10 @@ def ver_productos():
 
     # 4. Recorremos los productos
     for prod in productos:
-        codigo, desc, proveedor, costo, coef, iva, stock = prod # Desempaquetamos los 7 datos
+        codigo, desc, proveedor, costo, coef, iva, stock, desc_g = prod
 
-        # Fórmula: Costo * Ganancia * (1 + IVA)
-        precio_final = costo * coef * (1 + iva)
+        # Fórmula: Costo * (1 - Descuento) * Ganancia * (1 + IVA)
+        precio_final = costo * (1 - (desc_g or 0)) * coef * (1 + iva)
 
         # Imprimimos la fila con el stock incluido
         print(f"{codigo:<10} | {desc:<30} | {proveedor:<20} | {stock:<8} | $ {precio_final:.2f}")

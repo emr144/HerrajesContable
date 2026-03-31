@@ -19,7 +19,7 @@ except ImportError:
         print("Ejecuta en tu terminal: pip install pandas openpyxl", file=sys.stderr)
     sys.exit(1)
 
-def _ejecutar_importacion(proveedor_id, archivo_excel, numero_lista, fecha_lista):
+def _ejecutar_importacion(proveedor_id, archivo_excel, numero_lista, fecha_lista, descuento_prov=None):
     """
     Importa o actualiza productos desde un Excel para un proveedor específico.
     Utiliza una operación UPSERT para mayor eficiencia.
@@ -73,6 +73,10 @@ def _ejecutar_importacion(proveedor_id, archivo_excel, numero_lista, fecha_lista
         # 1. Aseguramos índice (DDL)
         cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_producto_proveedor ON productos (codigo_proveedor, proveedor_id)")
         
+        # 1.5 Actualizamos el descuento global del proveedor si se indicó en el formulario
+        if descuento_prov is not None:
+            cursor.execute("UPDATE proveedores SET descuento_global = ? WHERE id = ?", (descuento_prov, proveedor_id))
+
         # 2. Marcar como inactivos (Inicia la transacción implícita)
         cursor.execute("UPDATE productos SET estado = 'INACTIVO' WHERE proveedor_id = ?", (proveedor_id,))
 
@@ -164,6 +168,7 @@ def montar_interfaz(parent):
 
         numero_lista = entry_numero_lista.get().strip()
         fecha_lista = entry_fecha_lista.get().strip()
+        descuento_lista = entry_descuento_lista.get().strip().replace(',', '.')
 
         fecha_para_db = None
         # Validación simple de formato de fecha
@@ -176,10 +181,17 @@ def montar_interfaz(parent):
                 messagebox.showerror("Error de Formato", "La fecha debe tener el formato DD-MM-AAAA.")
                 return
 
+        try:
+            # Convertimos el descuento (ej: 10) a decimal (0.10)
+            descuento_val = float(descuento_lista) / 100.0 if descuento_lista else None
+        except ValueError:
+            messagebox.showerror("Error", "El descuento debe ser un número válido.")
+            return
+
         btn_importar.config(state="disabled", text="Importando...")
         ventana.update_idletasks()
         
-        resultado = _ejecutar_importacion(proveedor_id, archivo, numero_lista, fecha_para_db)
+        resultado = _ejecutar_importacion(proveedor_id, archivo, numero_lista, fecha_para_db, descuento_val)
         
         messagebox.showinfo("Resultado de Importación", resultado)
         btn_importar.config(state="normal", text="Iniciar Importación")
@@ -233,6 +245,11 @@ def montar_interfaz(parent):
     entry_fecha_lista = tk.Entry(sub_frame, **st.estilo_entrada())
     entry_fecha_lista.grid(row=1, column=1, sticky="ew", padx=10, pady=2)
     entry_fecha_lista.insert(0, pd.Timestamp.now().strftime('%d-%m-%Y'))
+
+    tk.Label(sub_frame, text="Descuento de Lista (%):", font=st.FONT_NORMAL, bg=st.BG_CARD, fg="white").grid(row=2, column=0, sticky="w", pady=2)
+    entry_descuento_lista = tk.Entry(sub_frame, **st.estilo_entrada())
+    entry_descuento_lista.grid(row=2, column=1, sticky="ew", padx=10, pady=2)
+    entry_descuento_lista.insert(0, "0")
 
     frame_archivo = tk.Frame(ventana, bg=st.BG_MAIN)
     frame_archivo.pack(fill="x", pady=15)
