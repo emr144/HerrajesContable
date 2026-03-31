@@ -125,17 +125,20 @@ def _ejecutar_importacion(proveedor_id, archivo_excel, numero_lista, fecha_lista
 def montar_interfaz(parent):
     """Crea una interfaz gráfica para seleccionar proveedor e importar el archivo."""
     
-    def obtener_proveedores():
+    def cargar_proveedores():
         try:
             conexion = sqlite3.connect(database.get_db_path())
             cursor = conexion.cursor()
             cursor.execute("SELECT id, nombre FROM proveedores ORDER BY nombre")
             proveedores = cursor.fetchall()
             conexion.close()
-            return proveedores
+            
+            nombres = [nombre for pid, nombre in proveedores]
+            ventana.proveedor_map = {nombre: pid for pid, nombre in proveedores}
+            ventana.lista_nombres_prov = nombres
+            combo_proveedores['values'] = nombres
         except Exception as e:
             messagebox.showerror("Error DB", f"No se pudo leer la lista de proveedores: {e}")
-            return []
 
     def seleccionar_archivo():
         filepath = filedialog.askopenfilename(
@@ -154,7 +157,7 @@ def montar_interfaz(parent):
             messagebox.showwarning("Faltan datos", "Debes seleccionar un proveedor y un archivo Excel.")
             return
 
-        proveedor_id = proveedor_map.get(proveedor_seleccionado)
+        proveedor_id = ventana.proveedor_map.get(proveedor_seleccionado)
         if not proveedor_id:
             messagebox.showerror("Error", "Proveedor no válido.")
             return
@@ -184,6 +187,7 @@ def montar_interfaz(parent):
 
     ventana = tk.Frame(parent, bg=st.BG_MAIN)
     ventana.config(padx=30, pady=20)
+    ventana.refrescar_contenido = cargar_proveedores # Exponer función para el main.py
 
     tk.Label(ventana, text="Importar Lista de Precios", font=st.FONT_TITLE, bg=st.BG_MAIN, fg=st.TEXT_PRIMARY).pack(pady=(0, 20))
 
@@ -191,26 +195,26 @@ def montar_interfaz(parent):
     frame_proveedor.pack(fill="x", pady=5)
     tk.Label(frame_proveedor, text="1. Seleccionar Proveedor:", font=st.FONT_LABEL, bg=st.BG_MAIN, fg=st.TEXT_SECONDARY).pack(anchor="w")
     
-    proveedores_lista = obtener_proveedores()
-    lista_nombres_prov = [nombre for pid, nombre in proveedores_lista]
-    proveedor_map = {nombre: pid for pid, nombre in proveedores_lista}
-    
     def filtrar_proveedores(event):
         if event.keysym in ('Down', 'Up', 'Return', 'Escape', 'Tab', 'Left', 'Right'): return
         
         texto = combo_proveedores.get().lower()
+        lista_completa = getattr(ventana, 'lista_nombres_prov', [])
         
         if not texto:
-            combo_proveedores['values'] = lista_nombres_prov
+            combo_proveedores['values'] = lista_completa
         else:
-            filtrados = [p for p in lista_nombres_prov if p.lower().startswith(texto)]
+            # Cambiado a 'in' para búsqueda más flexible
+            filtrados = [p for p in lista_completa if texto in p.lower()]
             combo_proveedores['values'] = filtrados
             if filtrados:
                 combo_proveedores.event_generate('<Down>')
 
-    combo_proveedores = ttk.Combobox(frame_proveedor, values=lista_nombres_prov, font=st.FONT_INPUT)
+    combo_proveedores = ttk.Combobox(frame_proveedor, font=st.FONT_INPUT)
     combo_proveedores.pack(fill="x", pady=5)
     combo_proveedores.bind("<KeyRelease>", filtrar_proveedores)
+
+    cargar_proveedores()
 
     # --- Nuevos campos para número y fecha de lista ---
     frame_datos_lista = tk.Frame(ventana, bg=st.BG_MAIN)

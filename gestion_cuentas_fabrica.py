@@ -22,19 +22,18 @@ def montar_interfaz(notebook):
     header.pack(fill="x", padx=20, pady=10)
     
     tk.Label(header, text="ESTADO DE CUENTA:", font=("Inter", 14, "bold"), fg="white", bg=st.BG_MAIN).pack(side="left")
-    
-    # Variables para filtrado
-    lista_proveedores_cache = []
 
     def filtrar_proveedores(event):
         if event.keysym in ('Down', 'Up', 'Return', 'Escape', 'Tab', 'Left', 'Right', 'Control_L', 'Control_R'): return
         
         texto = combo_prov.get().lower()
+        lista_proveedores_cache = getattr(frame, 'lista_proveedores_cache', [])
         
         if not texto:
             combo_prov['values'] = lista_proveedores_cache
         else:
-            filtrados = [p for p in lista_proveedores_cache if p.lower().startswith(texto)]
+            # Búsqueda por contenido, no solo por inicio
+            filtrados = [p for p in lista_proveedores_cache if texto in p.lower()]
             filtrados.sort(key=str.lower) # Forzar orden A-Z al filtrar
             combo_prov['values'] = filtrados
             if filtrados:
@@ -291,11 +290,12 @@ def montar_interfaz(notebook):
             lista = [r[0] for r in cursor.fetchall()]
             lista.sort(key=str.lower) # Asegurar orden A-Z ignorando mayúsculas
             combo_prov['values'] = lista
-            lista_proveedores_cache.clear(); lista_proveedores_cache.extend(lista)
+            frame.lista_proveedores_cache = lista
             conn.close()
         except: pass
 
     # Botones y Eventos
+    frame.refrescar_contenido = cargar_provs # Para que main.py pueda llamar
     # Asignamos los comandos a los botones que creamos arriba
     btn_registrar.config(command=guardar)
     btn_cancelar.config(command=reset_form)
