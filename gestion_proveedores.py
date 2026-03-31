@@ -13,11 +13,15 @@ def cargar_proveedores(filtro=""):
         tabla.delete(row)
     conexion = sqlite3.connect(database.get_db_path())
     cursor = conexion.cursor()
-    # Agregamos la nueva columna de fecha de modificación
-    query_base = "SELECT id, nombre, contacto, descuento_global, fecha_modif_coeficiente FROM proveedores"
+    # Consultamos proveedores y verificamos si tienen productos (lista cargada)
+    query_base = """
+        SELECT id, nombre, contacto, descuento_global, fecha_modif_coeficiente,
+        (SELECT COUNT(*) FROM productos WHERE proveedor_id = proveedores.id) as tiene_lista
+        FROM proveedores
+    """
     
     if filtro:
-        query = f"{query_base} WHERE nombre LIKE ? OR contacto LIKE ? ORDER BY nombre ASC"
+        query = f"SELECT * FROM ({query_base}) WHERE nombre LIKE ? OR contacto LIKE ? ORDER BY nombre ASC"
         param = f"{filtro}%"
         cursor.execute(query, (param, param))
     else:
@@ -29,7 +33,8 @@ def cargar_proveedores(filtro=""):
         # Formatear descuento como un string de porcentaje para mostrarlo
         descuento_str = f"{proveedor[3] * 100:.2f}%" if proveedor[3] is not None else "0.00%"
         fecha_modif_coef = proveedor[4] if proveedor[4] else "---"
-        valores_display = proveedor[:3] + (descuento_str, fecha_modif_coef)
+        check_lista = "✅" if proveedor[5] > 0 else ""
+        valores_display = (proveedor[0], proveedor[1], proveedor[2], descuento_str, fecha_modif_coef, check_lista)
         # Añadimos los iconos de acción al final
         valores_con_accion = valores_display + ('✏️', '🗑️')
         # Usamos el ID de la DB como el ID del item en la tabla (más robusto)
@@ -142,10 +147,10 @@ def on_tabla_click(event):
             return
             
         # Se usan los índices de columna para mayor consistencia con otros módulos.
-        # La columna #6 es "EDITAR" y la #7 es "ELIMINAR".
-        if columna_id == "#6":
+        # Al agregar "LISTA", Editar pasa a ser #7 y Eliminar #8
+        if columna_id == "#7":
             cargar_datos_para_editar(item_id)
-        elif columna_id == "#7":
+        elif columna_id == "#8":
             valores = tabla.item(item_id, 'values')
             eliminar_proveedor_por_id(item_id, valores[1])
     except Exception as e:
@@ -185,15 +190,16 @@ def montar_interfaz(parent):
 
     style_tabla = ttk.Style(); style_tabla.theme_use("clam"); style_tabla.configure("Treeview", background=st.BG_CARD, foreground="white", fieldbackground=st.BG_CARD, borderwidth=0, rowheight=30, font=st.FONT_NORMAL); style_tabla.map("Treeview", background=[('selected', st.ACCENT)]); style_tabla.configure("Treeview.Heading", font=st.FONT_LABEL)
 
-    columnas = ("id", "nombre", "contacto", "descuento", "ult_modif_coef", "editar", "eliminar")
+    columnas = ("id", "nombre", "contacto", "descuento", "ult_modif_coef", "lista", "editar", "eliminar")
     tabla = ttk.Treeview(ventana, columns=columnas, show="headings"); tabla.pack(fill=tk.BOTH, expand=True, padx=40, pady=20)
-    tabla.heading("id", text="ID"); tabla.heading("nombre", text="NOMBRE"); tabla.heading("contacto", text="CONTACTO"); tabla.heading("descuento", text="DESCUENTO"); tabla.heading("ult_modif_coef", text="MODIF. COEF."); tabla.heading("editar", text="EDITAR"); tabla.heading("eliminar", text="ELIMINAR")
+    tabla.heading("id", text="ID"); tabla.heading("nombre", text="NOMBRE"); tabla.heading("contacto", text="CONTACTO"); tabla.heading("descuento", text="DESCUENTO"); tabla.heading("ult_modif_coef", text="MODIF. COEF."); tabla.heading("lista", text="LISTA"); tabla.heading("editar", text="EDITAR"); tabla.heading("eliminar", text="ELIMINAR")
 
     tabla.column("id", width=50, anchor="center")
     tabla.column("nombre", width=200)
     tabla.column("contacto", width=200)
     tabla.column("descuento", width=100, anchor="center")
     tabla.column("ult_modif_coef", width=120, anchor="center")
+    tabla.column("lista", width=60, anchor="center")
     tabla.column("editar", width=80, anchor="center")
     tabla.column("eliminar", width=80, anchor="center")
 
