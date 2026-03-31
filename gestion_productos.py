@@ -67,7 +67,11 @@ def cargar_productos():
         # Preparamos los valores para que se vean bien en la tabla
         num_lista_disp = num_lista if num_lista else "---"
         fecha_lista_disp = fecha_lista if fecha_lista else "---"
-        desc_fab_disp = f"{desc_g * 100:.1f}%" if desc_g else "0%"
+        # Mostramos como índice (x1.10) si es mayor a 1 (inflación), o como porcentaje si es un descuento (0.10 -> 10%)
+        if desc_g and desc_g > 1:
+            desc_fab_disp = f"x{desc_g:.2f}"
+        else:
+            desc_fab_disp = f"{desc_g * 100:.1f}%" if desc_g else "0%"
         f_mod_coef_disp = f_mod_coef if f_mod_coef else "---"
         
         valores_display = (p_id, cod, desc, prov, f"$ {costo:.2f}", coef, f"$ {precio_venta:.2f}", estado, num_lista_disp, fecha_lista_disp, desc_fab_disp, f_mod_coef_disp)
@@ -159,7 +163,7 @@ def modificar_coef_por_proveedor_dialogo():
     """Abre un diálogo para cambiar el coeficiente de todos los productos de un proveedor."""
     dialog = tk.Toplevel(ventana)
     dialog.title("Modificar Coeficiente por Proveedor")
-    dialog.geometry("450x300")
+    dialog.geometry("450x400") # Aumentado para dar espacio a los botones
     st.aplicar_estilo_ventana(dialog)
     dialog.config(padx=20, pady=20)
 
@@ -261,13 +265,13 @@ def modificar_coef_por_proveedor_dialogo():
 
     btn_confirmar = tk.Button(dialog, text="📈 APLICAR CAMBIO", command=confirmar_cambio, **st.estilo_boton(st.ACCENT))
     st.configurar_hover(btn_confirmar, st.ACCENT, st.BG_CARD)
-    btn_confirmar.pack(fill="x", pady=20)
+    btn_confirmar.pack(fill="x", pady=(30, 10)) # Más margen superior
 
 def aplicar_inflacion_por_proveedor_dialogo():
     """Abre un diálogo para aplicar un índice de inflación (multiplicador) al costo base de un proveedor."""
     dialog = tk.Toplevel(ventana)
     dialog.title("Índice de Inflación Global")
-    dialog.geometry("450x300")
+    dialog.geometry("450x400") # Aumentado para dar espacio a los botones
     st.aplicar_estilo_ventana(dialog)
     dialog.config(padx=20, pady=20)
 
@@ -349,12 +353,13 @@ def aplicar_inflacion_por_proveedor_dialogo():
             try:
                 conn = sqlite3.connect(database.get_db_path())
                 cur = conn.cursor()
+                # 1. Actualizamos productos y capturamos la cantidad real de filas afectadas
                 cur.execute("UPDATE productos SET costo_base = costo_base * ? WHERE proveedor_id = ?", (indice, proveedor_id))
-                
-                # Actualizamos también la fecha de modificación en el proveedor para dejar rastro de la inflación aplicada
-                cur.execute("UPDATE proveedores SET fecha_modif_coeficiente = CURRENT_DATE WHERE id = ?", (proveedor_id,))
-                
                 actualizados = cur.rowcount
+                
+                # 2. Guardamos el índice y la fecha en el proveedor para que persista en el sistema
+                cur.execute("UPDATE proveedores SET fecha_modif_coeficiente = CURRENT_DATE, descuento_global = ? WHERE id = ?", (indice, proveedor_id))
+                
                 conn.commit()
                 conn.close()
                 
@@ -366,7 +371,7 @@ def aplicar_inflacion_por_proveedor_dialogo():
 
     btn_confirmar = tk.Button(dialog, text="🚀 APLICAR INFLACIÓN", command=confirmar_inflacion, **st.estilo_boton(st.ACCENT))
     st.configurar_hover(btn_confirmar, st.ACCENT, st.BG_CARD)
-    btn_confirmar.pack(fill="x", pady=20)
+    btn_confirmar.pack(fill="x", pady=(30, 10)) # Más margen superior
 
 def eliminar_por_proveedor_dialogo():
     """Abre un diálogo para seleccionar un proveedor y borrar todos sus productos."""
@@ -616,13 +621,30 @@ def montar_interfaz(parent):
     frame_tabla = tk.Frame(frame_derecho, bg=st.BG_MAIN)
     frame_tabla.pack(fill=tk.BOTH, expand=True)
 
-    scrollbar = ttk.Scrollbar(frame_tabla, orient="vertical")
-    tabla = ttk.Treeview(frame_tabla, columns=columnas, show="headings", yscrollcommand=scrollbar.set)
-    scrollbar.config(command=tabla.yview)
-    scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-    tabla.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+    # Agregamos barras de desplazamiento tanto vertical como horizontal
+    scroll_v = ttk.Scrollbar(frame_tabla, orient="vertical")
+    scroll_h = ttk.Scrollbar(frame_derecho, orient="horizontal")
     
-    for col in columnas: tabla.heading(col, text=col.upper())
+    tabla = ttk.Treeview(frame_tabla, columns=columnas, show="headings", 
+                         yscrollcommand=scroll_v.set, xscrollcommand=scroll_h.set)
+    
+    scroll_v.config(command=tabla.yview)
+    scroll_h.config(command=tabla.xview)
+    
+    scroll_v.pack(side=tk.RIGHT, fill=tk.Y)
+    tabla.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+    scroll_h.pack(fill=tk.X)
+
+    # Definir los encabezados amigables para que se entienda qué es cada columna
+    cabeceras = {
+        "id": "ID", "código": "CÓDIGO", "descripción": "PRODUCTO", 
+        "proveedor": "FÁBRICA", "costo": "COSTO", "coef": "COEF.", 
+        "p_venta": "P. VENTA", "estado": "ESTADO", "nro_lista": "N° LISTA", 
+        "fecha_lista": "FECHA LISTA", "desc_fab": "INFLACIÓN/DESC", 
+        "mod_coef": "ACTUALIZADO", "editar": "✏️", "eliminar": "🗑️"
+    }
+    for col in columnas:
+        tabla.heading(col, text=cabeceras.get(col, col.upper()))
 
     # Ajuste de anchos de columnas
     tabla.column("id", width=40, anchor="center")
