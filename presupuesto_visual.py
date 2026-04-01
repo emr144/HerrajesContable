@@ -163,7 +163,7 @@ def agregar_producto(event=None):
     conexion = sqlite3.connect(database.get_db_path())
     cursor = conexion.cursor()
     query = '''
-        SELECT p.id, p.descripcion, p.costo_base, p.coeficiente_ganancia, p.iva, pr.descuento_global 
+        SELECT p.id, p.descripcion, p.costo_base, p.coeficiente_ganancia, p.iva, pr.descuento_global, pr.incremento_global
         FROM productos p
         JOIN proveedores pr ON p.proveedor_id = pr.id
         WHERE p.codigo_proveedor = ?
@@ -173,9 +173,9 @@ def agregar_producto(event=None):
     conexion.close()
 
     if producto:
-        prod_id, desc, costo, coef, iva, desc_g = producto
+        prod_id, desc, costo, coef, iva, desc_g, inc_g = producto
         # Precio base (Profesional / Lista) aplicando el descuento del proveedor
-        precio_base = costo * (1 - (desc_g or 0)) * coef * (1 + iva)
+        precio_base = costo * (1 - (desc_g or 0)) * (1 + (inc_g or 0)) * coef * (1 + iva)
         
         # Precio final con el aumento seleccionado
         multiplicador = obtener_multiplicador_precio()

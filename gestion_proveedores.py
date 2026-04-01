@@ -15,7 +15,7 @@ def cargar_proveedores(filtro=""):
     cursor = conexion.cursor()
     # Consultamos proveedores y verificamos si tienen productos (lista cargada)
     query_base = """
-        SELECT id, nombre, contacto, descuento_global, fecha_modif_coeficiente,
+        SELECT id, nombre, contacto, descuento_global, incremento_global, fecha_modif_coeficiente,
         (SELECT COUNT(*) FROM productos WHERE proveedor_id = proveedores.id) as tiene_lista
         FROM proveedores
     """
@@ -32,9 +32,10 @@ def cargar_proveedores(filtro=""):
     for proveedor in registros:
         # Formatear descuento como un string de porcentaje para mostrarlo
         descuento_str = f"{proveedor[3] * 100:.2f}%" if proveedor[3] is not None else "0.00%"
-        fecha_modif_coef = proveedor[4] if proveedor[4] else "---"
-        check_lista = "✅" if proveedor[5] > 0 else ""
-        valores_display = (proveedor[0], proveedor[1], proveedor[2], descuento_str, fecha_modif_coef, check_lista)
+        incremento_str = f"{proveedor[4] * 100:.2f}%" if proveedor[4] is not None else "0.00%"
+        fecha_modif_coef = proveedor[5] if proveedor[5] else "---"
+        check_lista = "✅" if proveedor[6] > 0 else ""
+        valores_display = (proveedor[0], proveedor[1], proveedor[2], descuento_str, incremento_str, fecha_modif_coef, check_lista)
         # Añadimos los iconos de acción al final
         valores_con_accion = valores_display + ('✏️', '🗑️')
         # Usamos el ID de la DB como el ID del item en la tabla (más robusto)
@@ -50,6 +51,7 @@ def limpiar_formulario(deseleccionar=False):
     ent_nombre.delete(0, tk.END)
     ent_contacto.delete(0, tk.END)
     ent_descuento.delete(0, tk.END)
+    ent_incremento.delete(0, tk.END)
     btn_guardar.config(text="➕ GUARDAR NUEVO PROVEEDOR")
     if deseleccionar and tabla.selection():
         tabla.selection_remove(tabla.selection())
@@ -64,23 +66,30 @@ def guardar_proveedor():
 
     contacto = ent_contacto.get().strip()
     descuento_str = ent_descuento.get().strip().replace('%', '').replace(',', '.')
+    incremento_str = ent_incremento.get().strip().replace('%', '').replace(',', '.')
+    
     try:
-        # Convertimos el porcentaje (ej: 10) a un valor decimal (ej: 0.10) para la DB
         descuento_float = float(descuento_str) / 100.0 if descuento_str else 0.0
     except ValueError:
         messagebox.showerror("Error de Formato", "El descuento debe ser un número válido (ej: 10 o 10.5).")
+        return
+
+    try:
+        incremento_float = float(incremento_str) / 100.0 if incremento_str else 0.0
+    except ValueError:
+        messagebox.showerror("Error de Formato", "El incremento debe ser un número válido.")
         return
 
     conexion = sqlite3.connect(database.get_db_path())
     cursor = conexion.cursor()
     
     if proveedor_seleccionado_id:
-        cursor.execute("UPDATE proveedores SET nombre=?, contacto=?, descuento_global=? WHERE id=?", 
-                       (nombre, contacto, descuento_float, proveedor_seleccionado_id))
+        cursor.execute("UPDATE proveedores SET nombre=?, contacto=?, descuento_global=?, incremento_global=? WHERE id=?", 
+                       (nombre, contacto, descuento_float, incremento_float, proveedor_seleccionado_id))
         mensaje = "Proveedor actualizado correctamente."
     else:
-        cursor.execute("INSERT INTO proveedores (nombre, contacto, descuento_global) VALUES (?, ?, ?)", 
-                       (nombre, contacto, descuento_float))
+        cursor.execute("INSERT INTO proveedores (nombre, contacto, descuento_global, incremento_global) VALUES (?, ?, ?, ?)", 
+                       (nombre, contacto, descuento_float, incremento_float))
         mensaje = "Proveedor guardado correctamente."
         
     conexion.commit()
@@ -95,7 +104,7 @@ def cargar_datos_para_editar(item_id):
     
     conexion = sqlite3.connect(database.get_db_path())
     cursor = conexion.cursor()
-    cursor.execute("SELECT id, nombre, contacto, descuento_global FROM proveedores WHERE id=?", (item_id,))
+    cursor.execute("SELECT id, nombre, contacto, descuento_global, incremento_global FROM proveedores WHERE id=?", (item_id,))
     valores = cursor.fetchone()
     conexion.close()
 
@@ -109,6 +118,9 @@ def cargar_datos_para_editar(item_id):
     # Convertimos el descuento de 0.1 a 10.0 para mostrarlo en el campo
     descuento_val = valores[3] if valores[3] is not None else 0.0
     ent_descuento.insert(0, f"{descuento_val * 100:.2f}")
+
+    incremento_val = valores[4] if valores[4] is not None else 0.0
+    ent_incremento.insert(0, f"{incremento_val * 100:.2f}")
     
     btn_guardar.config(text="💾 GUARDAR CAMBIOS")
 
@@ -146,11 +158,11 @@ def on_tabla_click(event):
         if not item_id:
             return
             
-        # Se usan los índices de columna para mayor consistencia con otros módulos.
-        # Al agregar "LISTA", Editar pasa a ser #7 y Eliminar #8
-        if columna_id == "#7":
+        # Con la nueva columna de incremento, los índices de las acciones se desplazan.
+        # Editar ahora es #8 y Eliminar #9
+        if columna_id == "#8":
             cargar_datos_para_editar(item_id)
-        elif columna_id == "#8":
+        elif columna_id == "#9":
             valores = tabla.item(item_id, 'values')
             eliminar_proveedor_por_id(item_id, valores[1])
     except Exception as e:
@@ -158,7 +170,7 @@ def on_tabla_click(event):
 
 # --- INTERFAZ GRÁFICA ---
 def montar_interfaz(parent):
-    global ent_nombre, ent_contacto, ent_descuento, btn_guardar, ent_buscar, tabla, label_contador
+    global ent_nombre, ent_contacto, ent_descuento, ent_incremento, btn_guardar, ent_buscar, tabla, label_contador
     
     ventana = tk.Frame(parent, bg=st.BG_MAIN)
 
@@ -179,6 +191,7 @@ def montar_interfaz(parent):
     ent_nombre = crear_campo("Nombre:", 0)
     ent_contacto = crear_campo("Contacto (Tel/Email):", 1)
     ent_descuento = crear_campo("Descuento (%):", 2)
+    ent_incremento = crear_campo("Incremento (%):", 3)
 
     frame_btn_form = tk.Frame(ventana, bg=st.BG_MAIN); frame_btn_form.pack(pady=20, padx=40, fill=tk.X)
     btn_guardar = tk.Button(frame_btn_form, text="➕ GUARDAR NUEVO PROVEEDOR", command=guardar_proveedor, **st.estilo_boton()); btn_guardar.pack(fill=tk.X, expand=True); st.configurar_hover(btn_guardar)
@@ -190,14 +203,15 @@ def montar_interfaz(parent):
 
     style_tabla = ttk.Style(); style_tabla.theme_use("clam"); style_tabla.configure("Treeview", background=st.BG_CARD, foreground="white", fieldbackground=st.BG_CARD, borderwidth=0, rowheight=30, font=st.FONT_NORMAL); style_tabla.map("Treeview", background=[('selected', st.ACCENT)]); style_tabla.configure("Treeview.Heading", font=st.FONT_LABEL)
 
-    columnas = ("id", "nombre", "contacto", "descuento", "ult_modif_coef", "lista", "editar", "eliminar")
+    columnas = ("id", "nombre", "contacto", "descuento", "incremento", "ult_modif_coef", "lista", "editar", "eliminar")
     tabla = ttk.Treeview(ventana, columns=columnas, show="headings"); tabla.pack(fill=tk.BOTH, expand=True, padx=40, pady=20)
-    tabla.heading("id", text="ID"); tabla.heading("nombre", text="NOMBRE"); tabla.heading("contacto", text="CONTACTO"); tabla.heading("descuento", text="DESCUENTO"); tabla.heading("ult_modif_coef", text="MODIF. COEF."); tabla.heading("lista", text="LISTA"); tabla.heading("editar", text="EDITAR"); tabla.heading("eliminar", text="ELIMINAR")
+    tabla.heading("id", text="ID"); tabla.heading("nombre", text="NOMBRE"); tabla.heading("contacto", text="CONTACTO"); tabla.heading("descuento", text="DESC."); tabla.heading("incremento", text="INC."); tabla.heading("ult_modif_coef", text="MODIF. COEF."); tabla.heading("lista", text="LISTA"); tabla.heading("editar", text="EDITAR"); tabla.heading("eliminar", text="ELIMINAR")
 
     tabla.column("id", width=50, anchor="center")
     tabla.column("nombre", width=200)
     tabla.column("contacto", width=200)
     tabla.column("descuento", width=100, anchor="center")
+    tabla.column("incremento", width=100, anchor="center")
     tabla.column("ult_modif_coef", width=120, anchor="center")
     tabla.column("lista", width=60, anchor="center")
     tabla.column("editar", width=80, anchor="center")

@@ -45,7 +45,8 @@ def crear_base_datos():
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         nombre TEXT NOT NULL,
         contacto TEXT,
-        descuento_global REAL DEFAULT 0.0, -- Ej: 0.10 para un 10% de descuento de gremio que te hacen a vos
+        descuento_global REAL DEFAULT 0.0,
+        incremento_global REAL DEFAULT 0.0,
         fecha_modif_coeficiente DATE
     )
     ''')

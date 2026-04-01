@@ -32,6 +32,16 @@ def aplicar_migracion():
         else:
             raise e
 
+    try:
+        # Añadir columna incremento_global a la tabla 'proveedores'
+        cursor.execute("ALTER TABLE proveedores ADD COLUMN incremento_global REAL DEFAULT 0.0")
+        print("✅ Columna 'incremento_global' agregada a la tabla 'proveedores'.")
+    except sqlite3.OperationalError as e:
+        if "duplicate column name" in str(e):
+            print("⚠️  La columna 'incremento_global' ya existe en 'proveedores'. No se requiere acción.")
+        else:
+            raise e
+
     conexion.commit()
     conexion.close()
     print("\n✨ Migración completada. La base de datos está actualizada.")
