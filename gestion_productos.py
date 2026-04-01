@@ -28,7 +28,7 @@ def cargar_productos():
     query = """
         SELECT p.id, p.codigo_proveedor, p.descripcion, pr.nombre, p.costo_base,
                p.coeficiente_ganancia, p.iva, p.estado, p.numero_lista, p.fecha_lista,
-               pr.descuento_global, pr.fecha_modif_coeficiente
+               pr.descuento_global, pr.incremento_global, pr.fecha_modif_coeficiente
         FROM productos p
         JOIN proveedores pr ON p.proveedor_id = pr.id
         WHERE 1=1
@@ -61,9 +61,9 @@ def cargar_productos():
         
     registros = cursor.fetchall()
     for prod in registros:
-        p_id, cod, desc, prov, costo, coef, iva, estado, num_lista, fecha_lista, desc_g, f_mod_coef = prod
-        # Calculamos el precio de venta aplicando el descuento global del proveedor
-        precio_venta = costo * (1 - (desc_g or 0)) * coef * (1 + iva)
+        p_id, cod, desc, prov, costo, coef, iva, estado, num_lista, fecha_lista, desc_g, inc_g, f_mod_coef = prod
+        # Calculamos el precio de venta aplicando descuento e incremento global del proveedor
+        precio_venta = costo * (1 - (desc_g or 0)) * (1 + (inc_g or 0)) * coef * (1 + iva)
         
         # Preparamos los valores para que se vean bien en la tabla
         num_lista_disp = num_lista if num_lista else "---"

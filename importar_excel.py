@@ -172,8 +172,8 @@ def montar_interfaz(parent):
 
         numero_lista = entry_numero_lista.get().strip()
         fecha_lista = entry_fecha_lista.get().strip()
-        descuento_lista = entry_descuento_lista.get().strip().replace(',', '.')
-        incremento_lista = entry_incremento_lista.get().strip().replace(',', '.')
+        descuento_lista = entry_descuento_lista.get().strip().replace('%', '').replace(',', '.')
+        incremento_lista = entry_incremento_lista.get().strip().replace('%', '').replace(',', '.')
 
         fecha_para_db = None
         # Validación simple de formato de fecha

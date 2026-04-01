@@ -61,7 +61,7 @@ def mostrar_detalle(codigo_buscado=None):
     conexion = sqlite3.connect(database.get_db_path())
     cursor = conexion.cursor()
     query = '''
-        SELECT p.descripcion, p.costo_base, p.coeficiente_ganancia, p.iva, pr.descuento_global
+        SELECT p.descripcion, p.costo_base, p.coeficiente_ganancia, p.iva, pr.descuento_global, pr.incremento_global
         FROM productos p
         JOIN proveedores pr ON p.proveedor_id = pr.id
         WHERE p.codigo_proveedor = ?
@@ -71,9 +71,9 @@ def mostrar_detalle(codigo_buscado=None):
     conexion.close()
 
     if producto:
-        desc, costo, coef, iva, desc_g = producto
-        # Aplicamos el descuento del proveedor al precio final
-        precio_final = costo * (1 - (desc_g or 0)) * coef * (1 + iva)
+        desc, costo, coef, iva, desc_g, inc_g = producto
+        # Aplicamos el descuento e incremento del proveedor al precio final
+        precio_final = costo * (1 - (desc_g or 0)) * (1 + (inc_g or 0)) * coef * (1 + iva)
         
         label_desc.config(text=desc)
         label_codigo_info.config(text=f"Código: {codigo_buscado}")

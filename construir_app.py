@@ -31,9 +31,17 @@ def crear_ejecutable():
     print(" INICIANDO CONSTRUCCIÓN DE HERRAJES CONTABLE ")
     print("="*50)
 
-    # 1. Verificar carpetas
+    # 1. Limpiar construcciones previas
     if os.path.exists("dist"):
-        shutil.rmtree("dist") # Limpiamos construcciones previas
+        try:
+            shutil.rmtree("dist")
+            print("🧹 Carpeta 'dist' limpiada.")
+        except PermissionError:
+            print("\n" + "!"*50)
+            print("❌ ERROR: No se puede borrar la carpeta 'dist'.")
+            print("Asegúrate de que el programa 'HerrajesContable.exe' esté CERRADO.")
+            print("!"*50 + "\n")
+            sys.exit(1)
     
     if not os.path.exists("img"):
         print("ADVERTENCIA: No se encontró la carpeta 'img'. El ícono no se cargará.")
