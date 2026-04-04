@@ -68,10 +68,9 @@ def cargar_productos():
         # Preparamos los valores para que se vean bien en la tabla
         num_lista_disp = num_lista if num_lista else "---"
         fecha_lista_disp = fecha_lista if fecha_lista else "---"
-        desc_fab_disp = f"{desc_g * 100:.1f}%" if desc_g else "0%"
         f_mod_coef_disp = f_mod_coef if f_mod_coef else "---"
         
-        valores_display = (p_id, cod, desc, prov, f"$ {costo:.2f}", coef, f"$ {precio_venta:.2f}", estado, num_lista_disp, fecha_lista_disp, desc_fab_disp, f_mod_coef_disp)
+        valores_display = (p_id, cod, desc, prov, f"$ {costo:.2f}", coef, f"$ {precio_venta:.2f}", estado, num_lista_disp, fecha_lista_disp, f_mod_coef_disp)
         valores_con_accion = valores_display + ('✏️', '🗑️') # Los íconos de acción
         
         tabla.insert("", "end", values=valores_con_accion, iid=p_id)
@@ -340,9 +339,9 @@ def on_tabla_click(event):
         
     valores = tabla.item(item_id, 'values')
     
-    if columna_id_str == "#13": # Columna "Editar"
+    if columna_id_str == "#12": # Ajustado por remoción de columna
         cargar_datos_para_editar(item_id)
-    elif columna_id_str == "#14": # Columna "Eliminar"
+    elif columna_id_str == "#13": # Ajustado por remoción de columna
         eliminar_producto_por_id(item_id, valores[2]) # Pasamos ID y descripción
 
 # --- FUNCIONES PARA BUSCADOR EN FORMULARIO DE EDICIÓN ---
@@ -502,7 +501,7 @@ def montar_interfaz(parent):
 
     style_tabla = ttk.Style(); style_tabla.theme_use("clam"); style_tabla.configure("Treeview", background=st.BG_CARD, foreground="white", fieldbackground=st.BG_CARD, borderwidth=0, rowheight=30, font=st.FONT_NORMAL); style_tabla.map("Treeview", background=[('selected', st.ACCENT)]); style_tabla.configure("Treeview.Heading", font=st.FONT_LABEL)
 
-    columnas = ("id", "código", "descripción", "proveedor", "costo", "coef", "p_venta", "estado", "nro_lista", "fecha_lista", "desc_fab", "mod_coef", "editar", "eliminar")
+    columnas = ("id", "código", "descripción", "proveedor", "costo", "coef", "p_venta", "estado", "nro_lista", "fecha_lista", "mod_coef", "editar", "eliminar")
     
     # Frame contenedor para tabla y scrollbar
     frame_tabla = tk.Frame(frame_derecho, bg=st.BG_MAIN)
@@ -527,8 +526,7 @@ def montar_interfaz(parent):
         "id": "ID", "código": "CÓDIGO", "descripción": "PRODUCTO", 
         "proveedor": "FÁBRICA", "costo": "COSTO", "coef": "COEF.", 
         "p_venta": "P. VENTA", "estado": "ESTADO", "nro_lista": "N° LISTA", 
-        "fecha_lista": "FECHA LISTA", "desc_fab": "INFLACIÓN/DESC", 
-        "mod_coef": "ACTUALIZADO", "editar": "✏️", "eliminar": "🗑️"
+        "fecha_lista": "FECHA LISTA", "mod_coef": "ACTUALIZADO", "editar": "✏️", "eliminar": "🗑️"
     }
     for col in columnas:
         tabla.heading(col, text=cabeceras.get(col, col.upper()))
@@ -543,8 +541,6 @@ def montar_interfaz(parent):
     tabla.column("p_venta", width=100, anchor="e")
     tabla.column("estado", width=80, anchor="center")
     tabla.column("nro_lista", width=80, anchor="center")
-    tabla.column("fecha_lista", width=100, anchor="center")
-    tabla.column("desc_fab", width=80, anchor="center")
     tabla.column("mod_coef", width=100, anchor="center")
     tabla.column("editar", width=60, anchor="center")
     tabla.column("eliminar", width=60, anchor="center")

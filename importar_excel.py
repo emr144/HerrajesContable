@@ -157,6 +157,39 @@ def montar_interfaz(parent):
             ruta_archivo.set(filepath)
             label_archivo.config(text=os.path.basename(filepath), fg=st.TEXT_PRIMARY)
 
+    def actualizar_solo_coeficientes():
+        """Actualiza el descuento e incremento global del proveedor sin procesar un Excel."""
+        proveedor_seleccionado = combo_proveedores.get()
+        if not proveedor_seleccionado:
+            messagebox.showwarning("Faltan datos", "Debes seleccionar un proveedor.")
+            return
+
+        proveedor_id = ventana.proveedor_map.get(proveedor_seleccionado)
+        
+        descuento_lista = entry_descuento_lista.get().strip().replace('%', '').replace(',', '.')
+        incremento_lista = entry_incremento_lista.get().strip().replace('%', '').replace(',', '.')
+
+        try:
+            descuento_val = float(descuento_lista) / 100.0 if descuento_lista else 0.0
+            incremento_val = float(incremento_lista) / 100.0 if incremento_lista else 0.0
+        except ValueError:
+            messagebox.showerror("Error", "Los valores de descuento e incremento deben ser números válidos.")
+            return
+
+        try:
+            conexion = sqlite3.connect(database.get_db_path())
+            cursor = conexion.cursor()
+            cursor.execute("""
+                UPDATE proveedores 
+                SET descuento_global = ?, incremento_global = ?, fecha_modif_coeficiente = CURRENT_DATE 
+                WHERE id = ?
+            """, (descuento_val, incremento_val, proveedor_id))
+            conexion.commit()
+            conexion.close()
+            messagebox.showinfo("Éxito", f"Coeficientes actualizados correctamente para {proveedor_seleccionado}.")
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo actualizar la base de datos: {e}")
+
     def iniciar_importacion():
         proveedor_seleccionado = combo_proveedores.get()
         archivo = ruta_archivo.get()
@@ -280,6 +313,10 @@ def montar_interfaz(parent):
     btn_importar = tk.Button(ventana, text="🚀 Iniciar Importación", command=iniciar_importacion, **st.estilo_boton())
     st.configurar_hover(btn_importar)
     btn_importar.pack(fill="x", pady=(20, 0))
+
+    btn_solo_coef = tk.Button(ventana, text="⚡ Actualizar Solo Coeficientes (Sin Excel)", command=actualizar_solo_coeficientes, **st.estilo_boton(st.ACCENT))
+    st.configurar_hover(btn_solo_coef, st.ACCENT, st.BG_CARD)
+    btn_solo_coef.pack(fill="x", pady=(10, 0))
 
     return ventana
 
