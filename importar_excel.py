@@ -19,7 +19,7 @@ except ImportError:
         print("Ejecuta en tu terminal: pip install pandas openpyxl", file=sys.stderr)
     sys.exit(1)
 
-def _ejecutar_importacion(proveedor_id, archivo_excel, numero_lista, fecha_lista, descuento_prov=None, incremento_prov=None):
+def _ejecutar_importacion(proveedor_id, archivo_excel, numero_lista, fecha_lista, descuento_prov=None, incremento_prov=None, margen_defecto=1.6):
     """
     Importa o actualiza productos desde un Excel para un proveedor específico.
     Utiliza una operación UPSERT para mayor eficiencia.
@@ -59,7 +59,7 @@ def _ejecutar_importacion(proveedor_id, archivo_excel, numero_lista, fecha_lista
                 continue
             
             # Añadimos numero_lista y fecha_lista a la tupla
-            productos_a_procesar.append((proveedor_id, cod, desc, prec, 1.6, numero_lista, fecha_lista or None))
+            productos_a_procesar.append((proveedor_id, cod, desc, prec, margen_defecto, numero_lista, fecha_lista or None))
             
     except Exception as e:
         return f"❌ Error leyendo o procesando el Excel: {e}"
@@ -207,6 +207,7 @@ def montar_interfaz(parent):
         fecha_lista = entry_fecha_lista.get().strip()
         descuento_lista = entry_descuento_lista.get().strip().replace('%', '').replace(',', '.')
         incremento_lista = entry_incremento_lista.get().strip().replace('%', '').replace(',', '.')
+        margen_lista = entry_margen_lista.get().strip().replace(',', '.')
 
         fecha_para_db = None
         # Validación simple de formato de fecha
@@ -231,10 +232,16 @@ def montar_interfaz(parent):
             messagebox.showerror("Error", "El incremento debe ser un número válido.")
             return
 
+        try:
+            margen_val = float(margen_lista) if margen_lista else 1.6
+        except ValueError:
+            messagebox.showerror("Error", "El margen de ganancia debe ser un número válido (ej: 1.6).")
+            return
+
         btn_importar.config(state="disabled", text="Importando...")
         ventana.update_idletasks()
         
-        resultado = _ejecutar_importacion(proveedor_id, archivo, numero_lista, fecha_para_db, descuento_val, incremento_val)
+        resultado = _ejecutar_importacion(proveedor_id, archivo, numero_lista, fecha_para_db, descuento_val, incremento_val, margen_val)
         
         messagebox.showinfo("Resultado de Importación", resultado)
         btn_importar.config(state="normal", text="Iniciar Importación")
@@ -265,9 +272,32 @@ def montar_interfaz(parent):
             if filtrados:
                 combo_proveedores.event_generate('<Down>')
 
+    def cargar_datos_proveedor_seleccionado(event):
+        """Carga el descuento e incremento actual del proveedor seleccionado."""
+        nombre = combo_proveedores.get()
+        pid = ventana.proveedor_map.get(nombre)
+        if not pid: return
+        
+        try:
+            conexion = sqlite3.connect(database.get_db_path())
+            cursor = conexion.cursor()
+            cursor.execute("SELECT descuento_global, incremento_global FROM proveedores WHERE id = ?", (pid,))
+            res = cursor.fetchone()
+            conexion.close()
+            
+            if res:
+                desc, inc = res
+                entry_descuento_lista.delete(0, tk.END)
+                entry_descuento_lista.insert(0, f"{(desc or 0.0) * 100:.2f}")
+                entry_incremento_lista.delete(0, tk.END)
+                entry_incremento_lista.insert(0, f"{(inc or 0.0) * 100:.2f}")
+        except Exception as e:
+            print(f"Error al cargar coeficientes: {e}")
+
     combo_proveedores = ttk.Combobox(frame_proveedor, font=st.FONT_INPUT)
     combo_proveedores.pack(fill="x", pady=5)
     combo_proveedores.bind("<KeyRelease>", filtrar_proveedores)
+    combo_proveedores.bind("<<ComboboxSelected>>", cargar_datos_proveedor_seleccionado)
 
     cargar_proveedores()
 
@@ -298,6 +328,11 @@ def montar_interfaz(parent):
     entry_incremento_lista = tk.Entry(sub_frame, **st.estilo_entrada())
     entry_incremento_lista.grid(row=3, column=1, sticky="ew", padx=10, pady=2)
     entry_incremento_lista.insert(0, "0")
+
+    tk.Label(sub_frame, text="Margen Ganancia (Ej: 1.6):", font=st.FONT_NORMAL, bg=st.BG_CARD, fg="white").grid(row=4, column=0, sticky="w", pady=2)
+    entry_margen_lista = tk.Entry(sub_frame, **st.estilo_entrada())
+    entry_margen_lista.grid(row=4, column=1, sticky="ew", padx=10, pady=2)
+    entry_margen_lista.insert(0, "1.6")
 
     frame_archivo = tk.Frame(ventana, bg=st.BG_MAIN)
     frame_archivo.pack(fill="x", pady=15)
