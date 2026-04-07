@@ -73,13 +73,15 @@ def _ejecutar_importacion(proveedor_id, archivo_excel, numero_lista, fecha_lista
         # 1. Aseguramos índice (DDL)
         cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_producto_proveedor ON productos (codigo_proveedor, proveedor_id)")
         
-        # 1.5 Actualizamos el descuento global del proveedor si se indicó en el formulario
-        if descuento_prov is not None:
-            cursor.execute("UPDATE proveedores SET descuento_global = ? WHERE id = ?", (descuento_prov, proveedor_id))
-        
-        # Actualizamos el incremento global
-        if incremento_prov is not None:
-            cursor.execute("UPDATE proveedores SET incremento_global = ? WHERE id = ?", (incremento_prov, proveedor_id))
+        # 1.5 Actualizamos los coeficientes del proveedor si se indicaron
+        if descuento_prov is not None or incremento_prov is not None:
+            cursor.execute("""
+                UPDATE proveedores 
+                SET descuento_global = COALESCE(?, descuento_global), 
+                    incremento_global = COALESCE(?, incremento_global),
+                    fecha_modif_coeficiente = CURRENT_DATE 
+                WHERE id = ?
+            """, (descuento_prov, incremento_prov, proveedor_id))
 
         # 2. Marcar como inactivos (Inicia la transacción implícita)
         cursor.execute("UPDATE productos SET estado = 'INACTIVO' WHERE proveedor_id = ?", (proveedor_id,))
@@ -91,6 +93,7 @@ def _ejecutar_importacion(proveedor_id, archivo_excel, numero_lista, fecha_lista
             ON CONFLICT(codigo_proveedor, proveedor_id) DO UPDATE SET
                 descripcion = excluded.descripcion,
                 costo_base = excluded.costo_base,
+                coeficiente_ganancia = excluded.coeficiente_ganancia,
                 estado = 'ACTIVO',
                 ultima_actualizacion = CURRENT_DATE,
                 numero_lista = excluded.numero_lista,

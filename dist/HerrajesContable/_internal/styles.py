@@ -19,7 +19,8 @@ NIVELES_FUENTE = {
     "Normal (100%)": 1.0,
     "Grande (120%)": 1.2,
     "Muy Grande (150%)": 1.5,
-    "Gigante (200%)": 2.0
+    "Gigante (200%)": 2.0,
+    "Ultra Gigante (240%)": 2.4
 }
 
 # Tipografías
@@ -30,7 +31,7 @@ def cargar_factor_fuente():
             with open("font_config.txt", "r") as f:
                 return float(f.read().strip())
     except: pass
-    return 1.0
+    return 1.5 # Valor por defecto: Muy Grande (150%)
 
 def guardar_factor_fuente(factor):
     """Guarda el factor de escala de la fuente para persistencia."""

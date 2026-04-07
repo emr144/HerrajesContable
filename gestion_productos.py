@@ -266,8 +266,8 @@ def modificar_coef_por_proveedor_dialogo():
 def eliminar_por_proveedor_dialogo():
     """Abre un diálogo para seleccionar un proveedor y borrar todos sus productos."""
     dialog = tk.Toplevel(ventana)
-    dialog.title("Eliminar Productos por Proveedor")
-    dialog.geometry("400x200")
+    dialog.title("Eliminar Productos por Proveedor") # Título de la ventana
+    dialog.geometry("400x250") # Aumentamos la altura para que el botón sea visible
     st.aplicar_estilo_ventana(dialog)
     dialog.config(padx=20, pady=20)
 
