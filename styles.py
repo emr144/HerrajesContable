@@ -7,7 +7,7 @@ import os
 # Paleta de Colores "Minimalist Slate"
 BG_MAIN = "#0F172A"      # Fondo profundo
 BG_CARD = "#1E293B"      # Gris azulado para contenedores
-BG_INPUT = "#333D5A"     # Azul Intenso para inputs (NUEVO)
+BG_INPUT = "#333D5A"     # Azul Intenso para inputs
 ACCENT = "#10B981"       # Verde Esmeralda (Éxito/Acción)
 TEXT_PRIMARY = "#F8FAFC" # Blanco puro
 TEXT_SECONDARY = "#94A3B8"# Gris frío para subtítulos
@@ -118,15 +118,15 @@ def configurar_estilos_ttk():
     style.configure("TNotebook", 
                     background=BG_MAIN, 
                     borderwidth=0, 
-                    tabmargins=[10, 10, 30, 0]) # Márgenes más amplios
+                    tabmargins=[5, 5, 5, 0]) 
     
     style.configure("TNotebook.Tab", 
                     background=BG_CARD, 
                     foreground="#94A3B8",
-                    padding=[25, 12],       # Pestañas más grandes y cómodas
+                    padding=[15, 5],       
                     font=FONT_LABEL,
                     borderwidth=0,
-                    focuscolor=BG_MAIN)
+                    focuscolor=ACCENT)
     
     style.map("TNotebook.Tab", 
               background=[("selected", ACCENT), ("active", BG_INPUT)], 
@@ -138,7 +138,7 @@ def configurar_estilos_ttk():
                     background=BG_CARD, 
                     foreground="white", 
                     font=FONT_LABEL, 
-                    padding=[10, 10], # Cabecera más alta
+                    padding=[10, 10], 
                     borderwidth=0)
     
     # Cuerpo de la tabla
@@ -147,7 +147,7 @@ def configurar_estilos_ttk():
                     foreground="white", 
                     fieldbackground="#1E293B", 
                     borderwidth=0, 
-                    rowheight=35, # FILAS MÁS ALTAS (Look moderno)
+                    rowheight=30, 
                     font=FONT_NORMAL)
     
     style.map("Treeview", background=[("selected", ACCENT)], foreground=[("selected", "white")])
