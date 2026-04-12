@@ -76,8 +76,11 @@ def obtener_multiplicador_precio():
 
 def actualizar_total_visual():
     global total_sin_descuento
-    # Ahora el total es simplemente la suma de los items (que ya tienen el aumento aplicado si corresponde)
-    label_total.config(text=f"TOTAL: $ {total_sin_descuento:.2f}", fg="darkgreen")
+    if total_sin_descuento == 0:
+        label_total.config(text="TOTAL: $ -", fg=st.ACCENT)
+    else:
+        # Ahora el total es simplemente la suma de los items (que ya tienen el aumento aplicado si corresponde)
+        label_total.config(text=f"TOTAL: $ {total_sin_descuento:.2f}", fg="darkgreen")
 
 def recalcular_carrito(event=None):
     """Recalcula los precios de todo el carrito cuando se cambia la lista de precios"""
@@ -161,7 +164,7 @@ def agregar_producto(event=None):
         actualizar_total_visual()
         
         codigo_seleccionado = ""
-        label_prod_sel.config(text="Ningún producto seleccionado", fg="gray")
+        label_prod_sel.config(text="")
         entrada_cantidad.delete(0, tk.END)
     else:
         messagebox.showwarning("No encontrado", f"El código '{codigo}' no existe.")
@@ -314,7 +317,7 @@ def cancelar_venta():
     carrito.clear()
     total_sin_descuento = 0.0
     codigo_seleccionado = ""
-    label_prod_sel.config(text="Ningún producto seleccionado", fg="gray")
+    label_prod_sel.config(text="")
     actualizar_total_visual()
     for row in tabla.get_children(): tabla.delete(row)
     entrada_cantidad.delete(0, tk.END)
@@ -322,7 +325,17 @@ def cancelar_venta():
 def abrir_buscador_productos():
     top = tk.Toplevel()
     top.title("Buscador de Productos")
-    top.geometry("900x600")
+    
+    # Obtener dimensiones de la pantalla para calcular el 3/4 (75%)
+    screen_width = top.winfo_screenwidth()
+    screen_height = top.winfo_screenheight()
+    width = int(screen_width * 0.75)
+    height = int(screen_height * 0.75)
+    # Calcular coordenadas para centrar la ventana
+    x = (screen_width // 2) - (width // 2)
+    y = (screen_height // 2) - (height // 2)
+    top.geometry(f"{width}x{height}+{x}+{y}")
+    
     st.aplicar_estilo_ventana(top)
     
     frame_f = tk.Frame(top, bg=st.BG_MAIN, padx=10, pady=10)
@@ -364,7 +377,7 @@ def abrir_buscador_productos():
         if sel:
             val = t_busca.item(sel[0], 'values')
             codigo_seleccionado = val[0]
-            label_prod_sel.config(text=f"SELECCIONADO: {val[0]} - {val[1][:40]}...", fg=st.ACCENT)
+            label_prod_sel.config(text=f"{val[0]} | {val[1][:50]}...", foreground=st.ACCENT)
             top.destroy()
             entrada_cantidad.focus()
 
@@ -398,26 +411,45 @@ def montar_interfaz(parent):
     
     ventana = tk.Frame(parent, bg=st.BG_MAIN)
 
-    # Buscador y Cliente (Frames superiores)
-    frame_top = tk.Frame(ventana, pady=10, bg=st.BG_MAIN)
-    frame_top.pack(fill=tk.X, padx=15)
-    
-    tk.Label(frame_top, text="Cliente:", bg=st.BG_MAIN, fg=st.TEXT_SECONDARY, font=st.FONT_LABEL).pack(side=tk.LEFT)
-    combo_cliente = ttk.Combobox(frame_top, values=obtener_clientes(), width=30, font=st.FONT_INPUT); combo_cliente.pack(side=tk.LEFT, padx=10)
+    # --- Barra de Venta Refinada y Funcional ---
+    frame_top = ttk.Frame(ventana, style="Venta.TFrame", padding=(15, 10))
+    frame_top.pack(fill=tk.X, padx=15, pady=(10, 5))
 
-    btn_abrir_busca = tk.Button(frame_top, text="📦 PRODUCTO", command=abrir_buscador_productos, **st.get_btn_style(st.ACCENT))
-    btn_abrir_busca.pack(side=tk.LEFT, padx=10)
+    # Configuración de pesos para un diseño elástico y profesional
+    frame_top.columnconfigure(1, weight=1) # Cliente
+    frame_top.columnconfigure(5, weight=2) # Info producto seleccionado
 
-    label_prod_sel = tk.Label(frame_top, text="Ningún producto seleccionado", bg=st.BG_MAIN, fg="gray", font=st.FONT_NORMAL)
-    label_prod_sel.pack(side=tk.LEFT, padx=10)
+    # 1. CLIENTE Y LISTA DE PRECIOS
+    ttk.Label(frame_top, text="CLIENTE:", style="Venta.TLabel").grid(row=0, column=0, padx=(5, 5), sticky="w")
+    combo_cliente = ttk.Combobox(frame_top, values=obtener_clientes(), font=st.FONT_INPUT)
+    combo_cliente.grid(row=0, column=1, padx=(0, 15), sticky="ew")
 
-    tk.Label(frame_top, text="Cant:", bg=st.BG_MAIN, fg=st.TEXT_SECONDARY, font=st.FONT_LABEL).pack(side=tk.LEFT, padx=5)
-    entrada_cantidad = tk.Entry(frame_top, width=8, **st.estilo_entrada())
-    entrada_cantidad.pack(side=tk.LEFT, padx=5)
+    ttk.Label(frame_top, text="LISTA:", style="Venta.TLabel").grid(row=0, column=2, padx=(10, 5), sticky="w")
+    opciones_precios = ["Profesional", "Particular 15%", "Particular 30%"]
+    combo_lista_precios = ttk.Combobox(frame_top, values=opciones_precios, state="readonly", font=st.FONT_INPUT, width=15)
+    combo_lista_precios.set("Particular 15%")
+    combo_lista_precios.grid(row=0, column=3, padx=(0, 15), sticky="w")
+    combo_lista_precios.bind("<<ComboboxSelected>>", recalcular_carrito)
+
+    # 2. BÚSQUEDA Y PRODUCTO SELECCIONADO
+    btn_abrir_busca = ttk.Button(frame_top, text="🔍 BUSCAR PRODUCTO", command=abrir_buscador_productos, bootstyle="info-outline")
+    btn_abrir_busca.grid(row=0, column=4, padx=(10, 10))
+
+    label_prod_sel = ttk.Label(frame_top, text="", font=st.FONT_NORMAL, foreground=st.ACCENT, background=st.BG_CARD)
+    label_prod_sel.grid(row=0, column=5, sticky="w", padx=(5, 15))
+
+    # 3. CANTIDAD Y ACCIÓN
+    # Agrupamos en un frame interno para que la relación estética entre input y botón sea perfecta
+    frame_accion = ttk.Frame(frame_top, style="Venta.TFrame")
+    frame_accion.grid(row=0, column=6, columnspan=3, sticky="e")
+
+    ttk.Label(frame_accion, text="CANT:", style="Venta.TLabel").pack(side=tk.LEFT, padx=(5, 5))
+    entrada_cantidad = ttk.Entry(frame_accion, width=6, font=st.FONT_INPUT, justify="center")
+    entrada_cantidad.pack(side=tk.LEFT, padx=(0, 10))
     entrada_cantidad.bind("<Return>", agregar_producto)
 
-    btn_agregar = tk.Button(frame_top, text="➕ Agregar", command=agregar_producto, **st.get_btn_style())
-    btn_agregar.pack(side=tk.LEFT, padx=10)
+    btn_agregar = ttk.Button(frame_accion, text="➕ AÑADIR", command=agregar_producto, bootstyle="success-outline")
+    btn_agregar.pack(side=tk.LEFT)
 
     # TABLA CON COLUMNA SUBTOTAL
     columnas = ("cod", "desc", "cant", "p_unit", "subtotal", "mod", "del")
@@ -442,17 +474,8 @@ def montar_interfaz(parent):
 
     # Pie de ventana
     frame_bot = tk.Frame(ventana, pady=20, bg=st.BG_MAIN); frame_bot.pack(fill=tk.X, padx=15)
-    label_total = tk.Label(frame_bot, text="TOTAL: $ 0.00", font=("Inter", 28, "bold"), fg="darkgreen", bg=st.BG_MAIN)
+    label_total = tk.Label(frame_bot, text="TOTAL: $ -", font=("Inter", 28, "bold"), fg=st.ACCENT, bg=st.BG_MAIN)
     label_total.pack(side=tk.LEFT)
-
-    # SECTOR LISTA DE PRECIOS (NUEVO)
-    tk.Label(frame_bot, text="Lista de Precios:", font=st.FONT_LABEL, bg=st.BG_MAIN, fg=st.TEXT_SECONDARY).pack(side=tk.LEFT, padx=(20, 5))
-    
-    opciones_precios = ["Profesional", "Particular 15%", "Particular 30%"]
-    combo_lista_precios = ttk.Combobox(frame_bot, values=opciones_precios, state="readonly", font=st.FONT_INPUT, width=15)
-    combo_lista_precios.set("Particular 15%") # Valor por defecto seguro (Particular)
-    combo_lista_precios.pack(side=tk.LEFT)
-    combo_lista_precios.bind("<<ComboboxSelected>>", recalcular_carrito)
 
     btn_cancelar = tk.Button(frame_bot, text="❌ CANCELAR", command=cancelar_venta, **st.estilo_boton(st.RED_ERROR))
     btn_cancelar.pack(side=tk.RIGHT, padx=5)

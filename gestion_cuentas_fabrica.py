@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import ttk, messagebox
 import ttkbootstrap as tb
 import sqlite3
 import styles as st 

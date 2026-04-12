@@ -12,7 +12,6 @@ import styles as st  # Central de estilos pura en Tkinter
 
 # --- TUS MÓDULOS ORIGINALES ---
 import presupuesto_visual
-import catalogo_visual
 import gestion_clientes
 import gestion_proveedores
 import gestion_productos
@@ -53,7 +52,6 @@ class App(tb.Window):
         self.agregar_pestana("📚 PRODUCTOS", "productos", gestion_productos)
         self.agregar_pestana("👥 CLIENTES", "clientes", gestion_clientes)
         self.agregar_pestana("📜 HISTORIAL", "historial", historial_ventas)
-        self.agregar_pestana("🔍 CATÁLOGO", "catalogo", catalogo_visual)
         self.agregar_pestana("🚚 PROVEEDORES", "proveedores", gestion_proveedores)
         self.agregar_pestana("📦 IMPORTAR", "importar", importar_excel)
         self.agregar_pestana("🏭 PEDIDOS", "pedidos", pedidos_fabrica)
