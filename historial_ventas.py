@@ -176,12 +176,6 @@ def montar_interfaz(parent):
              bg=st.BG_MAIN, fg=st.TEXT_PRIMARY).pack(pady=20)
 
     # Tabla de Historial
-    style_tabla = ttk.Style()
-    style_tabla.theme_use("clam")
-    style_tabla.configure("Treeview", background=st.BG_CARD, foreground="white", fieldbackground=st.BG_CARD, borderwidth=0)
-    style_tabla.map("Treeview", background=[('selected', st.ACCENT)])
-    style_tabla.configure("Treeview.Heading", background=st.BG_CARD, foreground=st.TEXT_SECONDARY, font=st.FONT_LABEL, padding=10)
-
     columnas = ("id", "fecha", "cliente", "total")
     tabla = ttk.Treeview(ventana, columns=columnas, show="headings", style="Treeview")
     tabla.heading("id", text="N° TICKET")

@@ -6,7 +6,8 @@ import shutil
 from datetime import datetime
 from tkinter import filedialog, messagebox
 from PIL import Image, ImageTk
-from tkinter import ttk
+import ttkbootstrap as tb
+from ttkbootstrap.constants import *
 import styles as st  # Central de estilos pura en Tkinter
 
 # --- TUS MÓDULOS ORIGINALES ---
@@ -24,9 +25,9 @@ import migracion_actualizar_listas
 import migracion_pedidos 
 import migracion_cuentas
 
-class App(tk.Tk):
+class App(tb.Window):
     def __init__(self):
-        super().__init__()
+        super().__init__(themename="darkly")
         
         # 1. Cargar Estética (Orden correcto para evitar errores de fuente) [4]
         st.actualizar_fuentes()
@@ -44,8 +45,8 @@ class App(tk.Tk):
         self.option_add('*TCombobox*Listbox.selectBackground', st.ACCENT)
         
         # --- Sistema de Pestañas Principal ---
-        self.notebook = ttk.Notebook(self)
-        self.notebook.pack(pady=10, padx=10, fill="both", expand=True)
+        self.notebook = tb.Notebook(self, bootstyle="primary")
+        self.notebook.pack(pady=(10, 0), padx=0, fill="both", expand=True)
         
         # --- Montar tus solapas originales ---
         self.agregar_pestana(" VENTA", "venta", presupuesto_visual)
@@ -83,7 +84,8 @@ class App(tk.Tk):
     def abrir_configuracion_fuente(self):
         ventana_cfg = tk.Toplevel(self)
         ventana_cfg.title("Configurar Tamaño de Letra")
-        ventana_cfg.geometry("400x450")
+        # Eliminamos la geometría fija para que la ventana se adapte al tamaño de los botones
+        ventana_cfg.resizable(False, False) 
         st.aplicar_estilo_ventana(ventana_cfg)
         
         tk.Label(ventana_cfg, text="Seleccione el tamaño de letra:", 
@@ -94,6 +96,7 @@ class App(tk.Tk):
             st.guardar_factor_fuente(factor)
             st.actualizar_fuentes()
             st.configurar_estilos_ttk()
+            self.update_idletasks() # Fuerza el redibujado de la interfaz
             ventana_cfg.destroy()
 
         for nivel in st.NIVELES_FUENTE.keys():

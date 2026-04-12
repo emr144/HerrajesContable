@@ -1,18 +1,19 @@
 import tkinter as tk
 from tkinter import ttk
 import tkinter.font as tkfont
+import ttkbootstrap as tb
 import os
 
 # ==========================================
 # PALETA SLATE & EMERALD (Puro Tkinter)
 # ==========================================
-BG_MAIN = "#0F172A"       # Fondo profundo
-BG_CARD = "#1E293B"       # Contenedores y Tablas
-BG_INPUT = "#0F172A"      # Fondo de inputs
-ACCENT = "#10B981"        # Verde Esmeralda suave
-TEXT_PRIMARY = "#F8FAFC"  # Blanco suave
-TEXT_SECONDARY = "#94A3B8" # Gris Slate
-RED_ERROR = "#EF4444"     # Rojo moderno
+BG_MAIN = "#0F172A"       # Fondo profundo (Slate 900)
+BG_CARD = "#1E293B"       # Contenedores (Slate 800)
+BG_INPUT = "#334155"      # Inputs (Slate 700)
+ACCENT = "#10B981"        # Emerald 500
+TEXT_PRIMARY = "#F8FAFC"  # Slate 50
+TEXT_SECONDARY = "#94A3B8" # Slate 400
+RED_ERROR = "#F43F5E"     # Rose 500
 ORANGE = "#D97706"        # Naranja para avisos/edición
 
 # Medidas predefinidas para la escala de fuente
@@ -50,8 +51,9 @@ def actualizar_fuentes():
     global FONT_INPUT, FONT_LABEL, FONT_NORMAL, FONT_TITLE
     f = cargar_factor_fuente()
     try:
-        # Usamos objetos Font de tkinter para que el cambio sea instantáneo en toda la app
-        if FONT_LABEL is None or isinstance(FONT_LABEL, tuple):
+        # Usamos objetos Font de tkinter para permitir actualizaciones en tiempo real.
+        # Verificamos si ya son objetos Font comparando si tienen el método 'configure'
+        if FONT_LABEL is None or not hasattr(FONT_LABEL, 'configure'):
             FONT_LABEL = tkfont.Font(family="Segoe UI", size=int(10 * f), weight="bold")
             FONT_NORMAL = tkfont.Font(family="Segoe UI", size=int(10 * f))
             FONT_INPUT = tkfont.Font(family="Segoe UI", size=int(10 * f))
@@ -69,31 +71,37 @@ def actualizar_fuentes():
         FONT_TITLE = ("Segoe UI", int(16 * f), "bold")
 
 def configurar_estilos_ttk():
-    """Configura el motor visual para un look moderno y suave """
-    style = ttk.Style()
-    style.theme_use("clam")
+    """Configura ttkbootstrap para un look moderno, suave y con espaciados amplios"""
+    style = tb.Style(theme="darkly")
+    f = cargar_factor_fuente()
 
-    # --- PESTAÑAS (Notebook) ---
-    style.configure("TNotebook", background=BG_MAIN, borderwidth=0)
-    style.configure("TNotebook.Tab", background=BG_CARD, foreground=TEXT_SECONDARY,
-                    padding=[3, 4], font=FONT_NORMAL, borderwidth=0)
+    # 1. Configuración Global para widgets TTK (Etiquetas, Botones TTK, etc.)
+    style.configure(".", font=FONT_NORMAL, borderwidth=0)
     
-    # SOLUCIÓN: Llenamos los corchetes para que la selección funcione [5, 2]
-    style.map("TNotebook.Tab", 
-              background= [("selected", BG_MAIN), ("active", BG_CARD)],
-              foreground=[("selected", "white"), ("active", "white")])
+    # 2. Tablas (Treeview): Look moderno con filas altas y sin bordes internos
+    style.configure("Treeview", 
+                    font=FONT_NORMAL, 
+                    rowheight=int(38 * f), 
+                    relief="flat",
+                    borderwidth=0)
+    style.configure("Treeview.Heading", 
+                    font=FONT_LABEL, 
+                    padding=[10, 15],
+                    background=BG_CARD)
+    
+    # Eliminar las líneas de las celdas para un look más "limpio"
+    style.layout("Treeview", [('Treeview.treearea', {'sticky': 'nswe'})])
 
-    # --- TABLAS (Treeview) ---
-    style.configure("Treeview", background=BG_CARD, foreground=TEXT_PRIMARY,
-                    fieldbackground=BG_CARD, rowheight=35, borderwidth=0, font=FONT_NORMAL)
+    # 3. Notebook (Pestañas): Pestañas más altas y curvas
+    style.configure("TNotebook", tabmargins=[0, 0, 0, 0], borderwidth=0)
     
-    style.configure("Treeview.Heading", background=BG_CARD, foreground=TEXT_SECONDARY,
-                    font=FONT_LABEL, padding=[10, 10], borderwidth=0)
+    style.configure("TNotebook.Tab", 
+                    font=FONT_LABEL, 
+                    padding=[10, 15], 
+                    width=int(23 / f), 
+                    anchor="center")
     
-    # SOLUCIÓN: Color verde al seleccionar una fila 
-    style.map("Treeview", 
-              background=[("selected", ACCENT)], 
-              foreground=[("selected", "white")])
+    return style
 
 # ==========================================
 # FUNCIONES DE ESTILO PARA WIDGETS CLÁSICOS
@@ -108,9 +116,10 @@ def estilo_entrada():
         "bd": 0,
         "insertbackground": "white",
         "highlightthickness": 1,
-        "highlightbackground": "#334155",
+        "highlightbackground": "#475569",
         "highlightcolor": ACCENT,
-        "relief": "flat"
+        "relief": "flat",
+        "justify": "center"
     }
 
 def estilo_boton(color=BG_CARD):
@@ -120,8 +129,8 @@ def estilo_boton(color=BG_CARD):
         "fg": "white",
         "font": FONT_LABEL,
         "bd": 0,
-        "padx": 20,
-        "pady": 8,
+        "padx": 25,
+        "pady": 12,
         "cursor": "hand2",
         "activebackground": ACCENT,
         "activeforeground": "white",

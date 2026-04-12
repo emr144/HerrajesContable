@@ -174,8 +174,6 @@ def montar_interfaz(parent):
     ent_buscar = tk.Entry(frame_buscar, **st.estilo_entrada()); ent_buscar.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=10)
     ent_buscar.bind("<KeyRelease>", lambda e: cargar_proveedores(ent_buscar.get()))
 
-    style_tabla = ttk.Style(); style_tabla.theme_use("clam"); style_tabla.configure("Treeview", background=st.BG_CARD, foreground="white", fieldbackground=st.BG_CARD, borderwidth=0, rowheight=30, font=st.FONT_NORMAL); style_tabla.map("Treeview", background=[('selected', st.ACCENT)]); style_tabla.configure("Treeview.Heading", font=st.FONT_LABEL)
-
     columnas = ("id", "nombre", "contacto", "ult_modif_coef", "lista", "editar", "eliminar")
     tabla = ttk.Treeview(ventana, columns=columnas, show="headings"); tabla.pack(fill=tk.BOTH, expand=True, padx=40, pady=20)
     tabla.heading("id", text="ID"); tabla.heading("nombre", text="NOMBRE"); tabla.heading("contacto", text="CONTACTO"); tabla.heading("ult_modif_coef", text="MODIF. COEF."); tabla.heading("lista", text="LISTA"); tabla.heading("editar", text="EDITAR"); tabla.heading("eliminar", text="ELIMINAR")
