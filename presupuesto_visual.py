@@ -406,7 +406,6 @@ def montar_interfaz(parent):
     combo_cliente = ttk.Combobox(frame_top, values=obtener_clientes(), width=30, font=st.FONT_INPUT); combo_cliente.pack(side=tk.LEFT, padx=10)
 
     btn_abrir_busca = tk.Button(frame_top, text="📦 PRODUCTO", command=abrir_buscador_productos, **st.get_btn_style(st.ACCENT))
-    st.configurar_hover(btn_abrir_busca, st.ACCENT, st.BG_CARD)
     btn_abrir_busca.pack(side=tk.LEFT, padx=10)
 
     label_prod_sel = tk.Label(frame_top, text="Ningún producto seleccionado", bg=st.BG_MAIN, fg="gray", font=st.FONT_NORMAL)
@@ -418,7 +417,6 @@ def montar_interfaz(parent):
     entrada_cantidad.bind("<Return>", agregar_producto)
 
     btn_agregar = tk.Button(frame_top, text="➕ Agregar", command=agregar_producto, **st.get_btn_style())
-    st.configurar_hover(btn_agregar)
     btn_agregar.pack(side=tk.LEFT, padx=10)
 
     # TABLA CON COLUMNA SUBTOTAL
@@ -457,15 +455,12 @@ def montar_interfaz(parent):
     combo_lista_precios.bind("<<ComboboxSelected>>", recalcular_carrito)
 
     btn_cancelar = tk.Button(frame_bot, text="❌ CANCELAR", command=cancelar_venta, **st.estilo_boton(st.RED_ERROR))
-    st.configurar_hover(btn_cancelar, st.RED_ERROR, st.BG_CARD)
     btn_cancelar.pack(side=tk.RIGHT, padx=5)
 
     btn_aceptar = tk.Button(frame_bot, text="✔️ ACEPTAR (GUARDAR)", command=lambda: guardar_presupuesto(False), **st.estilo_boton(st.ACCENT))
-    st.configurar_hover(btn_aceptar, st.ACCENT, st.BG_CARD)
     btn_aceptar.pack(side=tk.RIGHT, padx=5)
 
     btn_imprimir = tk.Button(frame_bot, text="💾🖨️ IMPRIMIR (GUARDAR)", command=lambda: guardar_presupuesto(True), **st.estilo_boton())
-    st.configurar_hover(btn_imprimir)
     btn_imprimir.pack(side=tk.RIGHT, padx=5)
     
     return ventana

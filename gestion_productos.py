@@ -256,7 +256,6 @@ def modificar_coef_por_proveedor_dialogo():
                 messagebox.showerror("Error", f"No se pudieron actualizar los productos: {e}", parent=dialog)
 
     btn_confirmar = tk.Button(dialog, text="📈 APLICAR CAMBIO", command=confirmar_cambio, **st.estilo_boton(st.ACCENT))
-    st.configurar_hover(btn_confirmar, st.ACCENT, st.BG_CARD)
     btn_confirmar.pack(fill="x", pady=(30, 10)) # Más margen superior
 
 def eliminar_por_proveedor_dialogo():
@@ -322,7 +321,6 @@ def eliminar_por_proveedor_dialogo():
                 messagebox.showerror("Error", f"No se pudieron eliminar los productos: {e}", parent=dialog)
 
     btn_confirmar = tk.Button(dialog, text="ELIMINAR PRODUCTOS", command=confirmar_borrado, **st.estilo_boton(st.RED_ERROR))
-    st.configurar_hover(btn_confirmar, st.RED_ERROR, st.BG_CARD)
     btn_confirmar.pack(fill="x", pady=15)
 
 def on_tabla_click(event):
@@ -430,16 +428,15 @@ def montar_interfaz(parent):
     ent_costo = crear_campo("Costo Base:", 1)
     ent_coef = crear_campo("Coeficiente:", 2)
 
-    btn_guardar = tk.Button(frame_izquierdo, text="💾 GUARDAR CAMBIOS", command=guardar_producto, **st.estilo_boton()); btn_guardar.pack(fill=tk.X, pady=15); st.aplicar_hover(btn_guardar)
+    btn_guardar = tk.Button(frame_izquierdo, text="💾 GUARDAR CAMBIOS", command=guardar_producto, **st.estilo_boton()); btn_guardar.pack(fill=tk.X, pady=15)
     btn_guardar.config(state="disabled")
 
     tk.Frame(frame_izquierdo, height=2, bg=st.BG_CARD).pack(fill=tk.X, pady=20)
 
     tk.Label(frame_izquierdo, text="ACCIONES MASIVAS", font=st.FONT_TITLE, bg=st.BG_MAIN, fg=st.TEXT_PRIMARY).pack(pady=10, anchor="w")
-    btn_eliminar_prov = tk.Button(frame_izquierdo, text="🗑️ Eliminar por Proveedor", command=eliminar_por_proveedor_dialogo, **st.estilo_boton(st.RED_ERROR)); btn_eliminar_prov.pack(fill=tk.X, pady=10); st.configurar_hover(btn_eliminar_prov, st.RED_ERROR, st.BG_CARD)
+    btn_eliminar_prov = tk.Button(frame_izquierdo, text="🗑️ Eliminar por Proveedor", command=eliminar_por_proveedor_dialogo, **st.estilo_boton(st.RED_ERROR)); btn_eliminar_prov.pack(fill=tk.X, pady=10)
 
     btn_modif_coef = tk.Button(frame_izquierdo, text="📈 Modificar Coeficiente por Proveedor", command=modificar_coef_por_proveedor_dialogo, **st.estilo_boton(st.ACCENT))
-    st.configurar_hover(btn_modif_coef, st.ACCENT, st.BG_CARD)
     btn_modif_coef.pack(fill=tk.X, pady=10)
 
     # --- Panel Derecho (Buscador y Tabla) ---

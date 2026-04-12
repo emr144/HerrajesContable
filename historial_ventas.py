@@ -200,17 +200,14 @@ def montar_interfaz(parent):
     frame_botones.pack(pady=15)
 
     btn_refrescar = tk.Button(frame_botones, text="🔄 Actualizar Lista", command=cargar_historial, **st.estilo_boton(st.ACCENT))
-    st.configurar_hover(btn_refrescar, st.ACCENT, st.BG_CARD)
     btn_refrescar.pack(side=tk.LEFT, padx=10)
 
     # BOTÓN REIMPRIMIR
     btn_imprimir = tk.Button(frame_botones, text="🖨️ VER TICKET", command=reimprimir_seleccionado, **st.estilo_boton(st.ACCENT))
-    st.configurar_hover(btn_imprimir, st.ACCENT, st.BG_CARD)
     btn_imprimir.pack(side=tk.LEFT, padx=10)
 
     # BOTÓN ELIMINAR
     btn_eliminar = tk.Button(frame_botones, text="🗑️ ELIMINAR VENTA", command=eliminar_venta, **st.estilo_boton(st.RED_ERROR))
-    st.configurar_hover(btn_eliminar, st.RED_ERROR, st.BG_CARD)
     btn_eliminar.pack(side=tk.LEFT, padx=10)
 
     cargar_historial()

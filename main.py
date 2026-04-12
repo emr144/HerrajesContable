@@ -76,7 +76,29 @@ class App(tk.Tk):
         self.config(menu=menubar)
         archivo_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="☁️ Archivo & Nube", menu=archivo_menu)
+        archivo_menu.add_command(label="⚙️ Configurar Letra", command=self.abrir_configuracion_fuente)
+        archivo_menu.add_separator()
         archivo_menu.add_command(label="Salir", command=self.quit)
+
+    def abrir_configuracion_fuente(self):
+        ventana_cfg = tk.Toplevel(self)
+        ventana_cfg.title("Configurar Tamaño de Letra")
+        ventana_cfg.geometry("400x450")
+        st.aplicar_estilo_ventana(ventana_cfg)
+        
+        tk.Label(ventana_cfg, text="Seleccione el tamaño de letra:", 
+                 font=st.FONT_LABEL, bg=st.BG_MAIN, fg="white").pack(pady=20)
+        
+        def cambiar(nivel):
+            factor = st.NIVELES_FUENTE[nivel]
+            st.guardar_factor_fuente(factor)
+            st.actualizar_fuentes()
+            st.configurar_estilos_ttk()
+            ventana_cfg.destroy()
+
+        for nivel in st.NIVELES_FUENTE.keys():
+            btn = tk.Button(ventana_cfg, text=nivel, command=lambda n=nivel: cambiar(n), **st.estilo_boton())
+            btn.pack(fill="x", padx=50, pady=5)
 
     def agregar_pestana(self, titulo_completo, icon_name, modulo):
         try:

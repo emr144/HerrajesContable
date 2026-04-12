@@ -116,7 +116,6 @@ def montar_interfaz(parent):
     entrada_busqueda.bind('<Return>', lambda e: mostrar_detalle())
 
     btn_buscar = tk.Button(frame_busqueda, text=" 🔍 BUSCAR ", command=mostrar_detalle, **st.estilo_boton(st.ACCENT))
-    st.configurar_hover(btn_buscar, st.ACCENT, st.BG_CARD)
     btn_buscar.pack(side=tk.RIGHT)
 
     # Sugerencias flotantes

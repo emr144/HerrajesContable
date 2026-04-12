@@ -66,10 +66,10 @@ def montar_interfaz(notebook):
     tk.Entry(form, textvariable=var_monto, width=15, **st.estilo_entrada()).grid(row=0, column=7, padx=5)
     
     # Definimos los botones aquí para poder configurarlos luego
-    btn_registrar = tk.Button(form, text="REGISTRAR", bg=st.ACCENT, fg="white", font=("Inter", 9, "bold"))
+    btn_registrar = tk.Button(form, text="REGISTRAR", **st.estilo_boton(st.ACCENT))
     btn_registrar.grid(row=0, column=8, padx=10)
     
-    btn_cancelar = tk.Button(form, text="CANCELAR", bg=st.RED_ERROR, fg="white", font=("Inter", 9, "bold"))
+    btn_cancelar = tk.Button(form, text="CANCELAR", **st.estilo_boton(st.RED_ERROR))
     # btn_cancelar se oculta o muestra en cargar_edicion/reset_form
 
     # --- Tabla Tipo "Libro Mayor" ---
@@ -178,7 +178,7 @@ def montar_interfaz(notebook):
                     var_fecha.set(row[3])
                 
                 # Cambiamos visualmente el botón para indicar edición
-                btn_registrar.config(text="💾 GUARDAR CAMBIOS", bg="#D97706") # Naranja
+                btn_registrar.config(text="💾 GUARDAR CAMBIOS", bg=st.ORANGE) 
                 btn_cancelar.grid(row=0, column=9, padx=5) # Mostramos botón cancelar
         except Exception as e:
             messagebox.showerror("Error", f"No se pudo cargar para editar: {e}")

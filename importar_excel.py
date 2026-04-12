@@ -343,17 +343,14 @@ def montar_interfaz(parent):
     
     ruta_archivo = tk.StringVar()
     btn_seleccionar = tk.Button(frame_archivo, text="📂 Elegir Archivo (.xlsx)", command=seleccionar_archivo, **st.estilo_boton(st.ACCENT))
-    st.configurar_hover(btn_seleccionar, st.ACCENT, st.BG_CARD)
     btn_seleccionar.pack(fill="x", pady=5)
     label_archivo = tk.Label(frame_archivo, text="Ningún archivo seleccionado", font=st.FONT_NORMAL, bg=st.BG_MAIN, fg="gray")
     label_archivo.pack(pady=5)
 
     btn_importar = tk.Button(ventana, text="🚀 Iniciar Importación", command=iniciar_importacion, **st.estilo_boton())
-    st.configurar_hover(btn_importar)
     btn_importar.pack(fill="x", pady=(20, 0))
 
     btn_solo_coef = tk.Button(ventana, text="⚡ Actualizar Solo Coeficientes (Sin Excel)", command=actualizar_solo_coeficientes, **st.estilo_boton(st.ACCENT))
-    st.configurar_hover(btn_solo_coef, st.ACCENT, st.BG_CARD)
     btn_solo_coef.pack(fill="x", pady=(10, 0))
 
     return ventana

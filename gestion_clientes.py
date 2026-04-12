@@ -153,7 +153,6 @@ def montar_interfaz(parent):
 
     btn_guardar = tk.Button(frame_btn_form, text="➕ GUARDAR NUEVO CLIENTE", command=guardar_cliente, **st.estilo_boton())
     btn_guardar.pack(fill=tk.X, expand=True)
-    st.aplicar_hover(btn_guardar)
 
     # Buscador
     frame_buscar = tk.Frame(ventana, bg=st.BG_MAIN)
