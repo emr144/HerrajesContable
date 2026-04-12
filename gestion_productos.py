@@ -430,7 +430,7 @@ def montar_interfaz(parent):
     ent_costo = crear_campo("Costo Base:", 1)
     ent_coef = crear_campo("Coeficiente:", 2)
 
-    btn_guardar = tk.Button(frame_izquierdo, text="💾 GUARDAR CAMBIOS", command=guardar_producto, **st.estilo_boton()); btn_guardar.pack(fill=tk.X, pady=15); st.configurar_hover(btn_guardar)
+    btn_guardar = tk.Button(frame_izquierdo, text="💾 GUARDAR CAMBIOS", command=guardar_producto, **st.estilo_boton()); btn_guardar.pack(fill=tk.X, pady=15); st.aplicar_hover(btn_guardar)
     btn_guardar.config(state="disabled")
 
     tk.Frame(frame_izquierdo, height=2, bg=st.BG_CARD).pack(fill=tk.X, pady=20)

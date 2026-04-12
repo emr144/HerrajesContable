@@ -7,13 +7,9 @@ from datetime import datetime
 from tkinter import filedialog, messagebox
 from PIL import Image, ImageTk
 from tkinter import ttk
-from styles import *           # Para que reconozca tus colores de Flowbite
-import styles as st             # Mantenemos el alias para compatibilidad
-import migracion_actualizar_listas 
-import migracion_pedidos 
-import migracion_cuentas
+import styles as st  # Central de estilos pura en Tkinter
 
-# --- IMPORTACIÓN DE MÓDULOS ---
+# --- TUS MÓDULOS ORIGINALES ---
 import presupuesto_visual
 import catalogo_visual
 import gestion_clientes
@@ -24,42 +20,34 @@ import importar_excel
 import pedidos_fabrica
 import gestion_cuentas_fabrica
 import database 
+import migracion_actualizar_listas 
+import migracion_pedidos 
+import migracion_cuentas
 
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
         
-        # Inicializamos las fuentes dinámicas AHORA que el root (self) existe
+        # 1. Cargar Estética (Orden correcto para evitar errores de fuente) [4]
         st.actualizar_fuentes()
         st.configurar_estilos_ttk()
-        
         st.aplicar_estilo_ventana(self)
+
         self.title("Herrajes Contable - Panel de Gestión")
         self.geometry("1200x800")
-
-        # --- Configuración del Ícono (Avocado) ---
         self.configurar_icono_app()
-        
-        # Diccionario para mantener una referencia a los íconos y evitar que el recolector de basura los borre
         self.tab_icons = {}
 
-        # --- Estilos Globales para Inputs y Comboboxes ---
-        # Configuración para que los desplegables sean azules y grandes
+        # 2. Configuración de Comboboxes (Estilo oscuro suave)
         self.option_add('*TCombobox*Listbox.background', st.BG_INPUT)
         self.option_add('*TCombobox*Listbox.foreground', 'white')
         self.option_add('*TCombobox*Listbox.selectBackground', st.ACCENT)
-        self.option_add('*TCombobox*Listbox.font', st.FONT_INPUT)
         
-        style = ttk.Style()
-        style.configure("TCombobox", fieldbackground=st.BG_INPUT, background=st.BG_MAIN, 
-                        foreground='white', arrowcolor='white', borderwidth=0)
-        style.map("TCombobox", fieldbackground=[('readonly', st.BG_INPUT)])
-        
-        # --- Sistema de Pestañas ---
+        # --- Sistema de Pestañas Principal ---
         self.notebook = ttk.Notebook(self)
         self.notebook.pack(pady=10, padx=10, fill="both", expand=True)
         
-        # --- Carga de Módulos ---
+        # --- Montar tus solapas originales ---
         self.agregar_pestana(" VENTA", "venta", presupuesto_visual)
         self.agregar_pestana("📚 PRODUCTOS", "productos", gestion_productos)
         self.agregar_pestana("👥 CLIENTES", "clientes", gestion_clientes)
@@ -70,138 +58,58 @@ class App(tk.Tk):
         self.agregar_pestana("🏭 PEDIDOS", "pedidos", pedidos_fabrica)
         self.agregar_pestana("💰 CUENTAS FÁBRICA", "cuentas", gestion_cuentas_fabrica)
 
-        # Bind para refrescar datos al cambiar de pestaña
         self.notebook.bind("<<NotebookTabChanged>>", self._on_tab_changed)
-        
-        # --- Menú Superior (NUEVO) ---
         self.crear_menu_superior()
 
     def configurar_icono_app(self):
-        """Carga el ícono de forma robusta para evitar la pluma por defecto."""
         try:
-            if getattr(sys, 'frozen', False):
-                base_dir = sys._MEIPASS if hasattr(sys, '_MEIPASS') else os.path.dirname(sys.executable)
-            else:
-                base_dir = os.path.dirname(os.path.abspath(__file__))
-            
+            base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
             ruta_ico = os.path.join(base_dir, "img", "avocado.ico")
-            
             if os.path.exists(ruta_ico):
                 img = Image.open(ruta_ico)
                 self.icono_ref = ImageTk.PhotoImage(img)
                 self.iconphoto(True, self.icono_ref)
-                try: self.iconbitmap(ruta_ico)
-                except: pass
-        except Exception as e:
-            print(f"⚠️ Error cargando icono: {e}")
+        except: pass
 
     def crear_menu_superior(self):
         menubar = tk.Menu(self)
         self.config(menu=menubar)
-        
         archivo_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="☁️ Archivo & Nube", menu=archivo_menu)
-        archivo_menu.add_command(label="💾 Crear Copia de Seguridad", command=self.hacer_backup)
-        archivo_menu.add_separator()
         archivo_menu.add_command(label="Salir", command=self.quit)
-
-        # --- Menú de Configuración Visual (Tamaño de Fuente) ---
-        config_menu = tk.Menu(menubar, tearoff=0)
-        menubar.add_cascade(label="⚙️ Config", menu=config_menu)
-        
-        # Generar opciones basadas en los niveles predefinidos
-        for nombre, factor in st.NIVELES_FUENTE.items():
-            config_menu.add_command(
-                label=nombre, 
-                command=lambda f=factor: self.cambiar_fuente_predefinida(f)
-            )
-
-    def cambiar_fuente_predefinida(self, factor):
-        """Aplica un tamaño predefinido y actualiza la interfaz al instante."""
-        st.FONT_SIZE_FACTOR = factor
-        st.guardar_factor_fuente(st.FONT_SIZE_FACTOR)
-        st.actualizar_fuentes()
-        st.configurar_estilos_ttk()
-
-    def hacer_backup(self):
-        """Genera una copia timestamped de la base de datos actual (sea local o nube)"""
-        try:
-            db_origen = database.get_db_path()
-            fecha = datetime.now().strftime("%Y-%m-%d_%H-%M")
-            nombre_backup = f"herrajes_backup_{fecha}.db"
-            
-            # Preguntamos dónde guardar, por defecto en el escritorio o documentos
-            destino = filedialog.asksaveasfilename(
-                defaultextension=".db",
-                initialfile=nombre_backup,
-                title="Guardar Copia de Seguridad"
-            )
-            
-            if destino:
-                shutil.copy2(db_origen, destino)
-                messagebox.showinfo("Backup Exitoso", f"Se guardó la copia en:\n{destino}")
-        except Exception as e:
-            messagebox.showerror("Error de Backup", f"No se pudo crear el respaldo:\n{e}")
 
     def agregar_pestana(self, titulo_completo, icon_name, modulo):
         try:
             frame_contenido = modulo.montar_interfaz(self.notebook)
-
-            # Rutina para encontrar la ruta de las imágenes (funciona en dev y en exe)
-            if getattr(sys, 'frozen', False):
-                base_path = sys._MEIPASS if hasattr(sys, '_MEIPASS') else os.path.dirname(sys.executable)
-            else:
-                base_path = os.path.dirname(os.path.abspath(__file__))
-            
+            base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
             icon_path = os.path.join(base_path, "img", f"{icon_name}.png")
-
-            image = None
             texto_titulo = titulo_completo.split(" ", 1)[-1]
 
             if os.path.exists(icon_path):
-                # Si la imagen existe, la cargamos y la usamos
                 img = Image.open(icon_path).resize((22, 22), Image.Resampling.LANCZOS)
                 image = ImageTk.PhotoImage(img)
                 self.tab_icons[icon_name] = image
                 self.notebook.add(frame_contenido, text=texto_titulo, image=image, compound=tk.LEFT)
             else:
-                # Si no, usamos el texto original con el emoji (que se verá blanco)
                 self.notebook.add(frame_contenido, text=titulo_completo)
-
         except Exception as e:
-            # En caso de error, mostramos un mensaje en la pestaña
-            lbl_error = tk.Label(self.notebook, text=f"Error cargando {titulo_completo}\n{e}", fg="red", bg=st.BG_MAIN)
+            lbl_error = tk.Label(self.notebook, text=f"Error: {e}", fg="red", bg=st.BG_MAIN)
             self.notebook.add(lbl_error, text=titulo_completo)
 
     def _on_tab_changed(self, _):
         try:
-            tab_actual_texto = self.notebook.tab(self.notebook.select(), "text")
-            if "PRODUCTOS" in tab_actual_texto:
-                gestion_productos.cargar_productos()
-            elif "CLIENTES" in tab_actual_texto:
-                gestion_clientes.cargar_clientes()
-            elif "HISTORIAL" in tab_actual_texto:
-                historial_ventas.cargar_historial()
-            elif "PROVEEDORES" in tab_actual_texto:
-                gestion_proveedores.cargar_proveedores()
-            elif "PEDIDOS" in tab_actual_texto:
-                pedidos_fabrica.cargar_pedidos_pendientes()
+            tab_actual = self.notebook.tab(self.notebook.select(), "text")
+            if "PRODUCTOS" in tab_actual: gestion_productos.cargar_productos()
+            elif "CLIENTES" in tab_actual: gestion_clientes.cargar_clientes()
+            elif "HISTORIAL" in tab_actual: historial_ventas.cargar_historial()
+            elif "PROVEEDORES" in tab_actual: gestion_proveedores.cargar_proveedores()
+            elif "PEDIDOS" in tab_actual: pedidos_fabrica.cargar_pedidos_pendientes()
         except: pass
 
 if __name__ == "__main__":
-    # --- Configuración para Windows (Forzar ícono en la barra de tareas) ---
-    try:
-        # Definimos un ID único para la aplicación
-        myappid = 'herrajes.contable.gestion.v1'
-        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
-    except Exception:
-        pass
-
-    # --- Inicialización y Migraciones ---
     database.crear_base_datos()
     migracion_actualizar_listas.aplicar_migracion()
     migracion_pedidos.aplicar_migracion()
     migracion_cuentas.aplicar_migracion()
-
     app = App()
     app.mainloop()

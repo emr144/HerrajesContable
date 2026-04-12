@@ -167,7 +167,7 @@ def montar_interfaz(parent):
     ent_contacto = crear_campo("Contacto (Tel/Email):", 1)
 
     frame_btn_form = tk.Frame(ventana, bg=st.BG_MAIN); frame_btn_form.pack(pady=20, padx=40, fill=tk.X)
-    btn_guardar = tk.Button(frame_btn_form, text="➕ GUARDAR NUEVO PROVEEDOR", command=guardar_proveedor, **st.estilo_boton()); btn_guardar.pack(fill=tk.X, expand=True); st.configurar_hover(btn_guardar)
+    btn_guardar = tk.Button(frame_btn_form, text="➕ GUARDAR NUEVO PROVEEDOR", command=guardar_proveedor, **st.estilo_boton()); btn_guardar.pack(fill=tk.X, expand=True); st.aplicar_hover(btn_guardar)
 
     frame_buscar = tk.Frame(ventana, bg=st.BG_MAIN); frame_buscar.pack(fill=tk.X, padx=40, pady=(10, 0))
     tk.Label(frame_buscar, text="🔍 Buscar Proveedor:", font=st.FONT_LABEL, bg=st.BG_MAIN, fg="white").pack(side=tk.LEFT)

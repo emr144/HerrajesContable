@@ -370,8 +370,8 @@ def abrir_buscador_productos():
 
     f_btn = tk.Frame(top, bg=st.BG_MAIN, pady=10)
     f_btn.pack(fill=tk.X)
-    tk.Button(f_btn, text="ACEPTAR", command=seleccionar, **st.estilo_boton(st.ACCENT)).pack(side=tk.RIGHT, padx=10)
-    tk.Button(f_btn, text="CANCELAR", command=top.destroy, **st.estilo_boton(st.RED_ERROR)).pack(side=tk.RIGHT, padx=10)
+    tk.Button(f_btn, text="ACEPTAR", command=seleccionar, **st.get_btn_style(st.ACCENT)).pack(side=tk.RIGHT, padx=10)
+    tk.Button(f_btn, text="CANCELAR", command=top.destroy, **st.get_btn_style(st.RED_ERROR)).pack(side=tk.RIGHT, padx=10)
     
     buscar()
 
@@ -405,7 +405,7 @@ def montar_interfaz(parent):
     tk.Label(frame_top, text="Cliente:", bg=st.BG_MAIN, fg=st.TEXT_SECONDARY, font=st.FONT_LABEL).pack(side=tk.LEFT)
     combo_cliente = ttk.Combobox(frame_top, values=obtener_clientes(), width=30, font=st.FONT_INPUT); combo_cliente.pack(side=tk.LEFT, padx=10)
 
-    btn_abrir_busca = tk.Button(frame_top, text="📦 PRODUCTO", command=abrir_buscador_productos, **st.estilo_boton(st.ACCENT))
+    btn_abrir_busca = tk.Button(frame_top, text="📦 PRODUCTO", command=abrir_buscador_productos, **st.get_btn_style(st.ACCENT))
     st.configurar_hover(btn_abrir_busca, st.ACCENT, st.BG_CARD)
     btn_abrir_busca.pack(side=tk.LEFT, padx=10)
 
@@ -417,7 +417,7 @@ def montar_interfaz(parent):
     entrada_cantidad.pack(side=tk.LEFT, padx=5)
     entrada_cantidad.bind("<Return>", agregar_producto)
 
-    btn_agregar = tk.Button(frame_top, text="➕ Agregar", command=agregar_producto, **st.estilo_boton())
+    btn_agregar = tk.Button(frame_top, text="➕ Agregar", command=agregar_producto, **st.get_btn_style())
     st.configurar_hover(btn_agregar)
     btn_agregar.pack(side=tk.LEFT, padx=10)
 
