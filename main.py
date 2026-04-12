@@ -46,7 +46,7 @@ class App(tb.Window):
         
         # --- Sistema de Pestañas Principal ---
         self.notebook = tb.Notebook(self, bootstyle="primary")
-        self.notebook.pack(pady=(10, 0), padx=0, fill="both", expand=True)
+        self.notebook.pack(pady=(20, 0), padx=0, fill="both", expand=True)
         
         # --- Montar tus solapas originales ---
         self.agregar_pestana(" VENTA", "venta", presupuesto_visual)
@@ -100,8 +100,8 @@ class App(tb.Window):
             ventana_cfg.destroy()
 
         for nivel in st.NIVELES_FUENTE.keys():
-            btn = tk.Button(ventana_cfg, text=nivel, command=lambda n=nivel: cambiar(n), **st.estilo_boton())
-            btn.pack(fill="x", padx=50, pady=5)
+            btn = tb.Button(ventana_cfg, text=nivel, command=lambda n=nivel: cambiar(n), bootstyle="secondary")
+            btn.pack(fill="x", padx=50, pady=8)
 
     def agregar_pestana(self, titulo_completo, icon_name, modulo):
         try:

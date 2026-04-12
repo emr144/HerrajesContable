@@ -1,6 +1,7 @@
 import sqlite3
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import messagebox
+import ttkbootstrap as tb
 import os
 from fpdf import FPDF
 import styles as st
@@ -193,15 +194,15 @@ def montar_interfaz(parent):
     frame_botones = tk.Frame(ventana, bg=st.BG_MAIN)
     frame_botones.pack(pady=15)
 
-    btn_refrescar = tk.Button(frame_botones, text="🔄 Actualizar Lista", command=cargar_historial, **st.estilo_boton(st.ACCENT))
+    btn_refrescar = tb.Button(frame_botones, text="🔄 Actualizar Lista", command=cargar_historial, bootstyle="info")
     btn_refrescar.pack(side=tk.LEFT, padx=10)
 
     # BOTÓN REIMPRIMIR
-    btn_imprimir = tk.Button(frame_botones, text="🖨️ VER TICKET", command=reimprimir_seleccionado, **st.estilo_boton(st.ACCENT))
+    btn_imprimir = tb.Button(frame_botones, text="🖨️ VER TICKET", command=reimprimir_seleccionado, bootstyle="success")
     btn_imprimir.pack(side=tk.LEFT, padx=10)
 
     # BOTÓN ELIMINAR
-    btn_eliminar = tk.Button(frame_botones, text="🗑️ ELIMINAR VENTA", command=eliminar_venta, **st.estilo_boton(st.RED_ERROR))
+    btn_eliminar = tb.Button(frame_botones, text="🗑️ ELIMINAR VENTA", command=eliminar_venta, bootstyle="danger-outline")
     btn_eliminar.pack(side=tk.LEFT, padx=10)
 
     cargar_historial()

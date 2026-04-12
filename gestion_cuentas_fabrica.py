@@ -1,5 +1,6 @@
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import messagebox
+import ttkbootstrap as tb
 import sqlite3
 import styles as st 
 import database # Importamos para obtener la ruta
@@ -66,10 +67,10 @@ def montar_interfaz(notebook):
     tk.Entry(form, textvariable=var_monto, width=15, **st.estilo_entrada()).grid(row=0, column=7, padx=5)
     
     # Definimos los botones aquí para poder configurarlos luego
-    btn_registrar = tk.Button(form, text="REGISTRAR", **st.estilo_boton(st.ACCENT))
+    btn_registrar = tb.Button(form, text="REGISTRAR", bootstyle="success")
     btn_registrar.grid(row=0, column=8, padx=10)
     
-    btn_cancelar = tk.Button(form, text="CANCELAR", **st.estilo_boton(st.RED_ERROR))
+    btn_cancelar = tb.Button(form, text="CANCELAR", bootstyle="danger-outline")
     # btn_cancelar se oculta o muestra en cargar_edicion/reset_form
 
     # --- Tabla Tipo "Libro Mayor" ---

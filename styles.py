@@ -71,35 +71,39 @@ def actualizar_fuentes():
         FONT_TITLE = ("Segoe UI", int(16 * f), "bold")
 
 def configurar_estilos_ttk():
-    """Configura ttkbootstrap para un look moderno, suave y con espaciados amplios"""
+    """Configura ttkbootstrap para un look moderno, curvo y espaciado"""
     style = tb.Style(theme="darkly")
     f = cargar_factor_fuente()
 
     # 1. Configuración Global para widgets TTK (Etiquetas, Botones TTK, etc.)
-    style.configure(".", font=FONT_NORMAL, borderwidth=0)
+    style.configure(".", font=FONT_NORMAL)
     
-    # 2. Tablas (Treeview): Look moderno con filas altas y sin bordes internos
+    # 2. Tablas (Treeview): Filas más altas y look minimalista
     style.configure("Treeview", 
                     font=FONT_NORMAL, 
-                    rowheight=int(38 * f), 
+                    rowheight=int(40 * f), 
                     relief="flat",
                     borderwidth=0)
     style.configure("Treeview.Heading", 
                     font=FONT_LABEL, 
-                    padding=[10, 15],
+                    padding=[10, 12],
                     background=BG_CARD)
     
-    # Eliminar las líneas de las celdas para un look más "limpio"
     style.layout("Treeview", [('Treeview.treearea', {'sticky': 'nswe'})])
 
-    # 3. Notebook (Pestañas): Pestañas más altas y curvas
-    style.configure("TNotebook", tabmargins=[0, 0, 0, 0], borderwidth=0)
+    # 3. Notebook (Pestañas): Efecto redondeado mediante padding y márgenes
+    style.configure("TNotebook", tabmargins=[2, 5, 2, 0], borderwidth=0)
     
     style.configure("TNotebook.Tab", 
                     font=FONT_LABEL, 
-                    padding=[10, 15], 
-                    width=int(23 / f), 
-                    anchor="center")
+                    padding=[15, 12], 
+                    width=int(28 / f), 
+                    anchor="center",
+                    relief="flat")
+
+    # 4. Botones TTK: Forzamos un aspecto más curvo aumentando el padding interno
+    style.configure("TButton", font=FONT_LABEL, padding=[20, 10])
+    style.configure("Outline.TButton", font=FONT_LABEL, padding=[20, 10])
     
     return style
 
@@ -129,8 +133,8 @@ def estilo_boton(color=BG_CARD):
         "fg": "white",
         "font": FONT_LABEL,
         "bd": 0,
-        "padx": 25,
-        "pady": 12,
+        "padx": 30,
+        "pady": 15,
         "cursor": "hand2",
         "activebackground": ACCENT,
         "activeforeground": "white",
