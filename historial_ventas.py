@@ -178,7 +178,7 @@ def montar_interfaz(parent):
     # Tabla de Historial
     style_tabla = ttk.Style()
     style_tabla.theme_use("clam")
-    style_tabla.configure("Treeview", background=st.BG_CARD, foreground="white", fieldbackground=st.BG_CARD, borderwidth=0, rowheight=25)
+    style_tabla.configure("Treeview", background=st.BG_CARD, foreground="white", fieldbackground=st.BG_CARD, borderwidth=0)
     style_tabla.map("Treeview", background=[('selected', st.ACCENT)])
     style_tabla.configure("Treeview.Heading", background=st.BG_CARD, foreground=st.TEXT_SECONDARY, font=st.FONT_LABEL, padding=10)
 

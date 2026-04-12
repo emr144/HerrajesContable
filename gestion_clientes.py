@@ -167,7 +167,7 @@ def montar_interfaz(parent):
     style_tabla = ttk.Style()
     style_tabla.theme_use("clam")
     # Configuramos la fuente para las filas y la cabecera
-    style_tabla.configure("Treeview", background=st.BG_CARD, foreground="white", fieldbackground=st.BG_CARD, borderwidth=0, rowheight=30, font=st.FONT_NORMAL)
+    style_tabla.configure("Treeview", background=st.BG_CARD, foreground="white", fieldbackground=st.BG_CARD, borderwidth=0, font=st.FONT_NORMAL)
     style_tabla.map("Treeview", background=[('selected', st.ACCENT)])
     style_tabla.configure("Treeview.Heading", font=st.FONT_LABEL)
 

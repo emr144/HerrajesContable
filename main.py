@@ -7,7 +7,8 @@ from datetime import datetime
 from tkinter import filedialog, messagebox
 from PIL import Image, ImageTk
 from tkinter import ttk
-import styles as st  
+from styles import *           # Para que reconozca tus colores de Flowbite
+import styles as st             # Mantenemos el alias para compatibilidad
 import migracion_actualizar_listas 
 import migracion_pedidos 
 import migracion_cuentas
@@ -35,7 +36,7 @@ class App(tk.Tk):
         st.aplicar_estilo_ventana(self)
         self.title("Herrajes Contable - Panel de Gestión")
         self.geometry("1200x800")
-        
+
         # --- Configuración del Ícono (Avocado) ---
         self.configurar_icono_app()
         
