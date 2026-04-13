@@ -97,9 +97,17 @@ class App(tb.Window):
             self.update_idletasks() # Fuerza el redibujado de la interfaz
             ventana_cfg.destroy()
 
+        def reiniciar_programa():
+            self.destroy()
+            os.execl(sys.executable, sys.executable, *sys.argv)
+
         for nivel in st.NIVELES_FUENTE.keys():
             btn = tb.Button(ventana_cfg, text=nivel, command=lambda n=nivel: cambiar(n), bootstyle="secondary")
             btn.pack(fill="x", padx=50, pady=8)
+
+        tk.Frame(ventana_cfg, height=2, bg=st.BG_CARD).pack(fill="x", pady=20)
+        btn_restart = tb.Button(ventana_cfg, text="🔄 REINICIAR APLICACIÓN", command=reiniciar_programa, bootstyle="warning")
+        btn_restart.pack(fill="x", padx=50, pady=(0, 20))
 
     def agregar_pestana(self, titulo_completo, icon_name, modulo):
         try:

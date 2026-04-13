@@ -101,7 +101,7 @@ def montar_interfaz(notebook):
         var_desc.set("")
         var_fecha.set(datetime.now().strftime("%d-%m-%Y"))
         var_tipo_mov.set("Factura")
-        btn_registrar.config(text="REGISTRAR", bg=st.ACCENT)
+        btn_registrar.config(text="REGISTRAR", bootstyle="success")
         btn_cancelar.grid_forget()
 
     def calcular_y_mostrar(_=None):
@@ -179,7 +179,7 @@ def montar_interfaz(notebook):
                     var_fecha.set(row[3])
                 
                 # Cambiamos visualmente el botón para indicar edición
-                btn_registrar.config(text="💾 GUARDAR CAMBIOS", bg=st.ORANGE) 
+                btn_registrar.config(text="💾 GUARDAR CAMBIOS", bootstyle="warning") 
                 btn_cancelar.grid(row=0, column=9, padx=5) # Mostramos botón cancelar
         except Exception as e:
             messagebox.showerror("Error", f"No se pudo cargar para editar: {e}")
