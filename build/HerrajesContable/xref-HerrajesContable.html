@@ -24,7 +24,6 @@ imports:
  &#8226;   <a href="#_collections_abc">_collections_abc</a>
  &#8226;   <a href="#_weakrefset">_weakrefset</a>
  &#8226;   <a href="#abc">abc</a>
- &#8226;   <a href="#catalogo_visual">catalogo_visual</a>
  &#8226;   <a href="#codecs">codecs</a>
  &#8226;   <a href="#collections">collections</a>
  &#8226;   <a href="#copyreg">copyreg</a>
@@ -197,8 +196,9 @@ imports:
  &#8226;   <a href="#tkinter">tkinter</a>
  &#8226;   <a href="#tkinter.filedialog">tkinter.filedialog</a>
  &#8226;   <a href="#tkinter.messagebox">tkinter.messagebox</a>
- &#8226;   <a href="#tkinter.ttk">tkinter.ttk</a>
  &#8226;   <a href="#traceback">traceback</a>
+ &#8226;   <a href="#ttkbootstrap">ttkbootstrap</a>
+ &#8226;   <a href="#ttkbootstrap.constants">ttkbootstrap.constants</a>
  &#8226;   <a href="#types">types</a>
  &#8226;   <a href="#warnings">warnings</a>
  &#8226;   <a href="#weakref">weakref</a>
@@ -297,6 +297,7 @@ imported by:
 imported by:
     <a href="#PIL.GimpGradientFile">PIL.GimpGradientFile</a>
  &#8226;   <a href="#PIL.Image">PIL.Image</a>
+ &#8226;   <a href="#PIL.ImageDraw">PIL.ImageDraw</a>
  &#8226;   <a href="#PIL.ImageFilter">PIL.ImageFilter</a>
  &#8226;   <a href="#PIL.ImageMath">PIL.ImageMath</a>
  &#8226;   <a href="#PIL.ImageOps">PIL.ImageOps</a>
@@ -306,6 +307,7 @@ imported by:
  &#8226;   <a href="#PIL.Jpeg2KImagePlugin">PIL.Jpeg2KImagePlugin</a>
  &#8226;   <a href="#PIL.PngImagePlugin">PIL.PngImagePlugin</a>
  &#8226;   <a href="#PIL.TiffImagePlugin">PIL.TiffImagePlugin</a>
+ &#8226;   <a href="#PIL._imagingft">PIL._imagingft</a>
  &#8226;   <a href="#PIL._typing">PIL._typing</a>
  &#8226;   <a href="#_colorize">_colorize</a>
  &#8226;   <a href="#_pyrepl.types">_pyrepl.types</a>
@@ -923,15 +925,21 @@ imports:
  &#8226;   <a href="#PIL.ImageChops">PIL.ImageChops</a>
  &#8226;   <a href="#PIL.ImageCms">PIL.ImageCms</a>
  &#8226;   <a href="#PIL.ImageColor">PIL.ImageColor</a>
+ &#8226;   <a href="#PIL.ImageDraw">PIL.ImageDraw</a>
+ &#8226;   <a href="#PIL.ImageDraw2">PIL.ImageDraw2</a>
  &#8226;   <a href="#PIL.ImageFile">PIL.ImageFile</a>
  &#8226;   <a href="#PIL.ImageFilter">PIL.ImageFilter</a>
+ &#8226;   <a href="#PIL.ImageFont">PIL.ImageFont</a>
+ &#8226;   <a href="#PIL.ImageGrab">PIL.ImageGrab</a>
  &#8226;   <a href="#PIL.ImageMath">PIL.ImageMath</a>
  &#8226;   <a href="#PIL.ImageMode">PIL.ImageMode</a>
  &#8226;   <a href="#PIL.ImageOps">PIL.ImageOps</a>
  &#8226;   <a href="#PIL.ImagePalette">PIL.ImagePalette</a>
+ &#8226;   <a href="#PIL.ImagePath">PIL.ImagePath</a>
  &#8226;   <a href="#PIL.ImageQt">PIL.ImageQt</a>
  &#8226;   <a href="#PIL.ImageSequence">PIL.ImageSequence</a>
  &#8226;   <a href="#PIL.ImageShow">PIL.ImageShow</a>
+ &#8226;   <a href="#PIL.ImageText">PIL.ImageText</a>
  &#8226;   <a href="#PIL.ImageTk">PIL.ImageTk</a>
  &#8226;   <a href="#PIL.ImageWin">PIL.ImageWin</a>
  &#8226;   <a href="#PIL.Jpeg2KImagePlugin">PIL.Jpeg2KImagePlugin</a>
@@ -982,15 +990,21 @@ imported by:
  &#8226;   <a href="#PIL.ImageChops">PIL.ImageChops</a>
  &#8226;   <a href="#PIL.ImageCms">PIL.ImageCms</a>
  &#8226;   <a href="#PIL.ImageColor">PIL.ImageColor</a>
+ &#8226;   <a href="#PIL.ImageDraw">PIL.ImageDraw</a>
+ &#8226;   <a href="#PIL.ImageDraw2">PIL.ImageDraw2</a>
  &#8226;   <a href="#PIL.ImageFile">PIL.ImageFile</a>
  &#8226;   <a href="#PIL.ImageFilter">PIL.ImageFilter</a>
+ &#8226;   <a href="#PIL.ImageFont">PIL.ImageFont</a>
+ &#8226;   <a href="#PIL.ImageGrab">PIL.ImageGrab</a>
  &#8226;   <a href="#PIL.ImageMath">PIL.ImageMath</a>
  &#8226;   <a href="#PIL.ImageMode">PIL.ImageMode</a>
  &#8226;   <a href="#PIL.ImageOps">PIL.ImageOps</a>
  &#8226;   <a href="#PIL.ImagePalette">PIL.ImagePalette</a>
+ &#8226;   <a href="#PIL.ImagePath">PIL.ImagePath</a>
  &#8226;   <a href="#PIL.ImageQt">PIL.ImageQt</a>
  &#8226;   <a href="#PIL.ImageSequence">PIL.ImageSequence</a>
  &#8226;   <a href="#PIL.ImageShow">PIL.ImageShow</a>
+ &#8226;   <a href="#PIL.ImageText">PIL.ImageText</a>
  &#8226;   <a href="#PIL.ImageTk">PIL.ImageTk</a>
  &#8226;   <a href="#PIL.ImageWin">PIL.ImageWin</a>
  &#8226;   <a href="#PIL.ImtImagePlugin">PIL.ImtImagePlugin</a>
@@ -1030,6 +1044,7 @@ imported by:
  &#8226;   <a href="#PIL._deprecate">PIL._deprecate</a>
  &#8226;   <a href="#PIL._imaging">PIL._imaging</a>
  &#8226;   <a href="#PIL._imagingcms">PIL._imagingcms</a>
+ &#8226;   <a href="#PIL._imagingft">PIL._imagingft</a>
  &#8226;   <a href="#PIL._imagingmath">PIL._imagingmath</a>
  &#8226;   <a href="#PIL._imagingtk">PIL._imagingtk</a>
  &#8226;   <a href="#PIL._typing">PIL._typing</a>
@@ -1037,10 +1052,14 @@ imported by:
  &#8226;   <a href="#PIL._version">PIL._version</a>
  &#8226;   <a href="#PIL._webp">PIL._webp</a>
  &#8226;   <a href="#PIL.features">PIL.features</a>
- &#8226;   <a href="#catalogo_visual">catalogo_visual</a>
  &#8226;   <a href="#fpdf.py3k">fpdf.py3k</a>
  &#8226;   <a href="#main.py">main.py</a>
  &#8226;   <a href="#openpyxl.drawing.image">openpyxl.drawing.image</a>
+ &#8226;   <a href="#ttkbootstrap.colorutils">ttkbootstrap.colorutils</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.colorchooser">ttkbootstrap.dialogs.colorchooser</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.colordropper">ttkbootstrap.dialogs.colordropper</a>
+ &#8226;   <a href="#ttkbootstrap.style">ttkbootstrap.style</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.meter">ttkbootstrap.widgets.meter</a>
 
   </div>
 
@@ -1117,6 +1136,7 @@ imported by:
  &#8226;   <a href="#PIL.CurImagePlugin">PIL.CurImagePlugin</a>
  &#8226;   <a href="#PIL.IcoImagePlugin">PIL.IcoImagePlugin</a>
  &#8226;   <a href="#PIL.Image">PIL.Image</a>
+ &#8226;   <a href="#PIL.ImageGrab">PIL.ImageGrab</a>
 
   </div>
 
@@ -1682,11 +1702,16 @@ imported by:
  &#8226;   <a href="#PIL.ImageChops">PIL.ImageChops</a>
  &#8226;   <a href="#PIL.ImageCms">PIL.ImageCms</a>
  &#8226;   <a href="#PIL.ImageColor">PIL.ImageColor</a>
+ &#8226;   <a href="#PIL.ImageDraw">PIL.ImageDraw</a>
+ &#8226;   <a href="#PIL.ImageDraw2">PIL.ImageDraw2</a>
  &#8226;   <a href="#PIL.ImageFile">PIL.ImageFile</a>
  &#8226;   <a href="#PIL.ImageFilter">PIL.ImageFilter</a>
+ &#8226;   <a href="#PIL.ImageFont">PIL.ImageFont</a>
+ &#8226;   <a href="#PIL.ImageGrab">PIL.ImageGrab</a>
  &#8226;   <a href="#PIL.ImageMath">PIL.ImageMath</a>
  &#8226;   <a href="#PIL.ImageOps">PIL.ImageOps</a>
  &#8226;   <a href="#PIL.ImagePalette">PIL.ImagePalette</a>
+ &#8226;   <a href="#PIL.ImagePath">PIL.ImagePath</a>
  &#8226;   <a href="#PIL.ImageQt">PIL.ImageQt</a>
  &#8226;   <a href="#PIL.ImageSequence">PIL.ImageSequence</a>
  &#8226;   <a href="#PIL.ImageShow">PIL.ImageShow</a>
@@ -1721,10 +1746,12 @@ imported by:
  &#8226;   <a href="#PIL.XbmImagePlugin">PIL.XbmImagePlugin</a>
  &#8226;   <a href="#PIL.XpmImagePlugin">PIL.XpmImagePlugin</a>
  &#8226;   <a href="#PIL.features">PIL.features</a>
- &#8226;   <a href="#catalogo_visual">catalogo_visual</a>
  &#8226;   <a href="#fpdf.py3k">fpdf.py3k</a>
  &#8226;   <a href="#main.py">main.py</a>
  &#8226;   <a href="#openpyxl.drawing.image">openpyxl.drawing.image</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.colordropper">ttkbootstrap.dialogs.colordropper</a>
+ &#8226;   <a href="#ttkbootstrap.style">ttkbootstrap.style</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.meter">ttkbootstrap.widgets.meter</a>
 
   </div>
 
@@ -1796,8 +1823,69 @@ imports:
 imported by:
     <a href="#PIL">PIL</a>
  &#8226;   <a href="#PIL.Image">PIL.Image</a>
+ &#8226;   <a href="#PIL.ImageDraw">PIL.ImageDraw</a>
+ &#8226;   <a href="#PIL.ImageDraw2">PIL.ImageDraw2</a>
  &#8226;   <a href="#PIL.ImageOps">PIL.ImageOps</a>
  &#8226;   <a href="#PIL.ImagePalette">PIL.ImagePalette</a>
+ &#8226;   <a href="#ttkbootstrap.colorutils">ttkbootstrap.colorutils</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.colorchooser">ttkbootstrap.dialogs.colorchooser</a>
+ &#8226;   <a href="#ttkbootstrap.style">ttkbootstrap.style</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="PIL.ImageDraw"></a>
+  <a target="code" href="///C:/Users/emr14/AppData/Local/Python/pythoncore-3.14-64/Lib/site-packages/PIL/ImageDraw.py" type="text/plain"><tt>PIL.ImageDraw</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#'collections.abc'">'collections.abc'</a>
+ &#8226;   <a href="#PIL">PIL</a>
+ &#8226;   <a href="#PIL.Image">PIL.Image</a>
+ &#8226;   <a href="#PIL.ImageColor">PIL.ImageColor</a>
+ &#8226;   <a href="#PIL.ImageDraw2">PIL.ImageDraw2</a>
+ &#8226;   <a href="#PIL.ImageFont">PIL.ImageFont</a>
+ &#8226;   <a href="#PIL.ImageText">PIL.ImageText</a>
+ &#8226;   <a href="#PIL._typing">PIL._typing</a>
+ &#8226;   <a href="#__future__">__future__</a>
+ &#8226;   <a href="#math">math</a>
+ &#8226;   <a href="#struct">struct</a>
+ &#8226;   <a href="#types">types</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#PIL">PIL</a>
+ &#8226;   <a href="#PIL.ImageDraw2">PIL.ImageDraw2</a>
+ &#8226;   <a href="#ttkbootstrap.style">ttkbootstrap.style</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.meter">ttkbootstrap.widgets.meter</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="PIL.ImageDraw2"></a>
+  <a target="code" href="///C:/Users/emr14/AppData/Local/Python/pythoncore-3.14-64/Lib/site-packages/PIL/ImageDraw2.py" type="text/plain"><tt>PIL.ImageDraw2</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#PIL">PIL</a>
+ &#8226;   <a href="#PIL.Image">PIL.Image</a>
+ &#8226;   <a href="#PIL.ImageColor">PIL.ImageColor</a>
+ &#8226;   <a href="#PIL.ImageDraw">PIL.ImageDraw</a>
+ &#8226;   <a href="#PIL.ImageFont">PIL.ImageFont</a>
+ &#8226;   <a href="#PIL.ImagePath">PIL.ImagePath</a>
+ &#8226;   <a href="#PIL._typing">PIL._typing</a>
+ &#8226;   <a href="#__future__">__future__</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#PIL">PIL</a>
+ &#8226;   <a href="#PIL.ImageDraw">PIL.ImageDraw</a>
 
   </div>
 
@@ -1846,6 +1934,7 @@ imported by:
  &#8226;   <a href="#PIL.IcoImagePlugin">PIL.IcoImagePlugin</a>
  &#8226;   <a href="#PIL.ImImagePlugin">PIL.ImImagePlugin</a>
  &#8226;   <a href="#PIL.Image">PIL.Image</a>
+ &#8226;   <a href="#PIL.ImageFont">PIL.ImageFont</a>
  &#8226;   <a href="#PIL.ImageQt">PIL.ImageQt</a>
  &#8226;   <a href="#PIL.ImageTk">PIL.ImageTk</a>
  &#8226;   <a href="#PIL.ImtImagePlugin">PIL.ImtImagePlugin</a>
@@ -1901,6 +1990,72 @@ imports:
 imported by:
     <a href="#PIL">PIL</a>
  &#8226;   <a href="#PIL.Image">PIL.Image</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="PIL.ImageFont"></a>
+  <a target="code" href="///C:/Users/emr14/AppData/Local/Python/pythoncore-3.14-64/Lib/site-packages/PIL/ImageFont.py" type="text/plain"><tt>PIL.ImageFont</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#PIL">PIL</a>
+ &#8226;   <a href="#PIL.Image">PIL.Image</a>
+ &#8226;   <a href="#PIL.ImageFile">PIL.ImageFile</a>
+ &#8226;   <a href="#PIL._imaging">PIL._imaging</a>
+ &#8226;   <a href="#PIL._imagingft">PIL._imagingft</a>
+ &#8226;   <a href="#PIL._typing">PIL._typing</a>
+ &#8226;   <a href="#PIL._util">PIL._util</a>
+ &#8226;   <a href="#__future__">__future__</a>
+ &#8226;   <a href="#base64">base64</a>
+ &#8226;   <a href="#enum">enum</a>
+ &#8226;   <a href="#io">io</a>
+ &#8226;   <a href="#os">os</a>
+ &#8226;   <a href="#sys">sys</a>
+ &#8226;   <a href="#types">types</a>
+ &#8226;   <a href="#typing">typing</a>
+ &#8226;   <a href="#warnings">warnings</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#PIL">PIL</a>
+ &#8226;   <a href="#PIL.ImageDraw">PIL.ImageDraw</a>
+ &#8226;   <a href="#PIL.ImageDraw2">PIL.ImageDraw2</a>
+ &#8226;   <a href="#PIL.ImageText">PIL.ImageText</a>
+ &#8226;   <a href="#PIL._imagingft">PIL._imagingft</a>
+ &#8226;   <a href="#ttkbootstrap.style">ttkbootstrap.style</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="PIL.ImageGrab"></a>
+  <a target="code" href="///C:/Users/emr14/AppData/Local/Python/pythoncore-3.14-64/Lib/site-packages/PIL/ImageGrab.py" type="text/plain"><tt>PIL.ImageGrab</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#PIL">PIL</a>
+ &#8226;   <a href="#PIL.BmpImagePlugin">PIL.BmpImagePlugin</a>
+ &#8226;   <a href="#PIL.Image">PIL.Image</a>
+ &#8226;   <a href="#PIL.ImageWin">PIL.ImageWin</a>
+ &#8226;   <a href="#PIL.PngImagePlugin">PIL.PngImagePlugin</a>
+ &#8226;   <a href="#__future__">__future__</a>
+ &#8226;   <a href="#binascii">binascii</a>
+ &#8226;   <a href="#io">io</a>
+ &#8226;   <a href="#os">os</a>
+ &#8226;   <a href="#shutil">shutil</a>
+ &#8226;   <a href="#struct">struct</a>
+ &#8226;   <a href="#subprocess">subprocess</a>
+ &#8226;   <a href="#sys">sys</a>
+ &#8226;   <a href="#tempfile">tempfile</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#PIL">PIL</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.colordropper">ttkbootstrap.dialogs.colordropper</a>
 
   </div>
 
@@ -2022,6 +2177,25 @@ imported by:
 </div>
 
 <div class="node">
+  <a name="PIL.ImagePath"></a>
+  <a target="code" href="///C:/Users/emr14/AppData/Local/Python/pythoncore-3.14-64/Lib/site-packages/PIL/ImagePath.py" type="text/plain"><tt>PIL.ImagePath</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#PIL">PIL</a>
+ &#8226;   <a href="#PIL.Image">PIL.Image</a>
+ &#8226;   <a href="#__future__">__future__</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#PIL">PIL</a>
+ &#8226;   <a href="#PIL.ImageDraw2">PIL.ImageDraw2</a>
+
+  </div>
+
+</div>
+
+<div class="node">
   <a name="PIL.ImageQt"></a>
   <a target="code" href="///C:/Users/emr14/AppData/Local/Python/pythoncore-3.14-64/Lib/site-packages/PIL/ImageQt.py" type="text/plain"><tt>PIL.ImageQt</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
@@ -2096,6 +2270,26 @@ imported by:
 </div>
 
 <div class="node">
+  <a name="PIL.ImageText"></a>
+  <a target="code" href="///C:/Users/emr14/AppData/Local/Python/pythoncore-3.14-64/Lib/site-packages/PIL/ImageText.py" type="text/plain"><tt>PIL.ImageText</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#PIL">PIL</a>
+ &#8226;   <a href="#PIL.ImageFont">PIL.ImageFont</a>
+ &#8226;   <a href="#PIL._typing">PIL._typing</a>
+ &#8226;   <a href="#__future__">__future__</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#PIL">PIL</a>
+ &#8226;   <a href="#PIL.ImageDraw">PIL.ImageDraw</a>
+
+  </div>
+
+</div>
+
+<div class="node">
   <a name="PIL.ImageTk"></a>
   <a target="code" href="///C:/Users/emr14/AppData/Local/Python/pythoncore-3.14-64/Lib/site-packages/PIL/ImageTk.py" type="text/plain"><tt>PIL.ImageTk</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
@@ -2114,8 +2308,10 @@ imports:
 imported by:
     <a href="#PIL">PIL</a>
  &#8226;   <a href="#PIL.SpiderImagePlugin">PIL.SpiderImagePlugin</a>
- &#8226;   <a href="#catalogo_visual">catalogo_visual</a>
  &#8226;   <a href="#main.py">main.py</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.colordropper">ttkbootstrap.dialogs.colordropper</a>
+ &#8226;   <a href="#ttkbootstrap.style">ttkbootstrap.style</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.meter">ttkbootstrap.widgets.meter</a>
 
   </div>
 
@@ -2135,6 +2331,7 @@ imports:
 imported by:
     <a href="#PIL">PIL</a>
  &#8226;   <a href="#PIL.ImageCms">PIL.ImageCms</a>
+ &#8226;   <a href="#PIL.ImageGrab">PIL.ImageGrab</a>
 
   </div>
 
@@ -2572,6 +2769,7 @@ imported by:
  &#8226;   <a href="#PIL.IcnsImagePlugin">PIL.IcnsImagePlugin</a>
  &#8226;   <a href="#PIL.IcoImagePlugin">PIL.IcoImagePlugin</a>
  &#8226;   <a href="#PIL.Image">PIL.Image</a>
+ &#8226;   <a href="#PIL.ImageGrab">PIL.ImageGrab</a>
 
   </div>
 
@@ -3010,7 +3208,9 @@ imported by:
  &#8226;   <a href="#PIL.GifImagePlugin">PIL.GifImagePlugin</a>
  &#8226;   <a href="#PIL.Image">PIL.Image</a>
  &#8226;   <a href="#PIL.ImageFilter">PIL.ImageFilter</a>
+ &#8226;   <a href="#PIL.ImageFont">PIL.ImageFont</a>
  &#8226;   <a href="#PIL.PngImagePlugin">PIL.PngImagePlugin</a>
+ &#8226;   <a href="#PIL._imagingft">PIL._imagingft</a>
 
   </div>
 
@@ -3031,6 +3231,25 @@ imports:
 imported by:
     <a href="#PIL">PIL</a>
  &#8226;   <a href="#PIL.ImageCms">PIL.ImageCms</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="PIL._imagingft"></a>
+  <tt>PIL._imagingft</tt> <span class="moduletype"><tt>C:\Users\emr14\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\PIL\_imagingft.cp314-win_amd64.pyd</tt></span>  <div class="import">
+imports:
+    <a href="#'collections.abc'">'collections.abc'</a>
+ &#8226;   <a href="#PIL">PIL</a>
+ &#8226;   <a href="#PIL.ImageFont">PIL.ImageFont</a>
+ &#8226;   <a href="#PIL._imaging">PIL._imaging</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#PIL.ImageFont">PIL.ImageFont</a>
 
   </div>
 
@@ -3091,8 +3310,12 @@ imported by:
     <a href="#PIL.GifImagePlugin">PIL.GifImagePlugin</a>
  &#8226;   <a href="#PIL.Image">PIL.Image</a>
  &#8226;   <a href="#PIL.ImageCms">PIL.ImageCms</a>
+ &#8226;   <a href="#PIL.ImageDraw">PIL.ImageDraw</a>
+ &#8226;   <a href="#PIL.ImageDraw2">PIL.ImageDraw2</a>
  &#8226;   <a href="#PIL.ImageFile">PIL.ImageFile</a>
  &#8226;   <a href="#PIL.ImageFilter">PIL.ImageFilter</a>
+ &#8226;   <a href="#PIL.ImageFont">PIL.ImageFont</a>
+ &#8226;   <a href="#PIL.ImageText">PIL.ImageText</a>
  &#8226;   <a href="#PIL.ImageTk">PIL.ImageTk</a>
  &#8226;   <a href="#PIL.MpegImagePlugin">PIL.MpegImagePlugin</a>
  &#8226;   <a href="#PIL.TiffImagePlugin">PIL.TiffImagePlugin</a>
@@ -3124,6 +3347,7 @@ imported by:
  &#8226;   <a href="#PIL.Image">PIL.Image</a>
  &#8226;   <a href="#PIL.ImageCms">PIL.ImageCms</a>
  &#8226;   <a href="#PIL.ImageFile">PIL.ImageFile</a>
+ &#8226;   <a href="#PIL.ImageFont">PIL.ImageFont</a>
  &#8226;   <a href="#PIL.ImageQt">PIL.ImageQt</a>
  &#8226;   <a href="#PIL.MpoImagePlugin">PIL.MpoImagePlugin</a>
  &#8226;   <a href="#PIL.PngImagePlugin">PIL.PngImagePlugin</a>
@@ -3248,15 +3472,21 @@ imported by:
  &#8226;   <a href="#PIL.ImageChops">PIL.ImageChops</a>
  &#8226;   <a href="#PIL.ImageCms">PIL.ImageCms</a>
  &#8226;   <a href="#PIL.ImageColor">PIL.ImageColor</a>
+ &#8226;   <a href="#PIL.ImageDraw">PIL.ImageDraw</a>
+ &#8226;   <a href="#PIL.ImageDraw2">PIL.ImageDraw2</a>
  &#8226;   <a href="#PIL.ImageFile">PIL.ImageFile</a>
  &#8226;   <a href="#PIL.ImageFilter">PIL.ImageFilter</a>
+ &#8226;   <a href="#PIL.ImageFont">PIL.ImageFont</a>
+ &#8226;   <a href="#PIL.ImageGrab">PIL.ImageGrab</a>
  &#8226;   <a href="#PIL.ImageMath">PIL.ImageMath</a>
  &#8226;   <a href="#PIL.ImageMode">PIL.ImageMode</a>
  &#8226;   <a href="#PIL.ImageOps">PIL.ImageOps</a>
  &#8226;   <a href="#PIL.ImagePalette">PIL.ImagePalette</a>
+ &#8226;   <a href="#PIL.ImagePath">PIL.ImagePath</a>
  &#8226;   <a href="#PIL.ImageQt">PIL.ImageQt</a>
  &#8226;   <a href="#PIL.ImageSequence">PIL.ImageSequence</a>
  &#8226;   <a href="#PIL.ImageShow">PIL.ImageShow</a>
+ &#8226;   <a href="#PIL.ImageText">PIL.ImageText</a>
  &#8226;   <a href="#PIL.ImageTk">PIL.ImageTk</a>
  &#8226;   <a href="#PIL.ImageWin">PIL.ImageWin</a>
  &#8226;   <a href="#PIL.ImtImagePlugin">PIL.ImtImagePlugin</a>
@@ -3536,6 +3766,7 @@ imported by:
  &#8226;   <a href="#pandas.util.version">pandas.util.version</a>
  &#8226;   <a href="#pydoc">pydoc</a>
  &#8226;   <a href="#six">six</a>
+ &#8226;   <a href="#ttkbootstrap.constants">ttkbootstrap.constants</a>
 
   </div>
 
@@ -6032,7 +6263,8 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#email._encoded_words">email._encoded_words</a>
+    <a href="#PIL.ImageFont">PIL.ImageFont</a>
+ &#8226;   <a href="#email._encoded_words">email._encoded_words</a>
  &#8226;   <a href="#email.base64mime">email.base64mime</a>
  &#8226;   <a href="#email.encoders">email.encoders</a>
  &#8226;   <a href="#encodings.base64_codec">encodings.base64_codec</a>
@@ -6077,7 +6309,8 @@ imported by:
   <a name="binascii"></a>
   <tt>binascii</tt> <span class="moduletype"><i>(builtin module)</i></span>  <div class="import">
 imported by:
-    <a href="#base64">base64</a>
+    <a href="#PIL.ImageGrab">PIL.ImageGrab</a>
+ &#8226;   <a href="#base64">base64</a>
  &#8226;   <a href="#email._encoded_words">email._encoded_words</a>
  &#8226;   <a href="#email.base64mime">email.base64mime</a>
  &#8226;   <a href="#email.contentmanager">email.contentmanager</a>
@@ -6241,32 +6474,8 @@ imported by:
  &#8226;   <a href="#email._parseaddr">email._parseaddr</a>
  &#8226;   <a href="#http.cookiejar">http.cookiejar</a>
  &#8226;   <a href="#ssl">ssl</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.datepicker">ttkbootstrap.dialogs.datepicker</a>
  &#8226;   <a href="#zoneinfo._zoneinfo">zoneinfo._zoneinfo</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="catalogo_visual"></a>
-  <a target="code" href="///C:/Users/herra/HerrajesContable/catalogo_visual.py" type="text/plain"><tt>catalogo_visual</tt></a>
-<span class="moduletype">SourceModule</span>  <div class="import">
-imports:
-    <a href="#PIL">PIL</a>
- &#8226;   <a href="#PIL.Image">PIL.Image</a>
- &#8226;   <a href="#PIL.ImageTk">PIL.ImageTk</a>
- &#8226;   <a href="#database">database</a>
- &#8226;   <a href="#os">os</a>
- &#8226;   <a href="#sqlite3">sqlite3</a>
- &#8226;   <a href="#styles">styles</a>
- &#8226;   <a href="#tkinter">tkinter</a>
- &#8226;   <a href="#tkinter.messagebox">tkinter.messagebox</a>
- &#8226;   <a href="#tkinter.ttk">tkinter.ttk</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#main.py">main.py</a>
 
   </div>
 
@@ -6605,6 +6814,8 @@ imported by:
  &#8226;   <a href="#threading">threading</a>
  &#8226;   <a href="#tkinter">tkinter</a>
  &#8226;   <a href="#tokenize">tokenize</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.colorchooser">ttkbootstrap.dialogs.colorchooser</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.colordropper">ttkbootstrap.dialogs.colordropper</a>
  &#8226;   <a href="#typing">typing</a>
  &#8226;   <a href="#unittest._log">unittest._log</a>
  &#8226;   <a href="#unittest.case">unittest.case</a>
@@ -6623,6 +6834,8 @@ imported by:
 <span class="moduletype">SourceModule</span>  <div class="import">
 imported by:
     <a href="#PIL.ImageColor">PIL.ImageColor</a>
+ &#8226;   <a href="#ttkbootstrap.colorutils">ttkbootstrap.colorutils</a>
+ &#8226;   <a href="#ttkbootstrap.style">ttkbootstrap.style</a>
 
   </div>
 
@@ -7181,6 +7394,7 @@ imported by:
  &#8226;   <a href="#pandas.errors">pandas.errors</a>
  &#8226;   <a href="#pandas.io.clipboard">pandas.io.clipboard</a>
  &#8226;   <a href="#platform">platform</a>
+ &#8226;   <a href="#ttkbootstrap.utility">ttkbootstrap.utility</a>
  &#8226;   <a href="#webbrowser">webbrowser</a>
 
   </div>
@@ -7375,8 +7589,7 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#catalogo_visual">catalogo_visual</a>
- &#8226;   <a href="#gestion_clientes">gestion_clientes</a>
+    <a href="#gestion_clientes">gestion_clientes</a>
  &#8226;   <a href="#gestion_cuentas_fabrica">gestion_cuentas_fabrica</a>
  &#8226;   <a href="#gestion_productos">gestion_productos</a>
  &#8226;   <a href="#gestion_proveedores">gestion_proveedores</a>
@@ -7512,6 +7725,9 @@ imported by:
  &#8226;   <a href="#pandas.tseries.holiday">pandas.tseries.holiday</a>
  &#8226;   <a href="#presupuesto_visual">presupuesto_visual</a>
  &#8226;   <a href="#sqlite3.dbapi2">sqlite3.dbapi2</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.datepicker">ttkbootstrap.dialogs.datepicker</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.query">ttkbootstrap.dialogs.query</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.dateentry">ttkbootstrap.widgets.dateentry</a>
  &#8226;   <a href="#xmlrpc.client">xmlrpc.client</a>
  &#8226;   <a href="#zoneinfo._zoneinfo">zoneinfo._zoneinfo</a>
 
@@ -11044,6 +11260,7 @@ imported by:
  &#8226;   <a href="#PIL.GifImagePlugin">PIL.GifImagePlugin</a>
  &#8226;   <a href="#PIL.Image">PIL.Image</a>
  &#8226;   <a href="#PIL.ImageCms">PIL.ImageCms</a>
+ &#8226;   <a href="#PIL.ImageFont">PIL.ImageFont</a>
  &#8226;   <a href="#PIL.PngImagePlugin">PIL.PngImagePlugin</a>
  &#8226;   <a href="#_ast_unparse">_ast_unparse</a>
  &#8226;   <a href="#annotationlib">annotationlib</a>
@@ -11071,6 +11288,7 @@ imported by:
  &#8226;   <a href="#socket">socket</a>
  &#8226;   <a href="#ssl">ssl</a>
  &#8226;   <a href="#tkinter">tkinter</a>
+ &#8226;   <a href="#ttkbootstrap.publisher">ttkbootstrap.publisher</a>
  &#8226;   <a href="#uuid">uuid</a>
 
   </div>
@@ -11711,6 +11929,7 @@ imports:
  &#8226;   <a href="#tkinter">tkinter</a>
  &#8226;   <a href="#tkinter.messagebox">tkinter.messagebox</a>
  &#8226;   <a href="#tkinter.ttk">tkinter.ttk</a>
+ &#8226;   <a href="#ttkbootstrap">ttkbootstrap</a>
 
   </div>
   <div class="import">
@@ -11945,7 +12164,7 @@ imports:
  &#8226;   <a href="#styles">styles</a>
  &#8226;   <a href="#tkinter">tkinter</a>
  &#8226;   <a href="#tkinter.messagebox">tkinter.messagebox</a>
- &#8226;   <a href="#tkinter.ttk">tkinter.ttk</a>
+ &#8226;   <a href="#ttkbootstrap">ttkbootstrap</a>
 
   </div>
   <div class="import">
@@ -12816,6 +13035,8 @@ imported by:
  &#8226;   <a href="#PIL.IcoImagePlugin">PIL.IcoImagePlugin</a>
  &#8226;   <a href="#PIL.Image">PIL.Image</a>
  &#8226;   <a href="#PIL.ImageFile">PIL.ImageFile</a>
+ &#8226;   <a href="#PIL.ImageFont">PIL.ImageFont</a>
+ &#8226;   <a href="#PIL.ImageGrab">PIL.ImageGrab</a>
  &#8226;   <a href="#PIL.ImageQt">PIL.ImageQt</a>
  &#8226;   <a href="#PIL.ImageTk">PIL.ImageTk</a>
  &#8226;   <a href="#PIL.IptcImagePlugin">PIL.IptcImagePlugin</a>
@@ -13019,6 +13240,7 @@ imported by:
  &#8226;   <a href="#tkinter.font">tkinter.font</a>
  &#8226;   <a href="#tokenize">tokenize</a>
  &#8226;   <a href="#traceback">traceback</a>
+ &#8226;   <a href="#ttkbootstrap.localization.msgs">ttkbootstrap.localization.msgs</a>
  &#8226;   <a href="#weakref">weakref</a>
  &#8226;   <a href="#zipfile._path">zipfile._path</a>
 
@@ -13065,6 +13287,7 @@ imported by:
  &#8226;   <a href="#pandas.io.parquet">pandas.io.parquet</a>
  &#8226;   <a href="#pandas.util._print_versions">pandas.util._print_versions</a>
  &#8226;   <a href="#pdb">pdb</a>
+ &#8226;   <a href="#ttkbootstrap.style">ttkbootstrap.style</a>
 
   </div>
 
@@ -13205,6 +13428,7 @@ imported by:
  &#8226;   <a href="#pandas.util._print_versions">pandas.util._print_versions</a>
  &#8226;   <a href="#subprocess">subprocess</a>
  &#8226;   <a href="#tkinter.filedialog">tkinter.filedialog</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.datepicker">ttkbootstrap.dialogs.datepicker</a>
 
   </div>
 
@@ -13320,6 +13544,7 @@ imported by:
  &#8226;   <a href="#PIL.GimpGradientFile">PIL.GimpGradientFile</a>
  &#8226;   <a href="#PIL.IcoImagePlugin">PIL.IcoImagePlugin</a>
  &#8226;   <a href="#PIL.Image">PIL.Image</a>
+ &#8226;   <a href="#PIL.ImageDraw">PIL.ImageDraw</a>
  &#8226;   <a href="#PIL.JpegImagePlugin">PIL.JpegImagePlugin</a>
  &#8226;   <a href="#PIL.PdfImagePlugin">PIL.PdfImagePlugin</a>
  &#8226;   <a href="#PIL.PpmImagePlugin">PIL.PpmImagePlugin</a>
@@ -13349,6 +13574,8 @@ imported by:
  &#8226;   <a href="#reprlib">reprlib</a>
  &#8226;   <a href="#selectors">selectors</a>
  &#8226;   <a href="#statistics">statistics</a>
+ &#8226;   <a href="#ttkbootstrap.style">ttkbootstrap.style</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.meter">ttkbootstrap.widgets.meter</a>
  &#8226;   <a href="#urllib.parse">urllib.parse</a>
 
   </div>
@@ -26155,6 +26382,8 @@ imported by:
  &#8226;   <a href="#PIL.ImImagePlugin">PIL.ImImagePlugin</a>
  &#8226;   <a href="#PIL.Image">PIL.Image</a>
  &#8226;   <a href="#PIL.ImageFile">PIL.ImageFile</a>
+ &#8226;   <a href="#PIL.ImageFont">PIL.ImageFont</a>
+ &#8226;   <a href="#PIL.ImageGrab">PIL.ImageGrab</a>
  &#8226;   <a href="#PIL.ImageShow">PIL.ImageShow</a>
  &#8226;   <a href="#PIL.Jpeg2KImagePlugin">PIL.Jpeg2KImagePlugin</a>
  &#8226;   <a href="#PIL.JpegImagePlugin">PIL.JpegImagePlugin</a>
@@ -26184,7 +26413,6 @@ imported by:
  &#8226;   <a href="#asyncio.windows_utils">asyncio.windows_utils</a>
  &#8226;   <a href="#bdb">bdb</a>
  &#8226;   <a href="#bz2">bz2</a>
- &#8226;   <a href="#catalogo_visual">catalogo_visual</a>
  &#8226;   <a href="#compression.zstd._zstdfile">compression.zstd._zstdfile</a>
  &#8226;   <a href="#concurrent.futures.process">concurrent.futures.process</a>
  &#8226;   <a href="#concurrent.futures.thread">concurrent.futures.thread</a>
@@ -26312,6 +26540,7 @@ imported by:
  &#8226;   <a href="#threading">threading</a>
  &#8226;   <a href="#tkinter">tkinter</a>
  &#8226;   <a href="#tkinter.filedialog">tkinter.filedialog</a>
+ &#8226;   <a href="#ttkbootstrap.localization.msgcat">ttkbootstrap.localization.msgcat</a>
  &#8226;   <a href="#unittest.loader">unittest.loader</a>
  &#8226;   <a href="#unittest.main">unittest.main</a>
  &#8226;   <a href="#urllib.request">urllib.request</a>
@@ -38735,6 +38964,7 @@ imported by:
  &#8226;   <a href="#pandas.io.formats.style_render">pandas.io.formats.style_render</a>
  &#8226;   <a href="#pandas.io.spss">pandas.io.spss</a>
  &#8226;   <a href="#pathlib._os">pathlib._os</a>
+ &#8226;   <a href="#ttkbootstrap.localization.msgcat">ttkbootstrap.localization.msgcat</a>
  &#8226;   <a href="#zipfile._path">zipfile._path</a>
 
   </div>
@@ -39071,6 +39301,7 @@ imports:
  &#8226;   <a href="#styles">styles</a>
  &#8226;   <a href="#tkinter">tkinter</a>
  &#8226;   <a href="#tkinter.messagebox">tkinter.messagebox</a>
+ &#8226;   <a href="#tkinter.simpledialog">tkinter.simpledialog</a>
  &#8226;   <a href="#tkinter.ttk">tkinter.ttk</a>
 
   </div>
@@ -39588,6 +39819,8 @@ imported by:
  &#8226;   <a href="#textwrap">textwrap</a>
  &#8226;   <a href="#tkinter">tkinter</a>
  &#8226;   <a href="#tokenize">tokenize</a>
+ &#8226;   <a href="#ttkbootstrap.style">ttkbootstrap.style</a>
+ &#8226;   <a href="#ttkbootstrap.validation">ttkbootstrap.validation</a>
  &#8226;   <a href="#typing">typing</a>
  &#8226;   <a href="#unittest.case">unittest.case</a>
  &#8226;   <a href="#unittest.loader">unittest.loader</a>
@@ -39907,6 +40140,7 @@ imports:
   <div class="import">
 imported by:
     <a href="#PIL.EpsImagePlugin">PIL.EpsImagePlugin</a>
+ &#8226;   <a href="#PIL.ImageGrab">PIL.ImageGrab</a>
  &#8226;   <a href="#PIL.ImageShow">PIL.ImageShow</a>
  &#8226;   <a href="#argparse">argparse</a>
  &#8226;   <a href="#ctypes.util">ctypes.util</a>
@@ -40159,8 +40393,7 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#catalogo_visual">catalogo_visual</a>
- &#8226;   <a href="#database">database</a>
+    <a href="#database">database</a>
  &#8226;   <a href="#gestion_clientes">gestion_clientes</a>
  &#8226;   <a href="#gestion_cuentas_fabrica">gestion_cuentas_fabrica</a>
  &#8226;   <a href="#gestion_productos">gestion_productos</a>
@@ -40452,7 +40685,9 @@ imported by:
  &#8226;   <a href="#PIL.FtexImagePlugin">PIL.FtexImagePlugin</a>
  &#8226;   <a href="#PIL.IcnsImagePlugin">PIL.IcnsImagePlugin</a>
  &#8226;   <a href="#PIL.Image">PIL.Image</a>
+ &#8226;   <a href="#PIL.ImageDraw">PIL.ImageDraw</a>
  &#8226;   <a href="#PIL.ImageFile">PIL.ImageFile</a>
+ &#8226;   <a href="#PIL.ImageGrab">PIL.ImageGrab</a>
  &#8226;   <a href="#PIL.Jpeg2KImagePlugin">PIL.Jpeg2KImagePlugin</a>
  &#8226;   <a href="#PIL.JpegImagePlugin">PIL.JpegImagePlugin</a>
  &#8226;   <a href="#PIL.McIdasImagePlugin">PIL.McIdasImagePlugin</a>
@@ -40504,12 +40739,12 @@ imports:
  &#8226;   <a href="#tkinter">tkinter</a>
  &#8226;   <a href="#tkinter.font">tkinter.font</a>
  &#8226;   <a href="#tkinter.ttk">tkinter.ttk</a>
+ &#8226;   <a href="#ttkbootstrap">ttkbootstrap</a>
 
   </div>
   <div class="import">
 imported by:
-    <a href="#catalogo_visual">catalogo_visual</a>
- &#8226;   <a href="#gestion_clientes">gestion_clientes</a>
+    <a href="#gestion_clientes">gestion_clientes</a>
  &#8226;   <a href="#gestion_cuentas_fabrica">gestion_cuentas_fabrica</a>
  &#8226;   <a href="#gestion_productos">gestion_productos</a>
  &#8226;   <a href="#gestion_proveedores">gestion_proveedores</a>
@@ -40554,6 +40789,7 @@ imports:
 imported by:
     <a href="#PIL.EpsImagePlugin">PIL.EpsImagePlugin</a>
  &#8226;   <a href="#PIL.GifImagePlugin">PIL.GifImagePlugin</a>
+ &#8226;   <a href="#PIL.ImageGrab">PIL.ImageGrab</a>
  &#8226;   <a href="#PIL.ImageShow">PIL.ImageShow</a>
  &#8226;   <a href="#PIL.JpegImagePlugin">PIL.JpegImagePlugin</a>
  &#8226;   <a href="#_aix_support">_aix_support</a>
@@ -40595,6 +40831,8 @@ imported by:
  &#8226;   <a href="#PIL.IcnsImagePlugin">PIL.IcnsImagePlugin</a>
  &#8226;   <a href="#PIL.Image">PIL.Image</a>
  &#8226;   <a href="#PIL.ImageCms">PIL.ImageCms</a>
+ &#8226;   <a href="#PIL.ImageFont">PIL.ImageFont</a>
+ &#8226;   <a href="#PIL.ImageGrab">PIL.ImageGrab</a>
  &#8226;   <a href="#PIL.ImageMode">PIL.ImageMode</a>
  &#8226;   <a href="#PIL.ImageQt">PIL.ImageQt</a>
  &#8226;   <a href="#PIL.ImageShow">PIL.ImageShow</a>
@@ -40921,6 +41159,7 @@ imports:
 imported by:
     <a href="#PIL.EpsImagePlugin">PIL.EpsImagePlugin</a>
  &#8226;   <a href="#PIL.Image">PIL.Image</a>
+ &#8226;   <a href="#PIL.ImageGrab">PIL.ImageGrab</a>
  &#8226;   <a href="#PIL.JpegImagePlugin">PIL.JpegImagePlugin</a>
  &#8226;   <a href="#_pyrepl.pager">_pyrepl.pager</a>
  &#8226;   <a href="#asyncio.windows_utils">asyncio.windows_utils</a>
@@ -40989,6 +41228,8 @@ imported by:
  &#8226;   <a href="#pydoc">pydoc</a>
  &#8226;   <a href="#sqlite3.__main__">sqlite3.__main__</a>
  &#8226;   <a href="#traceback">traceback</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.message">ttkbootstrap.dialogs.message</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.query">ttkbootstrap.dialogs.query</a>
 
   </div>
 
@@ -41143,8 +41384,8 @@ imports:
  &#8226;   <a href="#tkinter.commondialog">tkinter.commondialog</a>
  &#8226;   <a href="#tkinter.constants">tkinter.constants</a>
  &#8226;   <a href="#tkinter.filedialog">tkinter.filedialog</a>
+ &#8226;   <a href="#tkinter.font">tkinter.font</a>
  &#8226;   <a href="#tkinter.messagebox">tkinter.messagebox</a>
- &#8226;   <a href="#tkinter.ttk">tkinter.ttk</a>
  &#8226;   <a href="#traceback">traceback</a>
  &#8226;   <a href="#types">types</a>
  &#8226;   <a href="#warnings">warnings</a>
@@ -41152,8 +41393,7 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#catalogo_visual">catalogo_visual</a>
- &#8226;   <a href="#gestion_clientes">gestion_clientes</a>
+    <a href="#gestion_clientes">gestion_clientes</a>
  &#8226;   <a href="#gestion_cuentas_fabrica">gestion_cuentas_fabrica</a>
  &#8226;   <a href="#gestion_productos">gestion_productos</a>
  &#8226;   <a href="#gestion_proveedores">gestion_proveedores</a>
@@ -41171,6 +41411,24 @@ imported by:
  &#8226;   <a href="#tkinter.messagebox">tkinter.messagebox</a>
  &#8226;   <a href="#tkinter.simpledialog">tkinter.simpledialog</a>
  &#8226;   <a href="#tkinter.ttk">tkinter.ttk</a>
+ &#8226;   <a href="#ttkbootstrap">ttkbootstrap</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.base">ttkbootstrap.dialogs.base</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.colorchooser">ttkbootstrap.dialogs.colorchooser</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.colordropper">ttkbootstrap.dialogs.colordropper</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.datepicker">ttkbootstrap.dialogs.datepicker</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.fontdialog">ttkbootstrap.dialogs.fontdialog</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.message">ttkbootstrap.dialogs.message</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.query">ttkbootstrap.dialogs.query</a>
+ &#8226;   <a href="#ttkbootstrap.style">ttkbootstrap.style</a>
+ &#8226;   <a href="#ttkbootstrap.validation">ttkbootstrap.validation</a>
+ &#8226;   <a href="#ttkbootstrap.widgets">ttkbootstrap.widgets</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.dateentry">ttkbootstrap.widgets.dateentry</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.floodgauge">ttkbootstrap.widgets.floodgauge</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.labeledscale">ttkbootstrap.widgets.labeledscale</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.meter">ttkbootstrap.widgets.meter</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.toast">ttkbootstrap.widgets.toast</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.tooltip">ttkbootstrap.widgets.tooltip</a>
+ &#8226;   <a href="#ttkbootstrap.window">ttkbootstrap.window</a>
 
   </div>
 
@@ -41262,6 +41520,10 @@ imports:
   <div class="import">
 imported by:
     <a href="#styles">styles</a>
+ &#8226;   <a href="#tkinter">tkinter</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.fontdialog">ttkbootstrap.dialogs.fontdialog</a>
+ &#8226;   <a href="#ttkbootstrap.style">ttkbootstrap.style</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.toast">ttkbootstrap.widgets.toast</a>
 
   </div>
 
@@ -41278,8 +41540,7 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#catalogo_visual">catalogo_visual</a>
- &#8226;   <a href="#gestion_clientes">gestion_clientes</a>
+    <a href="#gestion_clientes">gestion_clientes</a>
  &#8226;   <a href="#gestion_cuentas_fabrica">gestion_cuentas_fabrica</a>
  &#8226;   <a href="#gestion_productos">gestion_productos</a>
  &#8226;   <a href="#gestion_proveedores">gestion_proveedores</a>
@@ -41306,7 +41567,8 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#tkinter.filedialog">tkinter.filedialog</a>
+    <a href="#presupuesto_visual">presupuesto_visual</a>
+ &#8226;   <a href="#tkinter.filedialog">tkinter.filedialog</a>
 
   </div>
 
@@ -41322,18 +41584,17 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#catalogo_visual">catalogo_visual</a>
- &#8226;   <a href="#gestion_clientes">gestion_clientes</a>
+    <a href="#gestion_clientes">gestion_clientes</a>
  &#8226;   <a href="#gestion_cuentas_fabrica">gestion_cuentas_fabrica</a>
  &#8226;   <a href="#gestion_productos">gestion_productos</a>
  &#8226;   <a href="#gestion_proveedores">gestion_proveedores</a>
- &#8226;   <a href="#historial_ventas">historial_ventas</a>
  &#8226;   <a href="#importar_excel">importar_excel</a>
- &#8226;   <a href="#main.py">main.py</a>
  &#8226;   <a href="#pedidos_fabrica">pedidos_fabrica</a>
  &#8226;   <a href="#presupuesto_visual">presupuesto_visual</a>
  &#8226;   <a href="#styles">styles</a>
- &#8226;   <a href="#tkinter">tkinter</a>
+ &#8226;   <a href="#ttkbootstrap">ttkbootstrap</a>
+ &#8226;   <a href="#ttkbootstrap.style">ttkbootstrap.style</a>
+ &#8226;   <a href="#ttkbootstrap.widgets">ttkbootstrap.widgets</a>
 
   </div>
 
@@ -41481,6 +41742,762 @@ imported by:
 </div>
 
 <div class="node">
+  <a name="ttkbootstrap"></a>
+  <a target="code" href="///C:/Users/emr14/AppData/Local/Python/pythoncore-3.14-64/Lib/site-packages/ttkbootstrap/__init__.py" type="text/plain"><tt>ttkbootstrap</tt></a>
+<span class="moduletype">Package</span>  <div class="import">
+imports:
+    <a href="#tkinter">tkinter</a>
+ &#8226;   <a href="#tkinter.ttk">tkinter.ttk</a>
+ &#8226;   <a href="#ttkbootstrap">ttkbootstrap</a>
+ &#8226;   <a href="#ttkbootstrap.colorutils">ttkbootstrap.colorutils</a>
+ &#8226;   <a href="#ttkbootstrap.style">ttkbootstrap.style</a>
+ &#8226;   <a href="#ttkbootstrap.utility">ttkbootstrap.utility</a>
+ &#8226;   <a href="#ttkbootstrap.widgets">ttkbootstrap.widgets</a>
+ &#8226;   <a href="#ttkbootstrap.window">ttkbootstrap.window</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#gestion_cuentas_fabrica">gestion_cuentas_fabrica</a>
+ &#8226;   <a href="#historial_ventas">historial_ventas</a>
+ &#8226;   <a href="#main.py">main.py</a>
+ &#8226;   <a href="#styles">styles</a>
+ &#8226;   <a href="#ttkbootstrap">ttkbootstrap</a>
+ &#8226;   <a href="#ttkbootstrap.colorutils">ttkbootstrap.colorutils</a>
+ &#8226;   <a href="#ttkbootstrap.constants">ttkbootstrap.constants</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs">ttkbootstrap.dialogs</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.base">ttkbootstrap.dialogs.base</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.colorchooser">ttkbootstrap.dialogs.colorchooser</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.colordropper">ttkbootstrap.dialogs.colordropper</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.datepicker">ttkbootstrap.dialogs.datepicker</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.fontdialog">ttkbootstrap.dialogs.fontdialog</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.message">ttkbootstrap.dialogs.message</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.query">ttkbootstrap.dialogs.query</a>
+ &#8226;   <a href="#ttkbootstrap.icons">ttkbootstrap.icons</a>
+ &#8226;   <a href="#ttkbootstrap.localization">ttkbootstrap.localization</a>
+ &#8226;   <a href="#ttkbootstrap.localization.msgcat">ttkbootstrap.localization.msgcat</a>
+ &#8226;   <a href="#ttkbootstrap.publisher">ttkbootstrap.publisher</a>
+ &#8226;   <a href="#ttkbootstrap.style">ttkbootstrap.style</a>
+ &#8226;   <a href="#ttkbootstrap.themes">ttkbootstrap.themes</a>
+ &#8226;   <a href="#ttkbootstrap.utility">ttkbootstrap.utility</a>
+ &#8226;   <a href="#ttkbootstrap.validation">ttkbootstrap.validation</a>
+ &#8226;   <a href="#ttkbootstrap.widgets">ttkbootstrap.widgets</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.dateentry">ttkbootstrap.widgets.dateentry</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.floodgauge">ttkbootstrap.widgets.floodgauge</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.labeledscale">ttkbootstrap.widgets.labeledscale</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.meter">ttkbootstrap.widgets.meter</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.toast">ttkbootstrap.widgets.toast</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.tooltip">ttkbootstrap.widgets.tooltip</a>
+ &#8226;   <a href="#ttkbootstrap.window">ttkbootstrap.window</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="ttkbootstrap.colorutils"></a>
+  <a target="code" href="///C:/Users/emr14/AppData/Local/Python/pythoncore-3.14-64/Lib/site-packages/ttkbootstrap/colorutils.py" type="text/plain"><tt>ttkbootstrap.colorutils</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#PIL">PIL</a>
+ &#8226;   <a href="#PIL.ImageColor">PIL.ImageColor</a>
+ &#8226;   <a href="#colorsys">colorsys</a>
+ &#8226;   <a href="#ttkbootstrap">ttkbootstrap</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#ttkbootstrap">ttkbootstrap</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.colorchooser">ttkbootstrap.dialogs.colorchooser</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.colordropper">ttkbootstrap.dialogs.colordropper</a>
+ &#8226;   <a href="#ttkbootstrap.style">ttkbootstrap.style</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.floodgauge">ttkbootstrap.widgets.floodgauge</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="ttkbootstrap.constants"></a>
+  <a target="code" href="///C:/Users/emr14/AppData/Local/Python/pythoncore-3.14-64/Lib/site-packages/ttkbootstrap/constants.py" type="text/plain"><tt>ttkbootstrap.constants</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#__future__">__future__</a>
+ &#8226;   <a href="#ttkbootstrap">ttkbootstrap</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#main.py">main.py</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.colorchooser">ttkbootstrap.dialogs.colorchooser</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.colordropper">ttkbootstrap.dialogs.colordropper</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.datepicker">ttkbootstrap.dialogs.datepicker</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.fontdialog">ttkbootstrap.dialogs.fontdialog</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.message">ttkbootstrap.dialogs.message</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.query">ttkbootstrap.dialogs.query</a>
+ &#8226;   <a href="#ttkbootstrap.style">ttkbootstrap.style</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.dateentry">ttkbootstrap.widgets.dateentry</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.floodgauge">ttkbootstrap.widgets.floodgauge</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.labeledscale">ttkbootstrap.widgets.labeledscale</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.meter">ttkbootstrap.widgets.meter</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.toast">ttkbootstrap.widgets.toast</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.tooltip">ttkbootstrap.widgets.tooltip</a>
+ &#8226;   <a href="#ttkbootstrap.window">ttkbootstrap.window</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="ttkbootstrap.dialogs"></a>
+  <a target="code" href="///C:/Users/emr14/AppData/Local/Python/pythoncore-3.14-64/Lib/site-packages/ttkbootstrap/dialogs/__init__.py" type="text/plain"><tt>ttkbootstrap.dialogs</tt></a>
+<span class="moduletype">Package</span>  <div class="import">
+imports:
+    <a href="#ttkbootstrap">ttkbootstrap</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.base">ttkbootstrap.dialogs.base</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.colorchooser">ttkbootstrap.dialogs.colorchooser</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.colordropper">ttkbootstrap.dialogs.colordropper</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.datepicker">ttkbootstrap.dialogs.datepicker</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.fontdialog">ttkbootstrap.dialogs.fontdialog</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.message">ttkbootstrap.dialogs.message</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.query">ttkbootstrap.dialogs.query</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#ttkbootstrap.dialogs.base">ttkbootstrap.dialogs.base</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.colorchooser">ttkbootstrap.dialogs.colorchooser</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.colordropper">ttkbootstrap.dialogs.colordropper</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.datepicker">ttkbootstrap.dialogs.datepicker</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.fontdialog">ttkbootstrap.dialogs.fontdialog</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.message">ttkbootstrap.dialogs.message</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.query">ttkbootstrap.dialogs.query</a>
+ &#8226;   <a href="#ttkbootstrap.localization.msgcat">ttkbootstrap.localization.msgcat</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.dateentry">ttkbootstrap.widgets.dateentry</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="ttkbootstrap.dialogs.base"></a>
+  <a target="code" href="///C:/Users/emr14/AppData/Local/Python/pythoncore-3.14-64/Lib/site-packages/ttkbootstrap/dialogs/base.py" type="text/plain"><tt>ttkbootstrap.dialogs.base</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#tkinter">tkinter</a>
+ &#8226;   <a href="#ttkbootstrap">ttkbootstrap</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs">ttkbootstrap.dialogs</a>
+ &#8226;   <a href="#ttkbootstrap.utility">ttkbootstrap.utility</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#ttkbootstrap.dialogs">ttkbootstrap.dialogs</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.colorchooser">ttkbootstrap.dialogs.colorchooser</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.fontdialog">ttkbootstrap.dialogs.fontdialog</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.message">ttkbootstrap.dialogs.message</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.query">ttkbootstrap.dialogs.query</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="ttkbootstrap.dialogs.colorchooser"></a>
+  <a target="code" href="///C:/Users/emr14/AppData/Local/Python/pythoncore-3.14-64/Lib/site-packages/ttkbootstrap/dialogs/colorchooser.py" type="text/plain"><tt>ttkbootstrap.dialogs.colorchooser</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#PIL">PIL</a>
+ &#8226;   <a href="#PIL.ImageColor">PIL.ImageColor</a>
+ &#8226;   <a href="#collections">collections</a>
+ &#8226;   <a href="#tkinter">tkinter</a>
+ &#8226;   <a href="#ttkbootstrap">ttkbootstrap</a>
+ &#8226;   <a href="#ttkbootstrap.colorutils">ttkbootstrap.colorutils</a>
+ &#8226;   <a href="#ttkbootstrap.constants">ttkbootstrap.constants</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs">ttkbootstrap.dialogs</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.base">ttkbootstrap.dialogs.base</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.colordropper">ttkbootstrap.dialogs.colordropper</a>
+ &#8226;   <a href="#ttkbootstrap.localization">ttkbootstrap.localization</a>
+ &#8226;   <a href="#ttkbootstrap.utility">ttkbootstrap.utility</a>
+ &#8226;   <a href="#ttkbootstrap.validation">ttkbootstrap.validation</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.tooltip">ttkbootstrap.widgets.tooltip</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#ttkbootstrap.dialogs">ttkbootstrap.dialogs</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.query">ttkbootstrap.dialogs.query</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="ttkbootstrap.dialogs.colordropper"></a>
+  <a target="code" href="///C:/Users/emr14/AppData/Local/Python/pythoncore-3.14-64/Lib/site-packages/ttkbootstrap/dialogs/colordropper.py" type="text/plain"><tt>ttkbootstrap.dialogs.colordropper</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#PIL">PIL</a>
+ &#8226;   <a href="#PIL.Image">PIL.Image</a>
+ &#8226;   <a href="#PIL.ImageGrab">PIL.ImageGrab</a>
+ &#8226;   <a href="#PIL.ImageTk">PIL.ImageTk</a>
+ &#8226;   <a href="#collections">collections</a>
+ &#8226;   <a href="#tkinter">tkinter</a>
+ &#8226;   <a href="#ttkbootstrap">ttkbootstrap</a>
+ &#8226;   <a href="#ttkbootstrap.colorutils">ttkbootstrap.colorutils</a>
+ &#8226;   <a href="#ttkbootstrap.constants">ttkbootstrap.constants</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs">ttkbootstrap.dialogs</a>
+ &#8226;   <a href="#ttkbootstrap.utility">ttkbootstrap.utility</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#ttkbootstrap.dialogs">ttkbootstrap.dialogs</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.colorchooser">ttkbootstrap.dialogs.colorchooser</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="ttkbootstrap.dialogs.datepicker"></a>
+  <a target="code" href="///C:/Users/emr14/AppData/Local/Python/pythoncore-3.14-64/Lib/site-packages/ttkbootstrap/dialogs/datepicker.py" type="text/plain"><tt>ttkbootstrap.dialogs.datepicker</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#calendar">calendar</a>
+ &#8226;   <a href="#datetime">datetime</a>
+ &#8226;   <a href="#locale">locale</a>
+ &#8226;   <a href="#tkinter">tkinter</a>
+ &#8226;   <a href="#ttkbootstrap">ttkbootstrap</a>
+ &#8226;   <a href="#ttkbootstrap.constants">ttkbootstrap.constants</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs">ttkbootstrap.dialogs</a>
+ &#8226;   <a href="#ttkbootstrap.localization">ttkbootstrap.localization</a>
+ &#8226;   <a href="#ttkbootstrap.utility">ttkbootstrap.utility</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#ttkbootstrap.dialogs">ttkbootstrap.dialogs</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.query">ttkbootstrap.dialogs.query</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="ttkbootstrap.dialogs.fontdialog"></a>
+  <a target="code" href="///C:/Users/emr14/AppData/Local/Python/pythoncore-3.14-64/Lib/site-packages/ttkbootstrap/dialogs/fontdialog.py" type="text/plain"><tt>ttkbootstrap.dialogs.fontdialog</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#tkinter">tkinter</a>
+ &#8226;   <a href="#tkinter.font">tkinter.font</a>
+ &#8226;   <a href="#ttkbootstrap">ttkbootstrap</a>
+ &#8226;   <a href="#ttkbootstrap.constants">ttkbootstrap.constants</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs">ttkbootstrap.dialogs</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.base">ttkbootstrap.dialogs.base</a>
+ &#8226;   <a href="#ttkbootstrap.localization">ttkbootstrap.localization</a>
+ &#8226;   <a href="#ttkbootstrap.utility">ttkbootstrap.utility</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#ttkbootstrap.dialogs">ttkbootstrap.dialogs</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.query">ttkbootstrap.dialogs.query</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="ttkbootstrap.dialogs.message"></a>
+  <a target="code" href="///C:/Users/emr14/AppData/Local/Python/pythoncore-3.14-64/Lib/site-packages/ttkbootstrap/dialogs/message.py" type="text/plain"><tt>ttkbootstrap.dialogs.message</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#textwrap">textwrap</a>
+ &#8226;   <a href="#tkinter">tkinter</a>
+ &#8226;   <a href="#ttkbootstrap">ttkbootstrap</a>
+ &#8226;   <a href="#ttkbootstrap.constants">ttkbootstrap.constants</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs">ttkbootstrap.dialogs</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.base">ttkbootstrap.dialogs.base</a>
+ &#8226;   <a href="#ttkbootstrap.icons">ttkbootstrap.icons</a>
+ &#8226;   <a href="#ttkbootstrap.localization">ttkbootstrap.localization</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#ttkbootstrap.dialogs">ttkbootstrap.dialogs</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.query">ttkbootstrap.dialogs.query</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="ttkbootstrap.dialogs.query"></a>
+  <a target="code" href="///C:/Users/emr14/AppData/Local/Python/pythoncore-3.14-64/Lib/site-packages/ttkbootstrap/dialogs/query.py" type="text/plain"><tt>ttkbootstrap.dialogs.query</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#datetime">datetime</a>
+ &#8226;   <a href="#textwrap">textwrap</a>
+ &#8226;   <a href="#tkinter">tkinter</a>
+ &#8226;   <a href="#ttkbootstrap">ttkbootstrap</a>
+ &#8226;   <a href="#ttkbootstrap.constants">ttkbootstrap.constants</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs">ttkbootstrap.dialogs</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.base">ttkbootstrap.dialogs.base</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.colorchooser">ttkbootstrap.dialogs.colorchooser</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.datepicker">ttkbootstrap.dialogs.datepicker</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.fontdialog">ttkbootstrap.dialogs.fontdialog</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.message">ttkbootstrap.dialogs.message</a>
+ &#8226;   <a href="#ttkbootstrap.localization">ttkbootstrap.localization</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#ttkbootstrap.dialogs">ttkbootstrap.dialogs</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="ttkbootstrap.icons"></a>
+  <a target="code" href="///C:/Users/emr14/AppData/Local/Python/pythoncore-3.14-64/Lib/site-packages/ttkbootstrap/icons.py" type="text/plain"><tt>ttkbootstrap.icons</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#ttkbootstrap">ttkbootstrap</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#ttkbootstrap.dialogs.message">ttkbootstrap.dialogs.message</a>
+ &#8226;   <a href="#ttkbootstrap.window">ttkbootstrap.window</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="ttkbootstrap.localization"></a>
+  <a target="code" href="///C:/Users/emr14/AppData/Local/Python/pythoncore-3.14-64/Lib/site-packages/ttkbootstrap/localization/__init__.py" type="text/plain"><tt>ttkbootstrap.localization</tt></a>
+<span class="moduletype">Package</span>  <div class="import">
+imports:
+    <a href="#ttkbootstrap">ttkbootstrap</a>
+ &#8226;   <a href="#ttkbootstrap.localization.msgcat">ttkbootstrap.localization.msgcat</a>
+ &#8226;   <a href="#ttkbootstrap.localization.msgs">ttkbootstrap.localization.msgs</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#ttkbootstrap.dialogs.colorchooser">ttkbootstrap.dialogs.colorchooser</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.datepicker">ttkbootstrap.dialogs.datepicker</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.fontdialog">ttkbootstrap.dialogs.fontdialog</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.message">ttkbootstrap.dialogs.message</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.query">ttkbootstrap.dialogs.query</a>
+ &#8226;   <a href="#ttkbootstrap.localization.msgcat">ttkbootstrap.localization.msgcat</a>
+ &#8226;   <a href="#ttkbootstrap.localization.msgs">ttkbootstrap.localization.msgs</a>
+ &#8226;   <a href="#ttkbootstrap.style">ttkbootstrap.style</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="ttkbootstrap.localization.msgcat"></a>
+  <a target="code" href="///C:/Users/emr14/AppData/Local/Python/pythoncore-3.14-64/Lib/site-packages/ttkbootstrap/localization/msgcat.py" type="text/plain"><tt>ttkbootstrap.localization.msgcat</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#os">os</a>
+ &#8226;   <a href="#pathlib">pathlib</a>
+ &#8226;   <a href="#ttkbootstrap">ttkbootstrap</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs">ttkbootstrap.dialogs</a>
+ &#8226;   <a href="#ttkbootstrap.localization">ttkbootstrap.localization</a>
+ &#8226;   <a href="#ttkbootstrap.window">ttkbootstrap.window</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#ttkbootstrap.localization">ttkbootstrap.localization</a>
+ &#8226;   <a href="#ttkbootstrap.localization.msgs">ttkbootstrap.localization.msgs</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="ttkbootstrap.localization.msgs"></a>
+  <a target="code" href="///C:/Users/emr14/AppData/Local/Python/pythoncore-3.14-64/Lib/site-packages/ttkbootstrap/localization/msgs.py" type="text/plain"><tt>ttkbootstrap.localization.msgs</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#itertools">itertools</a>
+ &#8226;   <a href="#ttkbootstrap.localization">ttkbootstrap.localization</a>
+ &#8226;   <a href="#ttkbootstrap.localization.msgcat">ttkbootstrap.localization.msgcat</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#ttkbootstrap.localization">ttkbootstrap.localization</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="ttkbootstrap.publisher"></a>
+  <a target="code" href="///C:/Users/emr14/AppData/Local/Python/pythoncore-3.14-64/Lib/site-packages/ttkbootstrap/publisher.py" type="text/plain"><tt>ttkbootstrap.publisher</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#enum">enum</a>
+ &#8226;   <a href="#ttkbootstrap">ttkbootstrap</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#ttkbootstrap.style">ttkbootstrap.style</a>
+ &#8226;   <a href="#ttkbootstrap.window">ttkbootstrap.window</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="ttkbootstrap.style"></a>
+  <a target="code" href="///C:/Users/emr14/AppData/Local/Python/pythoncore-3.14-64/Lib/site-packages/ttkbootstrap/style.py" type="text/plain"><tt>ttkbootstrap.style</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#PIL">PIL</a>
+ &#8226;   <a href="#PIL.Image">PIL.Image</a>
+ &#8226;   <a href="#PIL.ImageColor">PIL.ImageColor</a>
+ &#8226;   <a href="#PIL.ImageDraw">PIL.ImageDraw</a>
+ &#8226;   <a href="#PIL.ImageFont">PIL.ImageFont</a>
+ &#8226;   <a href="#PIL.ImageTk">PIL.ImageTk</a>
+ &#8226;   <a href="#colorsys">colorsys</a>
+ &#8226;   <a href="#json">json</a>
+ &#8226;   <a href="#math">math</a>
+ &#8226;   <a href="#re">re</a>
+ &#8226;   <a href="#tkinter">tkinter</a>
+ &#8226;   <a href="#tkinter.font">tkinter.font</a>
+ &#8226;   <a href="#tkinter.ttk">tkinter.ttk</a>
+ &#8226;   <a href="#ttkbootstrap">ttkbootstrap</a>
+ &#8226;   <a href="#ttkbootstrap.colorutils">ttkbootstrap.colorutils</a>
+ &#8226;   <a href="#ttkbootstrap.constants">ttkbootstrap.constants</a>
+ &#8226;   <a href="#ttkbootstrap.localization">ttkbootstrap.localization</a>
+ &#8226;   <a href="#ttkbootstrap.publisher">ttkbootstrap.publisher</a>
+ &#8226;   <a href="#ttkbootstrap.themes.standard">ttkbootstrap.themes.standard</a>
+ &#8226;   <a href="#ttkbootstrap.themes.user">ttkbootstrap.themes.user</a>
+ &#8226;   <a href="#ttkbootstrap.utility">ttkbootstrap.utility</a>
+ &#8226;   <a href="#ttkbootstrap.widgets">ttkbootstrap.widgets</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#ttkbootstrap">ttkbootstrap</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.floodgauge">ttkbootstrap.widgets.floodgauge</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.meter">ttkbootstrap.widgets.meter</a>
+ &#8226;   <a href="#ttkbootstrap.window">ttkbootstrap.window</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="ttkbootstrap.themes"></a>
+  <a target="code" href="///C:/Users/emr14/AppData/Local/Python/pythoncore-3.14-64/Lib/site-packages/ttkbootstrap/themes/__init__.py" type="text/plain"><tt>ttkbootstrap.themes</tt></a>
+<span class="moduletype">Package</span>  <div class="import">
+imports:
+    <a href="#ttkbootstrap">ttkbootstrap</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#ttkbootstrap.themes.standard">ttkbootstrap.themes.standard</a>
+ &#8226;   <a href="#ttkbootstrap.themes.user">ttkbootstrap.themes.user</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="ttkbootstrap.themes.standard"></a>
+  <a target="code" href="///C:/Users/emr14/AppData/Local/Python/pythoncore-3.14-64/Lib/site-packages/ttkbootstrap/themes/standard.py" type="text/plain"><tt>ttkbootstrap.themes.standard</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#ttkbootstrap.themes">ttkbootstrap.themes</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#ttkbootstrap.style">ttkbootstrap.style</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="ttkbootstrap.themes.user"></a>
+  <a target="code" href="///C:/Users/emr14/AppData/Local/Python/pythoncore-3.14-64/Lib/site-packages/ttkbootstrap/themes/user.py" type="text/plain"><tt>ttkbootstrap.themes.user</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#ttkbootstrap.themes">ttkbootstrap.themes</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#ttkbootstrap.style">ttkbootstrap.style</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="ttkbootstrap.utility"></a>
+  <a target="code" href="///C:/Users/emr14/AppData/Local/Python/pythoncore-3.14-64/Lib/site-packages/ttkbootstrap/utility.py" type="text/plain"><tt>ttkbootstrap.utility</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#ctypes">ctypes</a>
+ &#8226;   <a href="#ttkbootstrap">ttkbootstrap</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#ttkbootstrap">ttkbootstrap</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.base">ttkbootstrap.dialogs.base</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.colorchooser">ttkbootstrap.dialogs.colorchooser</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.colordropper">ttkbootstrap.dialogs.colordropper</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.datepicker">ttkbootstrap.dialogs.datepicker</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.fontdialog">ttkbootstrap.dialogs.fontdialog</a>
+ &#8226;   <a href="#ttkbootstrap.style">ttkbootstrap.style</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.meter">ttkbootstrap.widgets.meter</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.toast">ttkbootstrap.widgets.toast</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.tooltip">ttkbootstrap.widgets.tooltip</a>
+ &#8226;   <a href="#ttkbootstrap.window">ttkbootstrap.window</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="ttkbootstrap.validation"></a>
+  <a target="code" href="///C:/Users/emr14/AppData/Local/Python/pythoncore-3.14-64/Lib/site-packages/ttkbootstrap/validation.py" type="text/plain"><tt>ttkbootstrap.validation</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#re">re</a>
+ &#8226;   <a href="#tkinter">tkinter</a>
+ &#8226;   <a href="#ttkbootstrap">ttkbootstrap</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#ttkbootstrap.dialogs.colorchooser">ttkbootstrap.dialogs.colorchooser</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="ttkbootstrap.widgets"></a>
+  <a target="code" href="///C:/Users/emr14/AppData/Local/Python/pythoncore-3.14-64/Lib/site-packages/ttkbootstrap/widgets/__init__.py" type="text/plain"><tt>ttkbootstrap.widgets</tt></a>
+<span class="moduletype">Package</span>  <div class="import">
+imports:
+    <a href="#tkinter">tkinter</a>
+ &#8226;   <a href="#tkinter.ttk">tkinter.ttk</a>
+ &#8226;   <a href="#ttkbootstrap">ttkbootstrap</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.dateentry">ttkbootstrap.widgets.dateentry</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.floodgauge">ttkbootstrap.widgets.floodgauge</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.labeledscale">ttkbootstrap.widgets.labeledscale</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.meter">ttkbootstrap.widgets.meter</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.toast">ttkbootstrap.widgets.toast</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.tooltip">ttkbootstrap.widgets.tooltip</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#ttkbootstrap">ttkbootstrap</a>
+ &#8226;   <a href="#ttkbootstrap.style">ttkbootstrap.style</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.dateentry">ttkbootstrap.widgets.dateentry</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.floodgauge">ttkbootstrap.widgets.floodgauge</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.labeledscale">ttkbootstrap.widgets.labeledscale</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.meter">ttkbootstrap.widgets.meter</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.toast">ttkbootstrap.widgets.toast</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.tooltip">ttkbootstrap.widgets.tooltip</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="ttkbootstrap.widgets.dateentry"></a>
+  <a target="code" href="///C:/Users/emr14/AppData/Local/Python/pythoncore-3.14-64/Lib/site-packages/ttkbootstrap/widgets/dateentry.py" type="text/plain"><tt>ttkbootstrap.widgets.dateentry</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#datetime">datetime</a>
+ &#8226;   <a href="#tkinter">tkinter</a>
+ &#8226;   <a href="#ttkbootstrap">ttkbootstrap</a>
+ &#8226;   <a href="#ttkbootstrap.constants">ttkbootstrap.constants</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs">ttkbootstrap.dialogs</a>
+ &#8226;   <a href="#ttkbootstrap.widgets">ttkbootstrap.widgets</a>
+ &#8226;   <a href="#typing">typing</a>
+ &#8226;   <a href="#warnings">warnings</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#ttkbootstrap.widgets">ttkbootstrap.widgets</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="ttkbootstrap.widgets.floodgauge"></a>
+  <a target="code" href="///C:/Users/emr14/AppData/Local/Python/pythoncore-3.14-64/Lib/site-packages/ttkbootstrap/widgets/floodgauge.py" type="text/plain"><tt>ttkbootstrap.widgets.floodgauge</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#tkinter">tkinter</a>
+ &#8226;   <a href="#ttkbootstrap">ttkbootstrap</a>
+ &#8226;   <a href="#ttkbootstrap.colorutils">ttkbootstrap.colorutils</a>
+ &#8226;   <a href="#ttkbootstrap.constants">ttkbootstrap.constants</a>
+ &#8226;   <a href="#ttkbootstrap.style">ttkbootstrap.style</a>
+ &#8226;   <a href="#ttkbootstrap.widgets">ttkbootstrap.widgets</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#ttkbootstrap.widgets">ttkbootstrap.widgets</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="ttkbootstrap.widgets.labeledscale"></a>
+  <a target="code" href="///C:/Users/emr14/AppData/Local/Python/pythoncore-3.14-64/Lib/site-packages/ttkbootstrap/widgets/labeledscale.py" type="text/plain"><tt>ttkbootstrap.widgets.labeledscale</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#tkinter">tkinter</a>
+ &#8226;   <a href="#ttkbootstrap">ttkbootstrap</a>
+ &#8226;   <a href="#ttkbootstrap.constants">ttkbootstrap.constants</a>
+ &#8226;   <a href="#ttkbootstrap.widgets">ttkbootstrap.widgets</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#ttkbootstrap.widgets">ttkbootstrap.widgets</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="ttkbootstrap.widgets.meter"></a>
+  <a target="code" href="///C:/Users/emr14/AppData/Local/Python/pythoncore-3.14-64/Lib/site-packages/ttkbootstrap/widgets/meter.py" type="text/plain"><tt>ttkbootstrap.widgets.meter</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#PIL">PIL</a>
+ &#8226;   <a href="#PIL.Image">PIL.Image</a>
+ &#8226;   <a href="#PIL.ImageDraw">PIL.ImageDraw</a>
+ &#8226;   <a href="#PIL.ImageTk">PIL.ImageTk</a>
+ &#8226;   <a href="#math">math</a>
+ &#8226;   <a href="#tkinter">tkinter</a>
+ &#8226;   <a href="#ttkbootstrap">ttkbootstrap</a>
+ &#8226;   <a href="#ttkbootstrap.constants">ttkbootstrap.constants</a>
+ &#8226;   <a href="#ttkbootstrap.style">ttkbootstrap.style</a>
+ &#8226;   <a href="#ttkbootstrap.utility">ttkbootstrap.utility</a>
+ &#8226;   <a href="#ttkbootstrap.widgets">ttkbootstrap.widgets</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#ttkbootstrap.widgets">ttkbootstrap.widgets</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="ttkbootstrap.widgets.toast"></a>
+  <a target="code" href="///C:/Users/emr14/AppData/Local/Python/pythoncore-3.14-64/Lib/site-packages/ttkbootstrap/widgets/toast.py" type="text/plain"><tt>ttkbootstrap.widgets.toast</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#tkinter">tkinter</a>
+ &#8226;   <a href="#tkinter.font">tkinter.font</a>
+ &#8226;   <a href="#ttkbootstrap">ttkbootstrap</a>
+ &#8226;   <a href="#ttkbootstrap.constants">ttkbootstrap.constants</a>
+ &#8226;   <a href="#ttkbootstrap.utility">ttkbootstrap.utility</a>
+ &#8226;   <a href="#ttkbootstrap.widgets">ttkbootstrap.widgets</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#ttkbootstrap.widgets">ttkbootstrap.widgets</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="ttkbootstrap.widgets.tooltip"></a>
+  <a target="code" href="///C:/Users/emr14/AppData/Local/Python/pythoncore-3.14-64/Lib/site-packages/ttkbootstrap/widgets/tooltip.py" type="text/plain"><tt>ttkbootstrap.widgets.tooltip</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#tkinter">tkinter</a>
+ &#8226;   <a href="#ttkbootstrap">ttkbootstrap</a>
+ &#8226;   <a href="#ttkbootstrap.constants">ttkbootstrap.constants</a>
+ &#8226;   <a href="#ttkbootstrap.utility">ttkbootstrap.utility</a>
+ &#8226;   <a href="#ttkbootstrap.widgets">ttkbootstrap.widgets</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#ttkbootstrap.dialogs.colorchooser">ttkbootstrap.dialogs.colorchooser</a>
+ &#8226;   <a href="#ttkbootstrap.widgets">ttkbootstrap.widgets</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="ttkbootstrap.window"></a>
+  <a target="code" href="///C:/Users/emr14/AppData/Local/Python/pythoncore-3.14-64/Lib/site-packages/ttkbootstrap/window.py" type="text/plain"><tt>ttkbootstrap.window</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#tkinter">tkinter</a>
+ &#8226;   <a href="#ttkbootstrap">ttkbootstrap</a>
+ &#8226;   <a href="#ttkbootstrap.constants">ttkbootstrap.constants</a>
+ &#8226;   <a href="#ttkbootstrap.icons">ttkbootstrap.icons</a>
+ &#8226;   <a href="#ttkbootstrap.publisher">ttkbootstrap.publisher</a>
+ &#8226;   <a href="#ttkbootstrap.style">ttkbootstrap.style</a>
+ &#8226;   <a href="#ttkbootstrap.utility">ttkbootstrap.utility</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#ttkbootstrap">ttkbootstrap</a>
+ &#8226;   <a href="#ttkbootstrap.localization.msgcat">ttkbootstrap.localization.msgcat</a>
+
+  </div>
+
+</div>
+
+<div class="node">
   <a name="tty"></a>
   <a target="code" href="///C:/Users/emr14/AppData/Local/Python/pythoncore-3.14-64/Lib/tty.py" type="text/plain"><tt>tty</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
@@ -41510,7 +42527,9 @@ imports:
   <div class="import">
 imported by:
     <a href="#PIL.Image">PIL.Image</a>
+ &#8226;   <a href="#PIL.ImageDraw">PIL.ImageDraw</a>
  &#8226;   <a href="#PIL.ImageFilter">PIL.ImageFilter</a>
+ &#8226;   <a href="#PIL.ImageFont">PIL.ImageFont</a>
  &#8226;   <a href="#PIL.ImageMath">PIL.ImageMath</a>
  &#8226;   <a href="#PIL._typing">PIL._typing</a>
  &#8226;   <a href="#_py_warnings">_py_warnings</a>
@@ -41624,8 +42643,11 @@ imported by:
  &#8226;   <a href="#PIL.ImImagePlugin">PIL.ImImagePlugin</a>
  &#8226;   <a href="#PIL.Image">PIL.Image</a>
  &#8226;   <a href="#PIL.ImageCms">PIL.ImageCms</a>
+ &#8226;   <a href="#PIL.ImageDraw">PIL.ImageDraw</a>
+ &#8226;   <a href="#PIL.ImageDraw2">PIL.ImageDraw2</a>
  &#8226;   <a href="#PIL.ImageFile">PIL.ImageFile</a>
  &#8226;   <a href="#PIL.ImageFilter">PIL.ImageFilter</a>
+ &#8226;   <a href="#PIL.ImageFont">PIL.ImageFont</a>
  &#8226;   <a href="#PIL.ImageMath">PIL.ImageMath</a>
  &#8226;   <a href="#PIL.ImageMode">PIL.ImageMode</a>
  &#8226;   <a href="#PIL.ImageOps">PIL.ImageOps</a>
@@ -41658,6 +42680,7 @@ imported by:
  &#8226;   <a href="#PIL._avif">PIL._avif</a>
  &#8226;   <a href="#PIL._imaging">PIL._imaging</a>
  &#8226;   <a href="#PIL._imagingcms">PIL._imagingcms</a>
+ &#8226;   <a href="#PIL._imagingft">PIL._imagingft</a>
  &#8226;   <a href="#PIL._imagingmath">PIL._imagingmath</a>
  &#8226;   <a href="#PIL._imagingtk">PIL._imagingtk</a>
  &#8226;   <a href="#PIL._typing">PIL._typing</a>
@@ -41929,6 +42952,26 @@ imported by:
  &#8226;   <a href="#pandas.util._validators">pandas.util._validators</a>
  &#8226;   <a href="#pandas.util.version">pandas.util.version</a>
  &#8226;   <a href="#pdb">pdb</a>
+ &#8226;   <a href="#ttkbootstrap">ttkbootstrap</a>
+ &#8226;   <a href="#ttkbootstrap.constants">ttkbootstrap.constants</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.base">ttkbootstrap.dialogs.base</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.colorchooser">ttkbootstrap.dialogs.colorchooser</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.colordropper">ttkbootstrap.dialogs.colordropper</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.datepicker">ttkbootstrap.dialogs.datepicker</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.fontdialog">ttkbootstrap.dialogs.fontdialog</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.message">ttkbootstrap.dialogs.message</a>
+ &#8226;   <a href="#ttkbootstrap.dialogs.query">ttkbootstrap.dialogs.query</a>
+ &#8226;   <a href="#ttkbootstrap.localization.msgcat">ttkbootstrap.localization.msgcat</a>
+ &#8226;   <a href="#ttkbootstrap.publisher">ttkbootstrap.publisher</a>
+ &#8226;   <a href="#ttkbootstrap.style">ttkbootstrap.style</a>
+ &#8226;   <a href="#ttkbootstrap.validation">ttkbootstrap.validation</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.dateentry">ttkbootstrap.widgets.dateentry</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.floodgauge">ttkbootstrap.widgets.floodgauge</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.labeledscale">ttkbootstrap.widgets.labeledscale</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.meter">ttkbootstrap.widgets.meter</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.toast">ttkbootstrap.widgets.toast</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.tooltip">ttkbootstrap.widgets.tooltip</a>
+ &#8226;   <a href="#ttkbootstrap.window">ttkbootstrap.window</a>
 
   </div>
 
@@ -42844,6 +43887,7 @@ imports:
 imported by:
     <a href="#PIL.IcoImagePlugin">PIL.IcoImagePlugin</a>
  &#8226;   <a href="#PIL.Image">PIL.Image</a>
+ &#8226;   <a href="#PIL.ImageFont">PIL.ImageFont</a>
  &#8226;   <a href="#PIL.JpegImagePlugin">PIL.JpegImagePlugin</a>
  &#8226;   <a href="#PIL.PngImagePlugin">PIL.PngImagePlugin</a>
  &#8226;   <a href="#PIL.TgaImagePlugin">PIL.TgaImagePlugin</a>
@@ -43043,6 +44087,7 @@ imported by:
  &#8226;   <a href="#threading">threading</a>
  &#8226;   <a href="#tkinter">tkinter</a>
  &#8226;   <a href="#traceback">traceback</a>
+ &#8226;   <a href="#ttkbootstrap.widgets.dateentry">ttkbootstrap.widgets.dateentry</a>
  &#8226;   <a href="#typing">typing</a>
  &#8226;   <a href="#unittest.async_case">unittest.async_case</a>
  &#8226;   <a href="#unittest.case">unittest.case</a>
