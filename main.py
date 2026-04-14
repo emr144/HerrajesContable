@@ -1,64 +1,72 @@
 import tkinter as tk
 import os
 import sys
-import ctypes
-import shutil
-from datetime import datetime
-from tkinter import filedialog, messagebox
+import traceback
 from PIL import Image, ImageTk
 import ttkbootstrap as tb
 from ttkbootstrap.constants import *
-import styles as st  # Central de estilos pura en Tkinter
 
-# --- TUS MÓDULOS ORIGINALES ---
-import presupuesto_visual
-import gestion_clientes
-import gestion_proveedores
-import gestion_productos
-import historial_ventas
-import importar_excel
-import pedidos_fabrica
-import gestion_cuentas_fabrica
-import database 
-import migracion_actualizar_listas 
-import migracion_pedidos 
-import migracion_cuentas
+# --- IMPORTACIÓN DE TUS MÓDULOS ---
+try:
+    import styles as st  
+    import presupuesto_visual
+    import gestion_clientes
+    import gestion_proveedores
+    import gestion_productos
+    import historial_ventas
+    import importar_excel
+    import pedidos_fabrica
+    import gestion_cuentas_fabrica
+    import database 
+    import migracion_actualizar_listas 
+    import migracion_pedidos 
+    import migracion_cuentas
+except ImportError as e:
+    print(f"❌ Error al importar módulos: {e}")
+    input("Presiona Enter para salir...")
+    sys.exit()
 
 class App(tb.Window):
     def __init__(self):
+        # Inicializar la ventana con el tema oscuro
         super().__init__(themename="darkly")
         
-        # 1. Cargar Estética (Orden correcto para evitar errores de fuente) [4]
-        st.actualizar_fuentes()
-        st.configurar_estilos_ttk()
-        st.aplicar_estilo_ventana(self)
+        try:
+            # 1. Cargar Estética
+            st.actualizar_fuentes()
+            st.configurar_estilos_ttk()
+            st.aplicar_estilo_ventana(self)
 
-        self.title("Herrajes Contable - Panel de Gestión")
-        self.geometry("1200x800")
-        self.configurar_icono_app()
-        self.tab_icons = {}
+            self.title("Herrajes Contable - Panel de Gestión")
+            self.geometry("1200x800")
+            self.configurar_icono_app()
+            self.tab_icons = {}
 
-        # 2. Configuración de Comboboxes (Estilo oscuro suave)
-        self.option_add('*TCombobox*Listbox.background', st.BG_INPUT)
-        self.option_add('*TCombobox*Listbox.foreground', 'white')
-        self.option_add('*TCombobox*Listbox.selectBackground', st.ACCENT)
-        
-        # --- Sistema de Pestañas Principal ---
-        self.notebook = tb.Notebook(self, bootstyle="primary")
-        self.notebook.pack(pady=(20, 0), padx=0, fill="both", expand=True)
-        
-        # --- Montar tus solapas originales ---
-        self.agregar_pestana(" VENTA", "venta", presupuesto_visual)
-        self.agregar_pestana("📚 PRODUCTOS", "productos", gestion_productos)
-        self.agregar_pestana("👥 CLIENTES", "clientes", gestion_clientes)
-        self.agregar_pestana("📜 HISTORIAL", "historial", historial_ventas)
-        self.agregar_pestana("🚚 PROVEEDORES", "proveedores", gestion_proveedores)
-        self.agregar_pestana("📦 IMPORTAR", "importar", importar_excel)
-        self.agregar_pestana("🏭 PEDIDOS", "pedidos", pedidos_fabrica)
-        self.agregar_pestana("💰 CUENTAS FÁBRICA", "cuentas", gestion_cuentas_fabrica)
+            # 2. Configuración de Comboboxes (Estilo oscuro suave)
+            self.option_add('*TCombobox*Listbox.background', st.BG_INPUT)
+            self.option_add('*TCombobox*Listbox.foreground', 'white')
+            self.option_add('*TCombobox*Listbox.selectBackground', st.ACCENT)
+            
+            # --- Sistema de Pestañas Principal ---
+            self.notebook = tb.Notebook(self, bootstyle="primary")
+            self.notebook.pack(pady=(20, 0), padx=0, fill="both", expand=True)
+            
+            # --- Montar solapas ---
+            self.agregar_pestana(" VENTA", "venta", presupuesto_visual)
+            self.agregar_pestana("📚 PRODUCTOS", "productos", gestion_productos)
+            self.agregar_pestana("👥 CLIENTES", "clientes", gestion_clientes)
+            self.agregar_pestana("📜 HISTORIAL", "historial", historial_ventas)
+            self.agregar_pestana("🚚 PROVEEDORES", "proveedores", gestion_proveedores)
+            self.agregar_pestana("📦 IMPORTAR", "importar", importar_excel)
+            self.agregar_pestana("🏭 PEDIDOS", "pedidos", pedidos_fabrica)
+            self.agregar_pestana("💰 CUENTAS FÁBRICA", "cuentas", gestion_cuentas_fabrica)
 
-        self.notebook.bind("<<NotebookTabChanged>>", self._on_tab_changed)
-        self.crear_menu_superior()
+            self.notebook.bind("<<NotebookTabChanged>>", self._on_tab_changed)
+            self.crear_menu_superior()
+            
+        except Exception as e:
+            print("❌ Error durante la inicialización de la interfaz:")
+            traceback.print_exc()
 
     def configurar_icono_app(self):
         try:
@@ -68,7 +76,8 @@ class App(tb.Window):
                 img = Image.open(ruta_ico)
                 self.icono_ref = ImageTk.PhotoImage(img)
                 self.iconphoto(True, self.icono_ref)
-        except: pass
+        except: 
+            pass
 
     def crear_menu_superior(self):
         menubar = tk.Menu(self)
@@ -82,7 +91,6 @@ class App(tb.Window):
     def abrir_configuracion_fuente(self):
         ventana_cfg = tk.Toplevel(self)
         ventana_cfg.title("Configurar Tamaño de Letra")
-        # Eliminamos la geometría fija para que la ventana se adapte al tamaño de los botones
         ventana_cfg.resizable(False, False) 
         st.aplicar_estilo_ventana(ventana_cfg)
         
@@ -94,7 +102,7 @@ class App(tb.Window):
             st.guardar_factor_fuente(factor)
             st.actualizar_fuentes()
             st.configurar_estilos_ttk()
-            self.update_idletasks() # Fuerza el redibujado de la interfaz
+            self.update_idletasks()
             ventana_cfg.destroy()
 
         def reiniciar_programa():
@@ -124,7 +132,8 @@ class App(tb.Window):
             else:
                 self.notebook.add(frame_contenido, text=titulo_completo)
         except Exception as e:
-            lbl_error = tk.Label(self.notebook, text=f"Error: {e}", fg="red", bg=st.BG_MAIN)
+            print(f"⚠️ Error al montar pestaña '{titulo_completo}': {e}")
+            lbl_error = tk.Label(self.notebook, text=f"Error en módulo: {e}", fg="red", bg="#1a1a1a")
             self.notebook.add(lbl_error, text=titulo_completo)
 
     def _on_tab_changed(self, _):
@@ -135,12 +144,27 @@ class App(tb.Window):
             elif "HISTORIAL" in tab_actual: historial_ventas.cargar_historial()
             elif "PROVEEDORES" in tab_actual: gestion_proveedores.cargar_proveedores()
             elif "PEDIDOS" in tab_actual: pedidos_fabrica.cargar_pedidos_pendientes()
-        except: pass
+        except: 
+            pass
 
+# --- BLOQUE DE EJECUCIÓN PRINCIPAL ---
 if __name__ == "__main__":
-    database.crear_base_datos()
-    migracion_actualizar_listas.aplicar_migracion()
-    migracion_pedidos.aplicar_migracion()
-    migracion_cuentas.aplicar_migracion()
-    app = App()
-    app.mainloop()
+    try:
+        print("⚙️ Iniciando mantenimiento de base de datos...")
+        database.crear_base_datos()
+        migracion_actualizar_listas.aplicar_migracion()
+        migracion_pedidos.aplicar_migracion()
+        migracion_cuentas.aplicar_migracion()
+        
+        print("🎨 Preparando interfaz gráfica...")
+        app = App()
+        print("✅ Aplicación lista.")
+        app.mainloop()
+        
+    except Exception as e:
+        print("\n" + "="*50)
+        print("❌ ERROR CRÍTICO AL INICIAR EL PROGRAMA")
+        print("="*50)
+        traceback.print_exc()
+        print("="*50)
+        input("\nPresiona Enter para cerrar esta ventana...")

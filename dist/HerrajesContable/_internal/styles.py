@@ -134,7 +134,7 @@ def estilo_boton(color=BG_CARD):
         "font": FONT_LABEL,
         "bd": 0,
         "padx": 30,
-        "pady": 15,
+        "pady": 5,
         "cursor": "hand2",
         "activebackground": ACCENT,
         "activeforeground": "white",
