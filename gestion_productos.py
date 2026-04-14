@@ -436,9 +436,6 @@ def montar_interfaz(parent):
     tk.Label(frame_izquierdo, text="ACCIONES MASIVAS", font=st.FONT_TITLE, bg=st.BG_MAIN, fg=st.TEXT_PRIMARY).pack(pady=10, anchor="w")
     btn_eliminar_prov = tk.Button(frame_izquierdo, text="🗑️ Eliminar por Proveedor", command=eliminar_por_proveedor_dialogo, **st.estilo_boton(st.RED_ERROR)); btn_eliminar_prov.pack(fill=tk.X, pady=10)
 
-    btn_modif_coef = tk.Button(frame_izquierdo, text="📈 Modificar Coeficiente por Proveedor", command=modificar_coef_por_proveedor_dialogo, **st.estilo_boton(st.ACCENT))
-    btn_modif_coef.pack(fill=tk.X, pady=10)
-
     # --- Panel Derecho (Buscador y Tabla) ---
     frame_filtros = tk.Frame(frame_derecho, bg=st.BG_MAIN)
     frame_filtros.pack(fill=tk.X, pady=(0, 10))

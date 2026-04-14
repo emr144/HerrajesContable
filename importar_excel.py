@@ -171,12 +171,14 @@ def montar_interfaz(parent):
         
         descuento_lista = entry_descuento_lista.get().strip().replace('%', '').replace(',', '.')
         incremento_lista = entry_incremento_lista.get().strip().replace('%', '').replace(',', '.')
+        coef_lista = entry_coef_lista.get().strip().replace(',', '.')
 
         try:
             descuento_val = float(descuento_lista) / 100.0 if descuento_lista else 0.0
             incremento_val = float(incremento_lista) / 100.0 if incremento_lista else 0.0
+            coef_val = float(coef_lista) if coef_lista else 1.6
         except ValueError:
-            messagebox.showerror("Error", "Los valores de descuento e incremento deben ser números válidos.")
+            messagebox.showerror("Error", "Los valores de descuento, incremento y coeficiente deben ser números válidos.")
             return
 
         try:
@@ -210,7 +212,7 @@ def montar_interfaz(parent):
         fecha_lista = entry_fecha_lista.get().strip()
         descuento_lista = entry_descuento_lista.get().strip().replace('%', '').replace(',', '.')
         incremento_lista = entry_incremento_lista.get().strip().replace('%', '').replace(',', '.')
-        margen_lista = entry_margen_lista.get().strip().replace(',', '.')
+        coef_lista = entry_coef_lista.get().strip().replace(',', '.')
 
         fecha_para_db = None
         # Validación simple de formato de fecha
@@ -236,15 +238,15 @@ def montar_interfaz(parent):
             return
 
         try:
-            margen_val = float(margen_lista) if margen_lista else 1.6
+            coef_val = float(coef_lista) if coef_lista else 1.6
         except ValueError:
-            messagebox.showerror("Error", "El margen de ganancia debe ser un número válido (ej: 1.6).")
+            messagebox.showerror("Error", "El coeficiente debe ser un número válido (ej: 1.6).")
             return
 
         btn_importar.config(state="disabled", text="Importando...")
         ventana.update_idletasks()
         
-        resultado = _ejecutar_importacion(proveedor_id, archivo, numero_lista, fecha_para_db, descuento_val, incremento_val, margen_val)
+        resultado = _ejecutar_importacion(proveedor_id, archivo, numero_lista, fecha_para_db, descuento_val, incremento_val, coef_val)
         
         messagebox.showinfo("Resultado de Importación", resultado)
         btn_importar.config(state="normal", text="Iniciar Importación")
@@ -276,7 +278,7 @@ def montar_interfaz(parent):
                 combo_proveedores.event_generate('<Down>')
 
     def cargar_datos_proveedor_seleccionado(event):
-        """Carga el descuento e incremento actual del proveedor seleccionado."""
+        """Carga el descuento, incremento y coeficiente actual del proveedor seleccionado."""
         nombre = combo_proveedores.get()
         pid = ventana.proveedor_map.get(nombre)
         if not pid: return
@@ -290,10 +292,10 @@ def montar_interfaz(parent):
             
             if res:
                 desc, inc = res
-                entry_descuento_lista.delete(0, tk.END)
-                entry_descuento_lista.insert(0, f"{(desc or 0.0) * 100:.2f}")
-                entry_incremento_lista.delete(0, tk.END)
-                entry_incremento_lista.insert(0, f"{(inc or 0.0) * 100:.2f}")
+                entry_descuento_lista.delete(0, tk.END) # Clear existing content
+                entry_descuento_lista.insert(0, f"{(desc or 0.0) * 100:.2f}") # Display as percentage
+                entry_incremento_lista.delete(0, tk.END) # Clear existing content
+                entry_incremento_lista.insert(0, f"{(inc or 0.0) * 100:.2f}") # Display as percentage
         except Exception as e:
             print(f"Error al cargar coeficientes: {e}")
 
@@ -332,10 +334,10 @@ def montar_interfaz(parent):
     entry_incremento_lista.grid(row=3, column=1, sticky="ew", padx=10, pady=2)
     entry_incremento_lista.insert(0, "0")
 
-    tk.Label(sub_frame, text="Margen Ganancia (Ej: 1.6):", font=st.FONT_NORMAL, bg=st.BG_CARD, fg="white").grid(row=4, column=0, sticky="w", pady=2)
-    entry_margen_lista = tk.Entry(sub_frame, **st.estilo_entrada())
-    entry_margen_lista.grid(row=4, column=1, sticky="ew", padx=10, pady=2)
-    entry_margen_lista.insert(0, "1.6")
+    tk.Label(sub_frame, text="Coeficiente (Ej: 1.6):", font=st.FONT_NORMAL, bg=st.BG_CARD, fg="white").grid(row=4, column=0, sticky="w", pady=2)
+    entry_coef_lista = tk.Entry(sub_frame, **st.estilo_entrada())
+    entry_coef_lista.grid(row=4, column=1, sticky="ew", padx=10, pady=2)
+    entry_coef_lista.insert(0, "1.6")
 
     frame_archivo = tk.Frame(ventana, bg=st.BG_MAIN)
     frame_archivo.pack(fill="x", pady=15)
