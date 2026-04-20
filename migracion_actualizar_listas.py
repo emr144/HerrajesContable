@@ -9,42 +9,28 @@ def aplicar_migracion():
     """
     conexion = sqlite3.connect(database.get_db_path())
     cursor = conexion.cursor()
-    print("Aplicando migraciones a la base de datos 'herrajes.db'...")
 
-    try:
-        # Añadir columnas a la tabla 'productos'
+    def columna_existe(tabla, columna):
+        cursor.execute(f"PRAGMA table_info({tabla})")
+        return any(row[1] == columna for row in cursor.fetchall())
+
+    # Columnas para 'productos'
+    if not columna_existe('productos', 'numero_lista'):
         cursor.execute("ALTER TABLE productos ADD COLUMN numero_lista TEXT")
+        print("✅ Columna 'numero_lista' agregada a 'productos'.")
+    
+    if not columna_existe('productos', 'fecha_lista'):
         cursor.execute("ALTER TABLE productos ADD COLUMN fecha_lista DATE")
-        print("✅ Columnas 'numero_lista' y 'fecha_lista' agregadas a la tabla 'productos'.")
-    except sqlite3.OperationalError as e:
-        if "duplicate column name" in str(e):
-            print("⚠️  Las columnas 'numero_lista' y 'fecha_lista' ya existen en 'productos'. No se requiere acción.")
-        else:
-            raise e
+        print("✅ Columna 'fecha_lista' agregada a 'productos'.")
 
-    try:
-        # Añadir columna a la tabla 'proveedores'
+    # Columnas para 'proveedores'
+    if not columna_existe('proveedores', 'fecha_modif_coeficiente'):
         cursor.execute("ALTER TABLE proveedores ADD COLUMN fecha_modif_coeficiente DATE")
-        print("✅ Columna 'fecha_modif_coeficiente' agregada a la tabla 'proveedores'.")
-    except sqlite3.OperationalError as e:
-        if "duplicate column name" in str(e):
-            print("⚠️  La columna 'fecha_modif_coeficiente' ya existe en 'proveedores'. No se requiere acción.")
-        else:
-            raise e
+        print("✅ Columna 'fecha_modif_coeficiente' agregada a 'proveedores'.")
 
-    try:
-        # Añadir columna incremento_global a la tabla 'proveedores'
+    if not columna_existe('proveedores', 'incremento_global'):
         cursor.execute("ALTER TABLE proveedores ADD COLUMN incremento_global REAL DEFAULT 0.0")
-        print("✅ Columna 'incremento_global' agregada a la tabla 'proveedores'.")
-    except sqlite3.OperationalError as e:
-        if "duplicate column name" in str(e):
-            print("⚠️  La columna 'incremento_global' ya existe en 'proveedores'. No se requiere acción.")
-        else:
-            raise e
+        print("✅ Columna 'incremento_global' agregada a 'proveedores'.")
 
     conexion.commit()
     conexion.close()
-    print("\n✨ Migración completada. La base de datos está actualizada.")
-
-if __name__ == '__main__':
-    aplicar_migracion()

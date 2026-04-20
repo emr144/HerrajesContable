@@ -22,7 +22,7 @@ def cargar_productos():
     for row in tabla.get_children():
         tabla.delete(row)
     
-    conexion = sqlite3.connect(database.get_db_path())
+    conexion = database.conectar()
     cursor = conexion.cursor()
     
     query = """
@@ -93,21 +93,20 @@ def guardar_producto():
     try:
         desc = ent_desc.get().strip()
         costo = float(ent_costo.get().strip().replace('$', ''))
-        coef = float(ent_coef.get().strip())
     except ValueError:
-        messagebox.showerror("Error de Formato", "Costo y Coeficiente deben ser números válidos.")
+        messagebox.showerror("Error de Formato", "El costo debe ser un número válido.")
         return
 
     if not desc:
         messagebox.showwarning("Atención", "La descripción no puede estar vacía.")
         return
 
-    conexion = sqlite3.connect(database.get_db_path())
+    conexion = database.conectar()
     cursor = conexion.cursor()
     cursor.execute("""
-        UPDATE productos SET descripcion=?, costo_base=?, coeficiente_ganancia=? 
+        UPDATE productos SET descripcion=?, costo_base=?
         WHERE id=?
-    """, (desc, costo, coef, producto_seleccionado_id))
+    """, (desc, costo, producto_seleccionado_id))
     conexion.commit()
     conexion.close()
     
@@ -119,7 +118,7 @@ def cargar_datos_para_editar(item_id):
     """Carga los datos de un producto en el formulario para su edición."""
     global producto_seleccionado_id
     
-    conexion = sqlite3.connect(database.get_db_path())
+    conexion = database.conectar()
     cursor = conexion.cursor()
     cursor.execute("SELECT descripcion, costo_base, coeficiente_ganancia FROM productos WHERE id=?", (item_id,))
     valores = cursor.fetchone()
@@ -133,6 +132,7 @@ def cargar_datos_para_editar(item_id):
     ent_desc.insert(0, valores[0])
     ent_costo.insert(0, f"{valores[1]:.2f}")
     ent_coef.insert(0, str(valores[2]))
+    ent_coef.config(state="disabled") # El coeficiente no se edita manualmente aquí
     
     btn_guardar.config(state="normal")
 
@@ -141,7 +141,7 @@ def eliminar_producto_por_id(producto_id, descripcion):
     msg = f"¿Eliminar el producto '{descripcion}' (ID: {producto_id})?"
     if messagebox.askyesno("Confirmar Eliminación", msg):
         try:
-            conexion = sqlite3.connect(database.get_db_path())
+            conexion = database.conectar()
             cursor = conexion.cursor()
             cursor.execute("DELETE FROM productos WHERE id = ?", (producto_id,))
             conexion.commit()
@@ -427,6 +427,7 @@ def montar_interfaz(parent):
     ent_desc.bind('<KeyRelease>', actualizar_sugerencias_edicion)
     ent_costo = crear_campo("Costo Base:", 1)
     ent_coef = crear_campo("Coeficiente:", 2)
+    ent_coef.config(state="disabled") # Bloqueado por defecto
 
     btn_guardar = tk.Button(frame_izquierdo, text="💾 GUARDAR CAMBIOS", command=guardar_producto, **st.estilo_boton()); btn_guardar.pack(fill=tk.X, pady=15)
     btn_guardar.config(state="disabled")

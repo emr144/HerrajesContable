@@ -8,15 +8,15 @@ import database # Importamos para obtener la ruta
 
 try:
     import pandas as pd
+    import openpyxl
 except ImportError:
-    # Si estamos en un entorno gráfico, un print no se verá.
     try:
         root = tk.Tk()
         root.withdraw()
-        messagebox.showerror("Librería Faltante", "No tienes instalada la librería 'pandas'.\n\nEjecuta en tu terminal:\npip install pandas openpyxl")
+        mensaje = "Faltan librerías críticas: 'pandas' o 'openpyxl'.\n\nPara solucionar esto, abre una terminal y ejecuta:\npython -m pip install pandas openpyxl"
+        messagebox.showerror("Error de Dependencias", mensaje)
     except tk.TclError:
-        print("❌ ERROR: No tienes instalada la librería 'pandas'.", file=sys.stderr)
-        print("Ejecuta en tu terminal: pip install pandas openpyxl", file=sys.stderr)
+        print("❌ ERROR: No se encontraron 'pandas' o 'openpyxl'. Ejecuta: python -m pip install pandas openpyxl", file=sys.stderr)
     sys.exit(1)
 
 def _ejecutar_importacion(proveedor_id, archivo_excel, numero_lista, fecha_lista, descuento_prov=None, incremento_prov=None, margen_defecto=1.6):
@@ -67,21 +67,22 @@ def _ejecutar_importacion(proveedor_id, archivo_excel, numero_lista, fecha_lista
     # --- FASE 2: TRANSACCIÓN RÁPIDA EN BASE DE DATOS ---
     conexion = None
     try:
-        conexion = sqlite3.connect(db_path)
+        conexion = database.conectar()
         cursor = conexion.cursor()
         
         # 1. Aseguramos índice (DDL)
         cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_producto_proveedor ON productos (codigo_proveedor, proveedor_id)")
         
-        # 1.5 Actualizamos los coeficientes del proveedor si se indicaron
-        if descuento_prov is not None or incremento_prov is not None:
-            cursor.execute("""
-                UPDATE proveedores 
-                SET descuento_global = COALESCE(?, descuento_global), 
-                    incremento_global = COALESCE(?, incremento_global),
-                    fecha_modif_coeficiente = CURRENT_DATE 
-                WHERE id = ?
-            """, (descuento_prov, incremento_prov, proveedor_id))
+        # 1.5 Actualizamos los coeficientes del proveedor y de TODOS sus productos existentes
+        cursor.execute("""
+            UPDATE proveedores 
+            SET descuento_global = COALESCE(?, descuento_global), 
+                incremento_global = COALESCE(?, incremento_global),
+                fecha_modif_coeficiente = CURRENT_DATE 
+            WHERE id = ?
+        """, (descuento_prov, incremento_prov, proveedor_id))
+        
+        cursor.execute("UPDATE productos SET coeficiente_ganancia = ? WHERE proveedor_id = ?", (margen_defecto, proveedor_id))
 
         # 2. Marcar como inactivos (Inicia la transacción implícita)
         cursor.execute("UPDATE productos SET estado = 'INACTIVO' WHERE proveedor_id = ?", (proveedor_id,))
@@ -189,6 +190,10 @@ def montar_interfaz(parent):
                 SET descuento_global = ?, incremento_global = ?, fecha_modif_coeficiente = CURRENT_DATE 
                 WHERE id = ?
             """, (descuento_val, incremento_val, proveedor_id))
+            
+            # Actualizar el coeficiente en todos los productos de este proveedor
+            cursor.execute("UPDATE productos SET coeficiente_ganancia = ? WHERE proveedor_id = ?", (coef_val, proveedor_id))
+            
             conexion.commit()
             conexion.close()
             messagebox.showinfo("Éxito", f"Coeficientes actualizados correctamente para {proveedor_seleccionado}.")

@@ -12,6 +12,7 @@ carrito = []
 total_sin_descuento = 0.0
 combo_lista_precios = None # Nuevo selector de lista de precios
 lista_proveedores_cache = [] # Cache para filtrado
+var_tarjeta = None # Variable para el recargo de tarjeta
 
 codigo_seleccionado = ""
 desc_seleccionada = None # Variable de control visual
@@ -19,7 +20,7 @@ desc_seleccionada = None # Variable de control visual
 # --- FUNCIONES DE LÓGICA ---
 
 def obtener_clientes():
-    conexion = sqlite3.connect(database.get_db_path())
+    conexion = database.conectar()
     cursor = conexion.cursor()
     cursor.execute("SELECT nombre FROM clientes ORDER BY nombre ASC")
     filas = cursor.fetchall()
@@ -27,7 +28,7 @@ def obtener_clientes():
     return [f[0] for f in filas]
 
 def obtener_proveedores_lista():
-    conexion = sqlite3.connect(database.get_db_path())
+    conexion = database.conectar()
     cursor = conexion.cursor()
     cursor.execute("SELECT nombre FROM proveedores ORDER BY nombre ASC")
     filas = cursor.fetchall()
@@ -37,25 +38,32 @@ def obtener_proveedores_lista():
     return lista_proveedores_cache
 
 def buscar_productos_db(termino="", filtro_proveedor=None, filtro_codigo=""):
-    conexion = sqlite3.connect(database.get_db_path())
+    conexion = database.conectar()
     cursor = conexion.cursor()
+    
     query = '''
         SELECT p.codigo_proveedor, p.descripcion, pr.nombre,
                p.costo_base, p.coeficiente_ganancia, p.iva,
                pr.descuento_global, pr.incremento_global
         FROM productos p
         JOIN proveedores pr ON p.proveedor_id = pr.id
-        WHERE (p.codigo_proveedor LIKE ? 
-           OR p.descripcion LIKE ? 
-           OR pr.nombre LIKE ?)
-           AND p.estado = 'ACTIVO'
-        LIMIT 60
+        WHERE p.estado = 'ACTIVO'
     '''
-    args = [f'%{termino}%', f'%{termino}%', f'%{termino}%']
-    
+    args = []
+
+    if filtro_codigo:
+        query += " AND p.codigo_proveedor LIKE ?"
+        args.append(f'%{filtro_codigo}%')
+
+    if termino:
+        query += " AND p.descripcion LIKE ?"
+        args.append(f'%{termino}%')
+
     if filtro_proveedor:
-        query = query.replace("LIMIT 60", "AND pr.nombre = ? LIMIT 60")
+        query += " AND pr.nombre = ?"
         args.append(filtro_proveedor)
+
+    query += " LIMIT 60"
 
     cursor.execute(query, tuple(args))
     resultados = cursor.fetchall()
@@ -76,11 +84,14 @@ def obtener_multiplicador_precio():
 
 def actualizar_total_visual():
     global total_sin_descuento
+    
+    multiplicador_tarjeta = 1.10 if var_tarjeta.get() else 1.0
+    total_final = total_sin_descuento * multiplicador_tarjeta
+    
     if total_sin_descuento == 0:
         label_total.config(text="TOTAL: $ -", fg=st.ACCENT)
     else:
-        # Ahora el total es simplemente la suma de los items (que ya tienen el aumento aplicado si corresponde)
-        label_total.config(text=f"TOTAL: $ {total_sin_descuento:.2f}", fg="darkgreen")
+        label_total.config(text=f"TOTAL: $ {total_final:.2f}", fg="darkgreen")
 
 def recalcular_carrito(event=None):
     """Recalcula los precios de todo el carrito cuando se cambia la lista de precios"""
@@ -291,13 +302,18 @@ def guardar_presupuesto(imprimir=False):
         return
     
     total_final = total_sin_descuento # El total ya incluye los aumentos/precios finales
+    
+    # Aplicamos recargo de tarjeta si corresponde
+    if var_tarjeta.get():
+        total_final *= 1.10
+
     nombre_cliente = combo_cliente.get().strip() or "Consumidor Final"
-    tipo_cliente = combo_lista_precios.get() # Guardamos qué lista se usó
+    tipo_cliente = combo_lista_precios.get() + (" + TARJETA" if var_tarjeta.get() else "")
     
     conexion = sqlite3.connect(database.get_db_path())
     cursor = conexion.cursor()
     # Guardamos el tipo de cliente (Profesional, Particular 15%, etc)
-    cursor.execute("INSERT INTO presupuestos (cliente_nombre, total, cliente_tipo) VALUES (?, ?, ?)", (nombre_cliente, total_final, tipo_cliente))
+    cursor.execute("INSERT INTO presupuestos (cliente_nombre, total, cliente_tipo) VALUES (?, ?, ?)", (nombre_cliente, float(total_final), tipo_cliente))
     presupuesto_id = cursor.lastrowid
     
     for item in carrito:
@@ -313,10 +329,11 @@ def guardar_presupuesto(imprimir=False):
     cancelar_venta()
 
 def cancelar_venta():
-    global total_sin_descuento, carrito, codigo_seleccionado
+    global total_sin_descuento, carrito, codigo_seleccionado, var_tarjeta
     carrito.clear()
     total_sin_descuento = 0.0
     codigo_seleccionado = ""
+    var_tarjeta.set(False)
     label_prod_sel.config(text="")
     actualizar_total_visual()
     for row in tabla.get_children(): tabla.delete(row)
@@ -407,7 +424,7 @@ def on_tabla_click(event):
 
 # --- INTERFAZ ---
 def montar_interfaz(parent):
-    global combo_cliente, entrada_cantidad, tabla, label_total, combo_lista_precios, label_prod_sel
+    global combo_cliente, entrada_cantidad, tabla, label_total, combo_lista_precios, label_prod_sel, var_tarjeta
     
     ventana = tk.Frame(parent, bg=st.BG_MAIN)
 
@@ -416,8 +433,9 @@ def montar_interfaz(parent):
     frame_top.pack(fill=tk.X, padx=15, pady=(10, 5))
 
     # Configuración de pesos para un diseño elástico y profesional
-    frame_top.columnconfigure(1, weight=1) # Cliente
-    frame_top.columnconfigure(5, weight=2) # Info producto seleccionado
+    frame_top.columnconfigure(1, weight=1)  # Cliente
+    frame_top.columnconfigure(6, weight=2)  # Info producto seleccionado
+    var_tarjeta = tk.BooleanVar(value=False)
 
     # 1. CLIENTE Y LISTA DE PRECIOS
     ttk.Label(frame_top, text="CLIENTE:", style="Venta.TLabel").grid(row=0, column=0, padx=(5, 5), sticky="w")
@@ -430,18 +448,20 @@ def montar_interfaz(parent):
     combo_lista_precios.set("Particular 15%")
     combo_lista_precios.grid(row=0, column=3, padx=(0, 15), sticky="w")
     combo_lista_precios.bind("<<ComboboxSelected>>", recalcular_carrito)
+    
+    chk_tarjeta = tk.Checkbutton(frame_top, text="TARJETA (+10%)", variable=var_tarjeta, command=actualizar_total_visual, bg=st.BG_CARD, fg=st.ACCENT, selectcolor=st.BG_MAIN, activebackground=st.BG_CARD, font=st.FONT_LABEL)
+    chk_tarjeta.grid(row=0, column=4, padx=(10, 15))
 
     # 2. BÚSQUEDA Y PRODUCTO SELECCIONADO
     btn_abrir_busca = ttk.Button(frame_top, text="🔍 BUSCAR PRODUCTO", command=abrir_buscador_productos, bootstyle="info-outline")
-    btn_abrir_busca.grid(row=0, column=4, padx=(10, 10))
+    btn_abrir_busca.grid(row=0, column=5, padx=(10, 10))
 
     label_prod_sel = ttk.Label(frame_top, text="", font=st.FONT_NORMAL, foreground=st.ACCENT, background=st.BG_CARD)
-    label_prod_sel.grid(row=0, column=5, sticky="w", padx=(5, 15))
+    label_prod_sel.grid(row=0, column=6, sticky="w", padx=(5, 15))
 
     # 3. CANTIDAD Y ACCIÓN
-    # Agrupamos en un frame interno para que la relación estética entre input y botón sea perfecta
     frame_accion = ttk.Frame(frame_top, style="Venta.TFrame")
-    frame_accion.grid(row=0, column=6, columnspan=3, sticky="e")
+    frame_accion.grid(row=0, column=7, columnspan=3, sticky="e")
 
     ttk.Label(frame_accion, text="CANT:", style="Venta.TLabel").pack(side=tk.LEFT, padx=(5, 5))
     entrada_cantidad = ttk.Entry(frame_accion, width=6, font=st.FONT_INPUT, justify="center")

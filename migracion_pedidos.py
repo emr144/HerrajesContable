@@ -30,17 +30,13 @@ def aplicar_migracion():
         )
     """)
 
-    # Migración para añadir la columna unidad_medida si no existe
-    try:
+    # Verificar si la columna existe antes de intentar agregarla
+    cursor.execute("PRAGMA table_info(pedidos_fabrica_detalle)")
+    columnas = [row[1] for row in cursor.fetchall()]
+    
+    if 'unidad_medida' not in columnas:
         cursor.execute("ALTER TABLE pedidos_fabrica_detalle ADD COLUMN unidad_medida TEXT NOT NULL DEFAULT 'Unidad'")
-        print("✅ Columna 'unidad_medida' agregada a la tabla 'pedidos_fabrica_detalle'.")
-    except sqlite3.OperationalError as e:
-        if "duplicate column name" in str(e):
-            print("⚠️  La columna 'unidad_medida' ya existe en 'pedidos_fabrica_detalle'. No se requiere acción.")
-        else:
-            raise e
 
-    print("Migración de pedidos a fábrica aplicada correctamente.")
     conexion.commit()
     conexion.close()
 

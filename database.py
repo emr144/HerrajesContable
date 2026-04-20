@@ -2,12 +2,20 @@ import sqlite3
 import os
 import sys
 
+# Variable para cachear la ruta y evitar lecturas de disco constantes
+_ruta_db_cache = None
+
 def get_db_path():
     r"""
     Devuelve la ruta completa a la base de datos.
     Prioriza la ruta definida en 'ruta_db.txt', luego una ruta de Google Drive
     hardcodeada, y finalmente una ruta local.
     """
+    global _ruta_db_cache
+    
+    if _ruta_db_cache:
+        return _ruta_db_cache
+
     # 1. Intentar leer la ruta desde ruta_db.txt
     ruta_txt_file = "ruta_db.txt"
     if os.path.exists(ruta_txt_file):
@@ -16,7 +24,8 @@ def get_db_path():
                 configured_path = f.read().strip()
             if configured_path and os.path.exists(os.path.dirname(configured_path)):
                 print(f"✅ Usando ruta de DB desde '{ruta_txt_file}': {configured_path}")
-                return configured_path
+                _ruta_db_cache = configured_path
+                return _ruta_db_cache
             else:
                 print(f"⚠️ '{ruta_txt_file}' existe pero la ruta '{configured_path}' no es válida o su directorio no existe. Cayendo a otras opciones.")
         except Exception as e:
@@ -43,7 +52,8 @@ def get_db_path():
         except Exception as e:
             print(f"⚠️ Error durante la limpieza de DB local antigua: {e}")
         
-        return ruta_drive
+        _ruta_db_cache = ruta_drive
+        return _ruta_db_cache
     
     # 3. FALLBACK FINAL: Si no encuentra ninguna de las anteriores, usa local
     if getattr(sys, 'frozen', False):
@@ -53,10 +63,18 @@ def get_db_path():
     else:
         final_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'herrajes.db')
         print(f"⚠️ No se encontró ruta de DB en la nube. Usando ruta local (script): {final_path}")
-        return final_path
+
+    _ruta_db_cache = final_path
+    return _ruta_db_cache
+
+def conectar():
+    """Crea una conexión con timeout y modo WAL activado para evitar bloqueos."""
+    conexion = sqlite3.connect(get_db_path(), timeout=30)
+    conexion.execute("PRAGMA journal_mode=WAL;")
+    return conexion
 
 def crear_base_datos():
-    conexion = sqlite3.connect(get_db_path())
+    conexion = conectar()
     cursor = conexion.cursor()
 
     # 1. Tabla Proveedores

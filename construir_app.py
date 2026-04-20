@@ -23,8 +23,8 @@ def crear_acceso_directo(target_exe, icon_path):
         print(f"No se pudo crear el acceso directo automáticamente: {e}")
 
 def instalar_dependencia():
-    print("⏳ Instalando dependencias de construcción (PyInstaller, pywin32)...")
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "pyinstaller", "pywin32"])
+    print("⏳ Instalando todas las dependencias (PyInstaller, Pandas, Openpyxl, pywin32)...")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "pyinstaller", "pywin32", "pandas", "openpyxl", "ttkbootstrap", "fpdf", "pillow"])
 
 def crear_ejecutable():
     print("\n" + "="*50)
@@ -98,8 +98,12 @@ def crear_ejecutable():
 
 if __name__ == "__main__":
     try:
+        # Verificamos que todo lo necesario esté presente antes de compilar
         import PyInstaller
         import win32com.client
+        import pandas
+        import openpyxl
+        import ttkbootstrap
     except ImportError:
         instalar_dependencia()
     
