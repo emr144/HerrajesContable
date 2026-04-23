@@ -260,15 +260,16 @@ def generar_ticket_pdf(presupuesto_id=None, vista_previa=False):
             desc_fmt = (desc[:12] + '..') if len(desc) > 14 else desc
             
             pdf.cell(22, 5, desc_fmt, 1)
-            pdf.cell(6, 5, str(cant), 1, 0, 'C')
+            pdf.cell(6, 5, f"{cant:g}", 1, 0, 'C')
             pdf.cell(12, 5, f"{precio:.2f}", 1, 0, 'R')
             pdf.cell(14, 5, f"{subtotal:.2f}", 1, 1, 'R')
             
         # Total
         pdf.ln(4)
         pdf.set_font("Arial", "B", 10)
-        pdf.cell(38, 6, "TOTAL:", 0, 0, 'R')
-        pdf.cell(16, 6, f"$ {total:.2f}", 0, 1, 'R')
+        pdf.cell(0, 6, "TOTAL:", 0, 1, 'R') # Mover "TOTAL" a su propia línea
+        pdf.set_font("Arial", "B", 14) # Aumentamos el tamaño del número
+        pdf.cell(0, 8, f"$ {total:.2f}", 0, 1, 'R') # Valor total en la siguiente línea con más altura
 
         # Mensaje condicional según categoría
         if tipo_cliente and "Profesional" in tipo_cliente:
