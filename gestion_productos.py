@@ -17,6 +17,16 @@ ent_buscar_codigo = None
 ent_buscar_desc = None
 lista_proveedores_cache = []
 
+combo_lista_precios = None
+
+def obtener_multiplicador_precio():
+    """Devuelve el factor de multiplicación según la lista seleccionada"""
+    if not combo_lista_precios: return 1.0
+    seleccion = combo_lista_precios.get()
+    if "15%" in seleccion: return 1.15
+    elif "30%" in seleccion: return 1.30
+    return 1.0
+
 def cargar_productos():
     """Carga y muestra los productos en la tabla con filtros de proveedor, código y descripción."""
     for row in tabla.get_children():
@@ -58,12 +68,14 @@ def cargar_productos():
         
     query += " ORDER BY p.descripcion ASC"
     cursor.execute(query, params)
+
+    multiplicador = obtener_multiplicador_precio()
         
     registros = cursor.fetchall()
     for prod in registros:
         p_id, cod, desc, prov, costo, coef, iva, estado, num_lista, fecha_lista, desc_g, inc_g, f_mod_coef = prod
         # Calculamos el precio de venta aplicando descuento e incremento global del proveedor
-        precio_venta = costo * (1 - (desc_g or 0)) * (1 + (inc_g or 0)) * coef * (1 + iva)
+        precio_venta = costo * (1 - (desc_g or 0)) * (1 + (inc_g or 0)) * coef * (1 + iva) * multiplicador
         
         # Preparamos los valores para que se vean bien en la tabla
         valores_display = (cod, desc, prov, f"$ {costo:.2f}", coef, f"$ {precio_venta:.2f}")
@@ -401,7 +413,7 @@ def seleccionar_producto_edicion(event=None):
 
 # --- INTERFAZ GRÁFICA ---
 def montar_interfaz(parent):
-    global ent_desc, ent_costo, ent_coef, btn_guardar, ent_buscar_codigo, ent_buscar_desc, combo_buscar_prov, label_contador, tabla, ventana, lista_sugerencias_edicion
+    global ent_desc, ent_costo, ent_coef, btn_guardar, ent_buscar_codigo, ent_buscar_desc, combo_buscar_prov, combo_lista_precios, label_contador, tabla, ventana, lista_sugerencias_edicion
     
     ventana = tk.Frame(parent, bg=st.BG_MAIN)
     # Nota: 'ventana' se usa en eliminar_por_proveedor_dialogo como parent, así que debe ser accesible
@@ -446,20 +458,27 @@ def montar_interfaz(parent):
     combo_buscar_prov = ttk.Combobox(frame_filtros, font=st.FONT_INPUT, width=18)
     combo_buscar_prov.grid(row=0, column=1, padx=5, sticky="ew")
     
-    # 2. Filtro Código
-    tk.Label(frame_filtros, text="Código:", font=st.FONT_LABEL, bg=st.BG_MAIN, fg="white").grid(row=0, column=2, sticky="w", padx=(10, 0))
-    ent_buscar_codigo = tk.Entry(frame_filtros, width=12, **st.estilo_entrada())
-    ent_buscar_codigo.grid(row=0, column=3, padx=5, sticky="ew")
+    # 2. Selector de Lista de Precios
+    tk.Label(frame_filtros, text="Lista:", font=st.FONT_LABEL, bg=st.BG_MAIN, fg="white").grid(row=0, column=2, sticky="w", padx=(10, 0))
+    combo_lista_precios = ttk.Combobox(frame_filtros, values=["Profesional", "Particular 15%", "Particular 30%"], state="readonly", font=st.FONT_INPUT, width=15)
+    combo_lista_precios.set("Profesional")
+    combo_lista_precios.grid(row=0, column=3, padx=5, sticky="ew")
+    combo_lista_precios.bind("<<ComboboxSelected>>", lambda e: cargar_productos())
     
-    # 3. Filtro Descripción
-    tk.Label(frame_filtros, text="Producto:", font=st.FONT_LABEL, bg=st.BG_MAIN, fg="white").grid(row=0, column=4, sticky="w", padx=(10, 0))
+    # 3. Filtro Código
+    tk.Label(frame_filtros, text="Código:", font=st.FONT_LABEL, bg=st.BG_MAIN, fg="white").grid(row=0, column=4, sticky="w", padx=(10, 0))
+    ent_buscar_codigo = tk.Entry(frame_filtros, width=12, **st.estilo_entrada())
+    ent_buscar_codigo.grid(row=0, column=5, padx=5, sticky="ew")
+    
+    # 4. Filtro Descripción
+    tk.Label(frame_filtros, text="Producto:", font=st.FONT_LABEL, bg=st.BG_MAIN, fg="white").grid(row=0, column=6, sticky="w", padx=(10, 0))
     ent_buscar_desc = tk.Entry(frame_filtros, **st.estilo_entrada())
-    ent_buscar_desc.grid(row=0, column=5, padx=5, sticky="ew")
+    ent_buscar_desc.grid(row=0, column=7, padx=5, sticky="ew")
     
     label_contador = tk.Label(frame_filtros, text="Total: 0", font=st.FONT_LABEL, bg=st.BG_MAIN, fg=st.ACCENT)
-    label_contador.grid(row=0, column=6, padx=(10, 0))
+    label_contador.grid(row=0, column=8, padx=(10, 0))
     
-    frame_filtros.columnconfigure(5, weight=1)
+    frame_filtros.columnconfigure(7, weight=1)
 
     def filtrar_provs_busqueda(event):
         if event.keysym in ('Down', 'Up', 'Return', 'Escape', 'Tab', 'Left', 'Right'): return
@@ -514,7 +533,7 @@ def montar_interfaz(parent):
     cabeceras = {
         "código": "CÓDIGO", "descripción": "PRODUCTO", 
         "proveedor": "FÁBRICA", "costo": "COSTO", "coef": "COEF.", 
-        "p_venta": "P. VENTA PROF.", "editar": "✏️", "eliminar": "🗑️"
+        "p_venta": "P. VENTA", "editar": "✏️", "eliminar": "🗑️"
     }
     for col in columnas:
         tabla.heading(col, text=cabeceras.get(col, col.upper()))
