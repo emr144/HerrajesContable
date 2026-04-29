@@ -1,4 +1,3 @@
-import sqlite3
 import tkinter as tk
 from tkinter import messagebox
 from tkinter import ttk
@@ -13,7 +12,7 @@ def cargar_historial():
     for row in tabla.get_children():
         tabla.delete(row)
     
-    conexion = sqlite3.connect(database.get_db_path())
+    conexion = database.conectar()
     cursor = conexion.cursor()
     # Traemos ID, Fecha, Cliente y Total
     cursor.execute("SELECT id, fecha, cliente_nombre, total FROM presupuestos ORDER BY id DESC")
@@ -28,11 +27,11 @@ def cargar_historial():
 def generar_ticket_pdf(presupuesto_id):
     """Genera un PDF con el detalle de la venta y lo abre automáticamente"""
     try:
-        conexion = sqlite3.connect(database.get_db_path())
+        conexion = database.conectar()
         cursor = conexion.cursor()
         
         # 1. Recuperamos datos de la cabecera
-        cursor.execute("SELECT cliente_nombre, fecha, total, cliente_tipo FROM presupuestos WHERE id = ?", (presupuesto_id,))
+        cursor.execute("SELECT cliente_nombre, fecha, total, cliente_tipo FROM presupuestos WHERE id = %s", (presupuesto_id,))
         datos_venta = cursor.fetchone()
         
         # 2. Recuperamos los productos
@@ -40,7 +39,7 @@ def generar_ticket_pdf(presupuesto_id):
             SELECT p.descripcion, d.cantidad, d.precio_unitario_congelado 
             FROM presupuesto_detalles d
             JOIN productos p ON d.producto_id = p.id
-            WHERE d.presupuesto_id = ?
+            WHERE d.presupuesto_id = %s
         ''', (presupuesto_id,))
         items = cursor.fetchall()
         conexion.close()
@@ -147,14 +146,14 @@ def eliminar_venta():
     
     if confirmar:
         try:
-            conexion = sqlite3.connect(database.get_db_path())
+            conexion = database.conectar()
             cursor = conexion.cursor()
             
             # 1. Borramos los detalles de la venta (productos)
-            cursor.execute("DELETE FROM presupuesto_detalles WHERE presupuesto_id = ?", (venta_id,))
+            cursor.execute("DELETE FROM presupuesto_detalles WHERE presupuesto_id = %s", (venta_id,))
             
             # 2. Borramos la cabecera de la venta
-            cursor.execute("DELETE FROM presupuestos WHERE id = ?", (venta_id,))
+            cursor.execute("DELETE FROM presupuestos WHERE id = %s", (venta_id,))
             
             conexion.commit()
             conexion.close()

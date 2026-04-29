@@ -1,4 +1,3 @@
-import sqlite3
 import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
 import os
@@ -52,15 +51,15 @@ def buscar_productos_db(termino="", filtro_proveedor=None, filtro_codigo=""):
     args = []
 
     if filtro_codigo:
-        query += " AND p.codigo_proveedor LIKE ?"
+        query += " AND p.codigo_proveedor LIKE %s"
         args.append(f'%{filtro_codigo}%')
 
     if termino:
-        query += " AND p.descripcion LIKE ?"
+        query += " AND p.descripcion LIKE %s"
         args.append(f'%{termino}%')
 
     if filtro_proveedor:
-        query += " AND pr.nombre = ?"
+        query += " AND pr.nombre = %s"
         args.append(filtro_proveedor)
 
     query += " LIMIT 60"
@@ -142,13 +141,13 @@ def agregar_producto(event=None):
 
     if not codigo or cantidad <= 0: return
 
-    conexion = sqlite3.connect(database.get_db_path())
+    conexion = database.conectar()
     cursor = conexion.cursor()
     query = '''
         SELECT p.id, p.descripcion, p.costo_base, p.coeficiente_ganancia, p.iva, pr.descuento_global, pr.incremento_global
         FROM productos p
         JOIN proveedores pr ON p.proveedor_id = pr.id
-        WHERE p.codigo_proveedor = ?
+        WHERE p.codigo_proveedor = %s
     '''
     cursor.execute(query, (codigo,))
     producto = cursor.fetchone()
@@ -199,15 +198,15 @@ def generar_ticket_pdf(presupuesto_id=None, vista_previa=False):
     """Genera un PDF con el detalle de la venta. Si presupuesto_id es None, usa el carrito actual."""
     try:
         if not vista_previa and presupuesto_id:
-            conexion = sqlite3.connect(database.get_db_path())
+            conexion = database.conectar()
             cursor = conexion.cursor()
-            cursor.execute("SELECT cliente_nombre, fecha, total, cliente_tipo FROM presupuestos WHERE id = ?", (presupuesto_id,))
+            cursor.execute("SELECT cliente_nombre, fecha, total, cliente_tipo FROM presupuestos WHERE id = %s", (presupuesto_id,))
             datos_venta = cursor.fetchone()
             cursor.execute('''
                 SELECT p.descripcion, d.cantidad, d.precio_unitario_congelado 
                 FROM presupuesto_detalles d
                 JOIN productos p ON d.producto_id = p.id
-                WHERE d.presupuesto_id = ?
+                WHERE d.presupuesto_id = %s
             ''', (presupuesto_id,))
             items = cursor.fetchall()
             conexion.close()
@@ -311,14 +310,14 @@ def guardar_presupuesto(imprimir=False):
     nombre_cliente = combo_cliente.get().strip() or "Consumidor Final"
     tipo_cliente = combo_lista_precios.get() + (" + TARJETA" if var_tarjeta.get() else "")
     
-    conexion = sqlite3.connect(database.get_db_path())
+    conexion = database.conectar()
     cursor = conexion.cursor()
     # Guardamos el tipo de cliente (Profesional, Particular 15%, etc)
-    cursor.execute("INSERT INTO presupuestos (cliente_nombre, total, cliente_tipo) VALUES (?, ?, ?)", (nombre_cliente, float(total_final), tipo_cliente))
-    presupuesto_id = cursor.lastrowid
+    cursor.execute("INSERT INTO presupuestos (cliente_nombre, total, cliente_tipo) VALUES (%s, %s, %s) RETURNING id", (nombre_cliente, float(total_final), tipo_cliente))
+    presupuesto_id = cursor.fetchone()[0]
     
     for item in carrito:
-        cursor.execute('INSERT INTO presupuesto_detalles (presupuesto_id, producto_id, cantidad, precio_unitario_congelado) VALUES (?, ?, ?, ?)',
+        cursor.execute('INSERT INTO presupuesto_detalles (presupuesto_id, producto_id, cantidad, precio_unitario_congelado) VALUES (%s, %s, %s, %s)',
                        (presupuesto_id, item['prod_id'], item['cantidad'], item['precio_unitario']))
     conexion.commit()
     conexion.close()

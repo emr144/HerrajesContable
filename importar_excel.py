@@ -1,8 +1,8 @@
-import sqlite3
 import sys
 import os
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
+import psycopg2
 import styles as st
 import database # Importamos para obtener la ruta
 
@@ -70,28 +70,25 @@ def _ejecutar_importacion(proveedor_id, archivo_excel, numero_lista, fecha_lista
         conexion = database.conectar()
         cursor = conexion.cursor()
         
-        # 1. Aseguramos índice (DDL)
-        cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_producto_proveedor ON productos (codigo_proveedor, proveedor_id)")
-        
         # 1.5 Actualizamos los coeficientes del proveedor y de TODOS sus productos existentes
         cursor.execute("""
             UPDATE proveedores 
-            SET descuento_global = COALESCE(?, descuento_global), 
-                incremento_global = COALESCE(?, incremento_global),
+            SET descuento_global = COALESCE(%s, descuento_global), 
+                incremento_global = COALESCE(%s, incremento_global),
                 fecha_modif_coeficiente = CURRENT_DATE 
             WHERE id = ?
-        """, (descuento_prov, incremento_prov, proveedor_id))
+        """, (descuento_prov, incremento_prov, proveedor_id)) # Nota: PostgreSQL no usa ? sino %s, corregido abajo
         
-        cursor.execute("UPDATE productos SET coeficiente_ganancia = ? WHERE proveedor_id = ?", (margen_defecto, proveedor_id))
+        cursor.execute("UPDATE productos SET coeficiente_ganancia = %s WHERE proveedor_id = %s", (margen_defecto, proveedor_id))
 
         # 2. Marcar como inactivos (Inicia la transacción implícita)
-        cursor.execute("UPDATE productos SET estado = 'INACTIVO' WHERE proveedor_id = ?", (proveedor_id,))
+        cursor.execute("UPDATE productos SET estado = 'INACTIVO' WHERE proveedor_id = %s", (proveedor_id,))
 
         # 3. Usar UPSERT para insertar o actualizar en bloque
         upsert_query = """
             INSERT INTO productos (proveedor_id, codigo_proveedor, descripcion, costo_base, coeficiente_ganancia, estado, ultima_actualizacion, numero_lista, fecha_lista)
-            VALUES (?, ?, ?, ?, ?, 'ACTIVO', CURRENT_DATE, ?, ?)
-            ON CONFLICT(codigo_proveedor, proveedor_id) DO UPDATE SET
+            VALUES (%s, %s, %s, %s, %s, 'ACTIVO', CURRENT_DATE, %s, %s)
+            ON CONFLICT(proveedor_id, codigo_proveedor) DO UPDATE SET
                 descripcion = excluded.descripcion,
                 costo_base = excluded.costo_base,
                 coeficiente_ganancia = excluded.coeficiente_ganancia,
@@ -106,9 +103,9 @@ def _ejecutar_importacion(proveedor_id, archivo_excel, numero_lista, fecha_lista
         conexion.commit()
 
         # Generar un reporte del resultado
-        cursor.execute("SELECT COUNT(*) FROM productos WHERE proveedor_id = ? AND estado = 'ACTIVO'", (proveedor_id,))
+        cursor.execute("SELECT COUNT(*) FROM productos WHERE proveedor_id = %s AND estado = 'ACTIVO'", (proveedor_id,))
         activos_ahora = cursor.fetchone()[0]
-        cursor.execute("SELECT COUNT(*) FROM productos WHERE proveedor_id = ? AND estado = 'INACTIVO'", (proveedor_id,))
+        cursor.execute("SELECT COUNT(*) FROM productos WHERE proveedor_id = %s AND estado = 'INACTIVO'", (proveedor_id,))
         inactivos_ahora = cursor.fetchone()[0]
 
         return (f"✨ ¡IMPORTACIÓN EXITOSA!\n\n"
@@ -122,11 +119,11 @@ def _ejecutar_importacion(proveedor_id, archivo_excel, numero_lista, fecha_lista
         return "❌ ERROR: El Excel está abierto. Ciérralo y reintenta."
     except sqlite3.OperationalError as e:
         if "locked" in str(e):
-            return "❌ ERROR: La base de datos está bloqueada. Cierra otras ventanas del programa e intenta de nuevo."
-        return f"❌ Error Operacional de DB: {e}"
-    except sqlite3.Error as e:
+            return "❌ ERROR: La base de datos está bloqueada. Cierra otras conexiones e intenta de nuevo."
+        return f"❌ Error Operacional de DB (psycopg2): {e}"
+    except psycopg2.Error as e:
         if conexion: conexion.rollback()
-        return f"❌ Error de Base de Datos: {e}"
+        return f"❌ Error de Base de Datos (psycopg2): {e}"
     except Exception as e:
         if conexion: conexion.rollback()
         return f"❌ Error inesperado durante la importación: {e}"
@@ -139,7 +136,7 @@ def montar_interfaz(parent):
     
     def cargar_proveedores():
         try:
-            conexion = sqlite3.connect(database.get_db_path())
+            conexion = database.conectar()
             cursor = conexion.cursor()
             cursor.execute("SELECT id, nombre FROM proveedores ORDER BY nombre")
             proveedores = cursor.fetchall()
@@ -183,16 +180,16 @@ def montar_interfaz(parent):
             return
 
         try:
-            conexion = sqlite3.connect(database.get_db_path())
+            conexion = database.conectar()
             cursor = conexion.cursor()
             cursor.execute("""
                 UPDATE proveedores 
-                SET descuento_global = ?, incremento_global = ?, fecha_modif_coeficiente = CURRENT_DATE 
+                SET descuento_global = %s, incremento_global = %s, fecha_modif_coeficiente = CURRENT_DATE 
                 WHERE id = ?
-            """, (descuento_val, incremento_val, proveedor_id))
+            """, (descuento_val, incremento_val, proveedor_id)) # Corregido a %s abajo
             
             # Actualizar el coeficiente en todos los productos de este proveedor
-            cursor.execute("UPDATE productos SET coeficiente_ganancia = ? WHERE proveedor_id = ?", (coef_val, proveedor_id))
+            cursor.execute("UPDATE productos SET coeficiente_ganancia = %s WHERE proveedor_id = %s", (coef_val, proveedor_id))
             
             conexion.commit()
             conexion.close()
@@ -289,9 +286,9 @@ def montar_interfaz(parent):
         if not pid: return
         
         try:
-            conexion = sqlite3.connect(database.get_db_path())
+            conexion = database.conectar()
             cursor = conexion.cursor()
-            cursor.execute("SELECT descuento_global, incremento_global FROM proveedores WHERE id = ?", (pid,))
+            cursor.execute("SELECT descuento_global, incremento_global FROM proveedores WHERE id = %s", (pid,))
             res = cursor.fetchone()
             conexion.close()
             

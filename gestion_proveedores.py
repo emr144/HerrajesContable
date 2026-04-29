@@ -1,4 +1,3 @@
-import sqlite3
 import tkinter as tk
 from tkinter import ttk, messagebox
 import styles as st
@@ -11,7 +10,7 @@ def cargar_proveedores(filtro=""):
     """Carga los proveedores en la tabla, aplicando un filtro si se provee."""
     for row in tabla.get_children():
         tabla.delete(row)
-    conexion = sqlite3.connect(database.get_db_path())
+    conexion = database.conectar()
     cursor = conexion.cursor()
     # Consultamos proveedores y verificamos si tienen productos (lista cargada)
     query_base = """
@@ -21,8 +20,8 @@ def cargar_proveedores(filtro=""):
     """
     
     if filtro:
-        query = f"SELECT * FROM ({query_base}) WHERE nombre LIKE ? OR contacto LIKE ? ORDER BY nombre ASC"
-        param = f"{filtro}%"
+        query = f"SELECT * FROM ({query_base}) AS sub WHERE nombre LIKE %s OR contacto LIKE %s ORDER BY nombre ASC"
+        param = f"%{filtro}%"
         cursor.execute(query, (param, param))
     else:
         query = f"{query_base} ORDER BY nombre ASC"
@@ -61,15 +60,15 @@ def guardar_proveedor():
 
     contacto = ent_contacto.get().strip()
 
-    conexion = sqlite3.connect(database.get_db_path())
+    conexion = database.conectar()
     cursor = conexion.cursor()
     
     if proveedor_seleccionado_id:
-        cursor.execute("UPDATE proveedores SET nombre=?, contacto=? WHERE id=?", 
+        cursor.execute("UPDATE proveedores SET nombre=%s, contacto=%s WHERE id=%s", 
                        (nombre, contacto, proveedor_seleccionado_id))
         mensaje = "Proveedor actualizado correctamente."
     else:
-        cursor.execute("INSERT INTO proveedores (nombre, contacto) VALUES (?, ?)", 
+        cursor.execute("INSERT INTO proveedores (nombre, contacto) VALUES (%s, %s)", 
                        (nombre, contacto))
         mensaje = "Proveedor guardado correctamente."
         
@@ -83,9 +82,9 @@ def cargar_datos_para_editar(item_id):
     """Carga los datos de un proveedor en el formulario para su edición."""
     global proveedor_seleccionado_id
     
-    conexion = sqlite3.connect(database.get_db_path())
+    conexion = database.conectar()
     cursor = conexion.cursor()
-    cursor.execute("SELECT id, nombre, contacto FROM proveedores WHERE id=?", (item_id,))
+    cursor.execute("SELECT id, nombre, contacto FROM proveedores WHERE id=%s", (item_id,))
     valores = cursor.fetchone()
     conexion.close()
 
@@ -105,21 +104,15 @@ def eliminar_proveedor_por_id(proveedor_id, nombre):
            "ADVERTENCIA: Esta acción no se puede deshacer.")
     if messagebox.askyesno("Confirmar Eliminación", msg):
         try:
-            conexion = sqlite3.connect(database.get_db_path())
+            conexion = database.conectar()
             cursor = conexion.cursor()
-            # Habilitar claves foráneas para que la restricción funcione
-            cursor.execute("PRAGMA foreign_keys = ON")
-            cursor.execute("DELETE FROM proveedores WHERE id = ?", (proveedor_id,))
+            cursor.execute("DELETE FROM proveedores WHERE id = %s", (proveedor_id,))
             conexion.commit()
             conexion.close()
             cargar_proveedores(ent_buscar.get())
             limpiar_formulario(deseleccionar=True)
-        except sqlite3.IntegrityError:
-            messagebox.showerror("Error de Integridad", 
-                                 f"No se puede eliminar '{nombre}' porque tiene productos asociados.\n\n"
-                                 "Debe eliminar o reasignar los productos de este proveedor primero.")
         except Exception as e:
-            messagebox.showerror("Error", f"No se pudo eliminar el proveedor: {e}")
+            messagebox.showerror("Error", f"No se pudo eliminar el proveedor.\n\nEs probable que tenga productos asociados. Debe eliminarlos o reasignarlos primero.\n\nDetalle: {e}")
 
 def on_tabla_click(event):
     """Manejador de clics en la tabla para disparar acciones de editar o eliminar."""

@@ -18,9 +18,6 @@ try:
     import pedidos_fabrica
     import gestion_cuentas_fabrica
     import database 
-    import migracion_actualizar_listas 
-    import migracion_pedidos 
-    import migracion_cuentas
 except ImportError as e:
     print(f"❌ Error al importar módulos: {e}")
     input("Presiona Enter para salir...")
@@ -150,11 +147,9 @@ class App(tb.Window):
 # --- BLOQUE DE EJECUCIÓN PRINCIPAL ---
 if __name__ == "__main__":
     try:
-        print("⚙️ Iniciando mantenimiento de base de datos...")
-        database.crear_base_datos()
-        migracion_actualizar_listas.aplicar_migracion()
-        migracion_pedidos.aplicar_migracion()
-        migracion_cuentas.aplicar_migracion()
+        print("⚙️ Iniciando conexión con Supabase...")
+        # 1. Intentar crear las tablas automáticamente en PostgreSQL
+        database.crear_base_datos() 
         
         print("🎨 Preparando interfaz gráfica...")
         app = App()

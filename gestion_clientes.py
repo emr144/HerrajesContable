@@ -1,4 +1,3 @@
-import sqlite3
 import tkinter as tk
 from tkinter import ttk, messagebox
 import styles as st  # Importamos tu archivo de estilos
@@ -10,14 +9,14 @@ cliente_seleccionado_id = None
 def cargar_clientes(filtro=""):
     for row in tabla.get_children():
         tabla.delete(row)
-    conexion = sqlite3.connect(database.get_db_path())
+    conexion = database.conectar()
     cursor = conexion.cursor()
     
     # Seleccionamos explícitamente las columnas para evitar problemas si la tabla cambia
     query_base = "SELECT id, nombre, telefono, email, cuit_dni FROM clientes"
     
     if filtro:
-        query = f"{query_base} WHERE nombre LIKE ? OR email LIKE ? OR cuit_dni LIKE ? ORDER BY nombre ASC"
+        query = f"{query_base} WHERE nombre LIKE %s OR email LIKE %s OR cuit_dni LIKE %s ORDER BY nombre ASC"
         param = f"%{filtro}%"
         cursor.execute(query, (param, param, param))
     else:
@@ -50,19 +49,19 @@ def guardar_cliente():
         messagebox.showwarning("Atención", "El nombre es obligatorio")
         return
     
-    conexion = sqlite3.connect(database.get_db_path())
+    conexion = database.conectar()
     cursor = conexion.cursor()
     
     if cliente_seleccionado_id:
         # UPDATE
         cursor.execute("""
-            UPDATE clientes SET nombre=?, telefono=?, email=?, cuit_dni=? WHERE id=?
+            UPDATE clientes SET nombre=%s, telefono=%s, email=%s, cuit_dni=%s WHERE id=%s
         """, (nombre, ent_tel.get(), ent_email.get(), ent_cuit.get(), cliente_seleccionado_id))
         mensaje = "Cliente actualizado correctamente"
     else:
         # INSERT
         cursor.execute("""
-            INSERT INTO clientes (nombre, telefono, email, cuit_dni) VALUES (?, ?, ?, ?)
+            INSERT INTO clientes (nombre, telefono, email, cuit_dni) VALUES (%s, %s, %s, %s)
         """, (nombre, ent_tel.get(), ent_email.get(), ent_cuit.get()))
         mensaje = "Cliente guardado correctamente"
         
@@ -91,9 +90,9 @@ def cargar_datos_para_editar(valores):
 def eliminar_cliente_por_id(cliente_id, nombre):
     """Elimina un cliente específico usando su ID y recarga la tabla."""
     if messagebox.askyesno("Confirmar", f"¿Eliminar a '{nombre}'?"):
-        conexion = sqlite3.connect(database.get_db_path())
+        conexion = database.conectar()
         cursor = conexion.cursor()
-        cursor.execute("DELETE FROM clientes WHERE id = ?", (cliente_id,))
+        cursor.execute("DELETE FROM clientes WHERE id = %s", (cliente_id,))
         conexion.commit()
         conexion.close()
         cargar_clientes(ent_buscar.get()) # Recargamos usando el filtro actual

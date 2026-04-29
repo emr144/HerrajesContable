@@ -1,10 +1,13 @@
-import sqlite3
+import psycopg2
 import database
 
 def limpiar_coeficientes_residuales():
     print("🧹 Depurando coeficientes de inflación antiguos...")
-    conexion = sqlite3.connect(database.get_db_path())
-    cursor = conexion.cursor()
+    conexion = database.conectar()
+    if not conexion:
+        print("🚫 No se pudo establecer conexión para depurar datos viejos.")
+        return
+    cursor = conexion.cursor() # Use cursor from psycopg2 connection
 
     # Reseteamos todos los coeficientes globales para empezar de cero
     cursor.execute("UPDATE proveedores SET descuento_global = 0.0, incremento_global = 0.0")

@@ -1,17 +1,18 @@
-import sqlite3
 import tkinter as tk
 from tkinter import messagebox, ttk
 import os
+import psycopg2
 from PIL import Image, ImageTk
 import styles as st # Importamos los estilos
 import database # Importamos para obtener la ruta
 
 def obtener_productos(filtro=""):
     """Consulta la DB buscando por código o por descripción"""
-    conexion = sqlite3.connect(database.get_db_path())
-    cursor = conexion.cursor()
-    query = "SELECT codigo_proveedor, descripcion FROM productos WHERE (codigo_proveedor LIKE ? OR descripcion LIKE ?) AND estado = 'ACTIVO' LIMIT 10"
-    cursor.execute(query, (f'%{filtro}%', f'%{filtro}%'))
+    conexion = database.conectar()
+    if not conexion: return []
+    cursor = conexion.cursor() # Use cursor from psycopg2 connection
+    query = "SELECT codigo_proveedor, descripcion FROM productos WHERE (codigo_proveedor LIKE %s OR descripcion LIKE %s) AND estado = 'ACTIVO' LIMIT 10"
+    cursor.execute(query, (f'%{filtro}%', f'%{filtro}%')) # Use %s placeholders
     resultados = cursor.fetchall()
     conexion.close()
     return resultados
@@ -58,15 +59,16 @@ def mostrar_detalle(codigo_buscado=None):
 
     if not codigo_buscado: return
 
-    conexion = sqlite3.connect(database.get_db_path())
-    cursor = conexion.cursor()
+    conexion = database.conectar()
+    if not conexion: return
+    cursor = conexion.cursor() # Use cursor from psycopg2 connection
     query = '''
         SELECT p.descripcion, p.costo_base, p.coeficiente_ganancia, p.iva, pr.descuento_global, pr.incremento_global
         FROM productos p
         JOIN proveedores pr ON p.proveedor_id = pr.id
-        WHERE p.codigo_proveedor = ?
-    '''
-    cursor.execute(query, (codigo_buscado,))
+        WHERE p.codigo_proveedor = %s
+    ''' # Use %s placeholder
+    cursor.execute(query, (codigo_buscado,)) # Use %s placeholder
     producto = cursor.fetchone()
     conexion.close()
 

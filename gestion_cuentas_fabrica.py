@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 import ttkbootstrap as tb
-import sqlite3
+import psycopg2
 import styles as st 
 import database # Importamos para obtener la ruta
 from datetime import datetime
@@ -113,11 +113,11 @@ def montar_interfaz(notebook):
         if not prov_nombre: return
 
         try:
-            conn = sqlite3.connect(database.get_db_path())
+            conn = database.conectar()
+            if not conn: return
             cursor = conn.cursor()
             
-            # Buscamos el ID
-            cursor.execute("SELECT id FROM proveedores WHERE nombre=?", (prov_nombre,))
+            cursor.execute("SELECT id FROM proveedores WHERE nombre=%s", (prov_nombre,))
             res_prov = cursor.fetchone()
             if not res_prov: return
             prov_id = res_prov[0]
@@ -159,9 +159,10 @@ def montar_interfaz(notebook):
     def cargar_edicion(row_id):
         """Carga los datos de la fila seleccionada en el formulario"""
         try:
-            conn = sqlite3.connect(database.get_db_path())
+            conn = database.conectar()
+            if not conn: return
             cursor = conn.cursor()
-            cursor.execute("SELECT tipo_movimiento, monto, descripcion, fecha FROM cuenta_corriente_proveedores WHERE id=?", (row_id,))
+            cursor.execute("SELECT tipo_movimiento, monto, descripcion, fecha FROM cuenta_corriente_proveedores WHERE id=%s", (row_id,))
             row = cursor.fetchone()
             conn.close()
             
@@ -187,18 +188,18 @@ def montar_interfaz(notebook):
     def eliminar_registro(row_id):
         """Elimina el registro de la DB"""
         if messagebox.askyesno("Confirmar", "¿Eliminar este movimiento?\nEsto recalculará el saldo."):
-            try:
-                conn = sqlite3.connect(database.get_db_path())
-                cursor = conn.cursor()
-                cursor.execute("DELETE FROM cuenta_corriente_proveedores WHERE id=?", (row_id,))
+            conn = database.conectar()
+            if conn:
+                conn = database.conectar()
+                cursor.execute("DELETE FROM cuenta_corriente_proveedores WHERE id=%s", (row_id,))
                 conn.commit()
                 conn.close()
                 
                 if frame.editando_id == row_id:
                     reset_form()
                 
-                calcular_y_mostrar()
-            except Exception as e:
+                calcular_y_mostrar() # Recalculate after deletion
+            else:
                 messagebox.showerror("Error", f"No se pudo eliminar: {e}")
 
     def on_tree_click(event):
@@ -246,8 +247,10 @@ def montar_interfaz(notebook):
                 return
 
             conn = sqlite3.connect(database.get_db_path())
+            conn = database.conectar()
+            if not conn: return
             cursor = conn.cursor()
-            cursor.execute("SELECT id FROM proveedores WHERE nombre=?", (prov_nombre,))
+            cursor.execute("SELECT id FROM proveedores WHERE nombre=%s", (prov_nombre,))
             res = cursor.fetchone()
             
             if not res:
@@ -262,13 +265,14 @@ def montar_interfaz(notebook):
                     UPDATE cuenta_corriente_proveedores 
                     SET tipo_movimiento=?, monto=?, descripcion=?, tipo_cuenta=?, fecha=?
                     WHERE id=?
+                    SET tipo_movimiento=%s, monto=%s, descripcion=%s, tipo_cuenta=%s, fecha=%s
+                    WHERE id=%s
                 """, (tipo, monto_f, desc, var_tipo_cuenta.get(), fecha_db, frame.editando_id))
             else:
                 # MODO NUEVO: INSERTAR
                 cursor.execute("""
                     INSERT INTO cuenta_corriente_proveedores 
-                    (id_proveedor, tipo_cuenta, tipo_movimiento, monto, metodo_pago, descripcion, fecha)
-                    VALUES (?, ?, ?, ?, 'N/A', ?, ?)
+                    VALUES (%s, %s, %s, %s, 'N/A', %s, %s)
                 """, (prov_id, var_tipo_cuenta.get(), tipo, monto_f, desc, fecha_db))
             
             conn.commit()
@@ -284,16 +288,16 @@ def montar_interfaz(notebook):
             if conn: conn.close()
 
     def cargar_provs():
-        try:
-            conn = sqlite3.connect(database.get_db_path())
+        conn = database.conectar()
+        if conn:
+            conn = database.conectar()
             cursor = conn.cursor()
             cursor.execute("SELECT nombre FROM proveedores ORDER BY nombre ASC")
             lista = [r[0] for r in cursor.fetchall()]
             lista.sort(key=str.lower) # Asegurar orden A-Z ignorando mayúsculas
             combo_prov['values'] = lista
             frame.lista_proveedores_cache = lista
-            conn.close()
-        except: pass
+            conn.close() # Close connection if it was successfully opened
 
     # Botones y Eventos
     frame.refrescar_contenido = cargar_provs # Para que main.py pueda llamar

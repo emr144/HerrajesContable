@@ -1,4 +1,3 @@
-import sqlite3
 import tkinter as tk
 from tkinter import ttk, messagebox
 import styles as st
@@ -49,21 +48,21 @@ def cargar_productos():
     if combo_buscar_prov:
         prov_f = combo_buscar_prov.get()
         if prov_f and prov_f != "TODOS":
-            query += " AND pr.nombre = ?"
+            query += " AND pr.nombre = %s"
             params.append(prov_f)
             
     # Filtro por Código
     if ent_buscar_codigo:
         cod_f = ent_buscar_codigo.get().strip()
         if cod_f:
-            query += " AND p.codigo_proveedor LIKE ?"
+            query += " AND p.codigo_proveedor LIKE %s"
             params.append(f"%{cod_f}%")
             
     # Filtro por Descripción
     if ent_buscar_desc:
         desc_f = ent_buscar_desc.get().strip()
         if desc_f:
-            query += " AND p.descripcion LIKE ?"
+            query += " AND p.descripcion LIKE %s"
             params.append(f"%{desc_f}%")
         
     query += " ORDER BY p.descripcion ASC"
@@ -116,8 +115,8 @@ def guardar_producto():
     conexion = database.conectar()
     cursor = conexion.cursor()
     cursor.execute("""
-        UPDATE productos SET descripcion=?, costo_base=?
-        WHERE id=?
+        UPDATE productos SET descripcion=%s, costo_base=%s
+        WHERE id=%s
     """, (desc, costo, producto_seleccionado_id))
     conexion.commit()
     conexion.close()
@@ -132,7 +131,7 @@ def cargar_datos_para_editar(item_id):
     
     conexion = database.conectar()
     cursor = conexion.cursor()
-    cursor.execute("SELECT descripcion, costo_base, coeficiente_ganancia FROM productos WHERE id=?", (item_id,))
+    cursor.execute("SELECT descripcion, costo_base, coeficiente_ganancia FROM productos WHERE id=%s", (item_id,))
     valores = cursor.fetchone()
     conexion.close()
 
@@ -155,7 +154,7 @@ def eliminar_producto_por_id(producto_id, descripcion):
         try:
             conexion = database.conectar()
             cursor = conexion.cursor()
-            cursor.execute("DELETE FROM productos WHERE id = ?", (producto_id,))
+            cursor.execute("DELETE FROM productos WHERE id = %s", (producto_id,))
             conexion.commit()
             conexion.close()
             cargar_productos()
@@ -179,7 +178,7 @@ def modificar_coef_por_proveedor_dialogo():
     frame_prov.pack(fill='x', pady=5)
     tk.Label(frame_prov, text="1. Seleccione Proveedor:", font=st.FONT_NORMAL, bg=st.BG_MAIN, fg='white').pack(anchor='w')
     
-    conexion = sqlite3.connect(database.get_db_path())
+    conexion = database.conectar()
     cursor = conexion.cursor()
     cursor.execute("SELECT id, nombre FROM proveedores ORDER BY nombre")
     proveedores = cursor.fetchall()
@@ -204,10 +203,10 @@ def modificar_coef_por_proveedor_dialogo():
         nombre_prov = combo.get()
         if nombre_prov in proveedor_map:
             prov_id = proveedor_map[nombre_prov]
-            conn = sqlite3.connect(database.get_db_path())
+            conn = database.conectar()
             cur = conn.cursor()
             # Buscamos el coeficiente del primer producto activo que encontremos
-            cur.execute("SELECT coeficiente_ganancia FROM productos WHERE proveedor_id = ? AND estado = 'ACTIVO' LIMIT 1", (prov_id,))
+            cur.execute("SELECT coeficiente_ganancia FROM productos WHERE proveedor_id = %s AND estado = 'ACTIVO' LIMIT 1", (prov_id,))
             res = cur.fetchone()
             conn.close()
             if res:
@@ -248,15 +247,15 @@ def modificar_coef_por_proveedor_dialogo():
         
         if messagebox.askyesno("Confirmar Cambio Masivo", msg, parent=dialog):
             try:
-                conn = sqlite3.connect(database.get_db_path())
+                conn = database.conectar()
                 cur = conn.cursor()
                 
                 # 1. Actualizar productos
-                cur.execute("UPDATE productos SET coeficiente_ganancia = ? WHERE proveedor_id = ?", (nuevo_coef, proveedor_id))
+                cur.execute("UPDATE productos SET coeficiente_ganancia = %s WHERE proveedor_id = %s", (nuevo_coef, proveedor_id))
                 actualizados = cur.rowcount
                 
                 # 2. Actualizar fecha en proveedor
-                cur.execute("UPDATE proveedores SET fecha_modif_coeficiente = CURRENT_DATE WHERE id = ?", (proveedor_id,))
+                cur.execute("UPDATE proveedores SET fecha_modif_coeficiente = CURRENT_DATE WHERE id = %s", (proveedor_id,))
                 
                 conn.commit()
                 conn.close()
@@ -282,7 +281,7 @@ def eliminar_por_proveedor_dialogo():
              font=st.FONT_LABEL, bg=st.BG_MAIN, fg=st.TEXT_SECONDARY).pack(pady=10)
 
     # Obtener proveedores
-    conexion = sqlite3.connect(database.get_db_path())
+    conexion = database.conectar()
     cursor = conexion.cursor()
     cursor.execute("SELECT id, nombre FROM proveedores ORDER BY nombre")
     proveedores = cursor.fetchall()
@@ -320,9 +319,9 @@ def eliminar_por_proveedor_dialogo():
         
         if messagebox.askyesno("Confirmación Final Requerida", msg, icon='error', parent=dialog):
             try:
-                conn = sqlite3.connect(database.get_db_path())
+                conn = database.conectar()
                 cur = conn.cursor()
-                cur.execute("DELETE FROM productos WHERE proveedor_id = ?", (proveedor_id,))
+                cur.execute("DELETE FROM productos WHERE proveedor_id = %s", (proveedor_id,))
                 conn.commit()
                 eliminados = cur.rowcount
                 conn.close()
@@ -354,12 +353,12 @@ def on_tabla_click(event):
 
 def buscar_productos_para_edicion(termino):
     """Busca productos por descripción o código para el autocompletado de edición."""
-    conexion = sqlite3.connect(database.get_db_path())
+    conexion = database.conectar()
     cursor = conexion.cursor()
     query = """
         SELECT id, codigo_proveedor, descripcion
         FROM productos
-        WHERE (descripcion LIKE ? OR codigo_proveedor LIKE ?)
+        WHERE (descripcion LIKE %s OR codigo_proveedor LIKE %s)
         ORDER BY descripcion
         LIMIT 15
     """
@@ -492,7 +491,7 @@ def montar_interfaz(parent):
                 combo_buscar_prov.event_generate('<Down>')
     
     def cargar_proveedores_filtro():
-        conexion = sqlite3.connect(database.get_db_path())
+        conexion = database.conectar()
         cursor = conexion.cursor()
         cursor.execute("SELECT nombre FROM proveedores ORDER BY nombre")
         provs = [p[0] for p in cursor.fetchall()]
