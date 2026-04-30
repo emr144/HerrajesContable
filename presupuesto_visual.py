@@ -51,12 +51,16 @@ def buscar_productos_db(termino="", filtro_proveedor=None, filtro_codigo=""):
     args = []
 
     if filtro_codigo:
-        query += " AND p.codigo_proveedor LIKE %s"
-        args.append(f'%{filtro_codigo}%')
+        tokens = filtro_codigo.lower().replace('-', ' ').replace('_', ' ').replace('/', ' ').split()
+        for t in tokens:
+            query += " AND LOWER(REPLACE(REPLACE(REPLACE(REPLACE(p.codigo_proveedor, ' ', ''), '-', ''), '_', ''), '/', '')) LIKE %s"
+            args.append(f'%{t}%')
 
     if termino:
-        query += " AND p.descripcion LIKE %s"
-        args.append(f'%{termino}%')
+        tokens = termino.lower().replace('-', ' ').replace('_', ' ').replace('/', ' ').split()
+        for t in tokens:
+            query += " AND LOWER(REPLACE(REPLACE(REPLACE(REPLACE(p.descripcion, ' ', ''), '-', ''), '_', ''), '/', '')) LIKE %s"
+            args.append(f'%{t}%')
 
     if filtro_proveedor:
         query += " AND pr.nombre = %s"

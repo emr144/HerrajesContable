@@ -11,8 +11,19 @@ def obtener_productos(filtro=""):
     conexion = database.conectar()
     if not conexion: return []
     cursor = conexion.cursor() # Use cursor from psycopg2 connection
-    query = "SELECT codigo_proveedor, descripcion FROM productos WHERE (codigo_proveedor LIKE %s OR descripcion LIKE %s) AND estado = 'ACTIVO' LIMIT 10"
-    cursor.execute(query, (f'%{filtro}%', f'%{filtro}%')) # Use %s placeholders
+    tokens = filtro.lower().replace('-', ' ').replace('_', ' ').replace('/', ' ').split()
+    if not tokens: return []
+
+    norm_cod = "LOWER(REPLACE(REPLACE(REPLACE(REPLACE(codigo_proveedor, ' ', ''), '-', ''), '_', ''), '/', ''))"
+    norm_desc = "LOWER(REPLACE(REPLACE(REPLACE(REPLACE(descripcion, ' ', ''), '-', ''), '_', ''), '/', ''))"
+    
+    cond_cod = " AND ".join([f"{norm_cod} LIKE %s" for _ in tokens])
+    cond_desc = " AND ".join([f"{norm_desc} LIKE %s" for _ in tokens])
+
+    query = f"SELECT codigo_proveedor, descripcion FROM productos WHERE (({cond_cod}) OR ({cond_desc})) AND estado = 'ACTIVO' LIMIT 10"
+    
+    params = [f"%{t}%" for t in tokens] * 2
+    cursor.execute(query, params) # Use %s placeholders
     resultados = cursor.fetchall()
     conexion.close()
     return resultados

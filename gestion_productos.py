@@ -55,15 +55,19 @@ def cargar_productos():
     if ent_buscar_codigo:
         cod_f = ent_buscar_codigo.get().strip()
         if cod_f:
-            query += " AND p.codigo_proveedor LIKE %s"
-            params.append(f"%{cod_f}%")
+            tokens = cod_f.lower().replace('-', ' ').replace('_', ' ').replace('/', ' ').split()
+            for t in tokens:
+                query += " AND LOWER(REPLACE(REPLACE(REPLACE(REPLACE(p.codigo_proveedor, ' ', ''), '-', ''), '_', ''), '/', '')) LIKE %s"
+                params.append(f"%{t}%")
             
     # Filtro por Descripción
     if ent_buscar_desc:
         desc_f = ent_buscar_desc.get().strip()
         if desc_f:
-            query += " AND p.descripcion LIKE %s"
-            params.append(f"%{desc_f}%")
+            tokens = desc_f.lower().replace('-', ' ').replace('_', ' ').replace('/', ' ').split()
+            for t in tokens:
+                query += " AND LOWER(REPLACE(REPLACE(REPLACE(REPLACE(p.descripcion, ' ', ''), '-', ''), '_', ''), '/', '')) LIKE %s"
+                params.append(f"%{t}%")
         
     query += " ORDER BY p.descripcion ASC"
     cursor.execute(query, params)
@@ -355,14 +359,19 @@ def buscar_productos_para_edicion(termino):
     """Busca productos por descripción o código para el autocompletado de edición."""
     conexion = database.conectar()
     cursor = conexion.cursor()
-    query = """
-        SELECT id, codigo_proveedor, descripcion
-        FROM productos
-        WHERE (descripcion LIKE %s OR codigo_proveedor LIKE %s)
-        ORDER BY descripcion
-        LIMIT 15
-    """
-    cursor.execute(query, (f'%{termino}%', f'%{termino}%'))
+    tokens = termino.lower().replace('-', ' ').replace('_', ' ').replace('/', ' ').split()
+    if not tokens: return []
+
+    norm_desc = "LOWER(REPLACE(REPLACE(REPLACE(REPLACE(descripcion, ' ', ''), '-', ''), '_', ''), '/', ''))"
+    norm_cod = "LOWER(REPLACE(REPLACE(REPLACE(REPLACE(codigo_proveedor, ' ', ''), '-', ''), '_', ''), '/', ''))"
+    
+    cond_desc = " AND ".join([f"{norm_desc} LIKE %s" for _ in tokens])
+    cond_cod = " AND ".join([f"{norm_cod} LIKE %s" for _ in tokens])
+
+    query = f"SELECT id, codigo_proveedor, descripcion FROM productos WHERE (({cond_desc}) OR ({cond_cod})) ORDER BY descripcion LIMIT 15"
+    
+    params = [f"%{t}%" for t in tokens] * 2
+    cursor.execute(query, params)
     resultados = cursor.fetchall()
     conexion.close()
     return resultados
