@@ -127,9 +127,22 @@ def montar_interfaz(parent):
     f_top_gen = tk.Frame(frame_edicion, bg=st.BG_CARD, pady=10)
     f_top_gen.pack(fill=tk.X, padx=15, pady=10)
 
+    lista_provs = obtener_proveedores()
+    def filtrar_provs(event):
+        if event.keysym in ('Down', 'Up', 'Return', 'Escape', 'Tab', 'Left', 'Right'): return
+        texto = combo_prov_gen.get().lower()
+        if not texto:
+            combo_prov_gen['values'] = lista_provs
+        else:
+            filtrados = [p for p in lista_provs if p.lower().startswith(texto)]
+            combo_prov_gen['values'] = filtrados
+            if filtrados:
+                combo_prov_gen.event_generate('<Down>')
+
     tk.Label(f_top_gen, text="FABRICA:", bg=st.BG_CARD, fg="white", font=st.FONT_LABEL).grid(row=0, column=0, padx=5)
-    combo_prov_gen = ttk.Combobox(f_top_gen, values=obtener_proveedores(), font=st.FONT_INPUT)
+    combo_prov_gen = ttk.Combobox(f_top_gen, values=lista_provs, font=st.FONT_INPUT)
     combo_prov_gen.grid(row=0, column=1, padx=5)
+    combo_prov_gen.bind("<KeyRelease>", filtrar_provs)
 
     lbl_prod_sel = tk.Label(f_top_gen, text="", bg=st.BG_CARD, fg=st.ACCENT, font=st.FONT_NORMAL)
     lbl_prod_sel.grid(row=0, column=3, padx=10)

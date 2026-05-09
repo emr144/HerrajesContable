@@ -66,7 +66,7 @@ def buscar_productos_db(termino="", filtro_proveedor=None, filtro_codigo=""):
         query += " AND pr.nombre = %s"
         args.append(filtro_proveedor)
 
-    query += " LIMIT 60"
+    query += " ORDER BY p.descripcion ASC"
 
     cursor.execute(query, tuple(args))
     resultados = cursor.fetchall()
@@ -363,10 +363,21 @@ def abrir_buscador_productos():
     frame_f.pack(fill=tk.X)
     
     tk.Label(frame_f, text="Fábrica:", bg=st.BG_MAIN, fg="white").grid(row=0, column=0, padx=5)
-    c_prov = ttk.Combobox(frame_f, values=["TODOS"] + obtener_proveedores_lista(), state="readonly")
+    c_prov = ttk.Combobox(frame_f, values=["TODOS"] + obtener_proveedores_lista(), font=st.FONT_INPUT)
     c_prov.set("TODOS")
     c_prov.grid(row=0, column=1, padx=5)
     
+    def filtrar_provs(event):
+        if event.keysym in ('Down', 'Up', 'Return', 'Escape', 'Tab', 'Left', 'Right'): return
+        texto = c_prov.get().lower()
+        if not texto or texto == "todos":
+            c_prov['values'] = ["TODOS"] + lista_proveedores_cache
+        else:
+            filtrados = [p for p in lista_proveedores_cache if p.lower().startswith(texto)]
+            c_prov['values'] = filtrados
+            if filtrados:
+                c_prov.event_generate('<Down>')
+
     tk.Label(frame_f, text="Código:", bg=st.BG_MAIN, fg="white").grid(row=0, column=2, padx=5)
     e_cod = tk.Entry(frame_f, **st.estilo_entrada())
     e_cod.grid(row=0, column=3, padx=5)
@@ -390,7 +401,7 @@ def abrir_buscador_productos():
             precio_prof = costo * (1 - (desc_g or 0)) * (1 + (inc_g or 0)) * coef * (1 + iva)
             t_busca.insert("", "end", values=(cod, desc, prov_nom, f"$ {precio_prof:.2f}"))
 
-    e_cod.bind("<KeyRelease>", buscar); e_desc.bind("<KeyRelease>", buscar); c_prov.bind("<<ComboboxSelected>>", buscar)
+    e_cod.bind("<KeyRelease>", buscar); e_desc.bind("<KeyRelease>", buscar); c_prov.bind("<<ComboboxSelected>>", buscar); c_prov.bind("<KeyRelease>", filtrar_provs)
     
     def seleccionar():
         global codigo_seleccionado
