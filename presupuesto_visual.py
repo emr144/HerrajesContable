@@ -6,6 +6,31 @@ from fpdf import FPDF
 import styles as st # Importamos los estilos
 import database # Importamos para obtener la ruta
 
+# --- Funciones Auxiliares para Normalización de Búsqueda ---
+def _normalize_string_for_sql_search(column_name):
+    """Genera un fragmento SQL para normalizar una cadena para búsqueda.
+    Elimina espacios, guiones, guiones bajos, barras y acentos comunes en español.
+    """
+    # Primero pasamos a minúsculas para que los REPLACE de acentos funcionen con mayúsculas acentuadas
+    n = f"LOWER({column_name})"
+    n = f"REPLACE({n}, ' ', '')"
+    n = f"REPLACE({n}, '-', '')"
+    n = f"REPLACE({n}, '_', '')"
+    n = f"REPLACE({n}, '/', '')"
+    n = f"REPLACE({n}, 'á', 'a')"
+    n = f"REPLACE({n}, 'é', 'e')"
+    n = f"REPLACE({n}, 'í', 'i')"
+    n = f"REPLACE({n}, 'ó', 'o')"
+    n = f"REPLACE({n}, 'ú', 'u')"
+    n = f"REPLACE({n}, 'ü', 'u')"
+    n = f"REPLACE({n}, 'ñ', 'n')"
+    return n
+
+def _normalize_python_string_for_search(text):
+    """Normaliza una cadena de Python para comparación, eliminando acentos y caracteres especiales."""
+    text = text.lower().replace(' ', '').replace('-', '').replace('_', '').replace('/', '')
+    return text.replace('á', 'a').replace('é', 'e').replace('í', 'i').replace('ó', 'o').replace('ú', 'u').replace('ü', 'u').replace('ñ', 'n')
+
 # Variables globales
 carrito = []
 total_sin_descuento = 0.0
@@ -51,15 +76,15 @@ def buscar_productos_db(termino="", filtro_proveedor=None, filtro_codigo=""):
     args = []
 
     if filtro_codigo:
-        tokens = filtro_codigo.lower().replace('-', ' ').replace('_', ' ').replace('/', ' ').split()
+        tokens = _normalize_python_string_for_search(filtro_codigo).split()
         for t in tokens:
-            query += " AND LOWER(REPLACE(REPLACE(REPLACE(REPLACE(p.codigo_proveedor, ' ', ''), '-', ''), '_', ''), '/', '')) LIKE %s"
+            query += f" AND {_normalize_string_for_sql_search('p.codigo_proveedor')} LIKE %s"
             args.append(f'%{t}%')
 
     if termino:
-        tokens = termino.lower().replace('-', ' ').replace('_', ' ').replace('/', ' ').split()
+        tokens = _normalize_python_string_for_search(termino).split()
         for t in tokens:
-            query += " AND LOWER(REPLACE(REPLACE(REPLACE(REPLACE(p.descripcion, ' ', ''), '-', ''), '_', ''), '/', '')) LIKE %s"
+            query += f" AND {_normalize_string_for_sql_search('p.descripcion')} LIKE %s"
             args.append(f'%{t}%')
 
     if filtro_proveedor:

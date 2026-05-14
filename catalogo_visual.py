@@ -6,16 +6,40 @@ from PIL import Image, ImageTk
 import styles as st # Importamos los estilos
 import database # Importamos para obtener la ruta
 
+# --- Funciones Auxiliares para Normalización de Búsqueda ---
+def _normalize_string_for_sql_search(column_name):
+    """Genera un fragmento SQL para normalizar una cadena para búsqueda.
+    Elimina espacios, guiones, guiones bajos, barras y acentos comunes en español.
+    """
+    n = f"LOWER({column_name})"
+    n = f"REPLACE({n}, ' ', '')"
+    n = f"REPLACE({n}, '-', '')"
+    n = f"REPLACE({n}, '_', '')"
+    n = f"REPLACE({n}, '/', '')"
+    n = f"REPLACE({n}, 'á', 'a')"
+    n = f"REPLACE({n}, 'é', 'e')"
+    n = f"REPLACE({n}, 'í', 'i')"
+    n = f"REPLACE({n}, 'ó', 'o')"
+    n = f"REPLACE({n}, 'ú', 'u')"
+    n = f"REPLACE({n}, 'ü', 'u')"
+    n = f"REPLACE({n}, 'ñ', 'n')"
+    return n
+
+def _normalize_python_string_for_search(text):
+    """Normaliza una cadena de Python para comparación, eliminando acentos y caracteres especiales."""
+    text = text.lower().replace(' ', '').replace('-', '').replace('_', '').replace('/', '')
+    return text.replace('á', 'a').replace('é', 'e').replace('í', 'i').replace('ó', 'o').replace('ú', 'u').replace('ü', 'u').replace('ñ', 'n')
+
 def obtener_productos(filtro=""):
     """Consulta la DB buscando por código o por descripción"""
     conexion = database.conectar()
     if not conexion: return []
     cursor = conexion.cursor() # Use cursor from psycopg2 connection
-    tokens = filtro.lower().replace('-', ' ').replace('_', ' ').replace('/', ' ').split()
+    tokens = _normalize_python_string_for_search(filtro).split()
     if not tokens: return []
 
-    norm_cod = "LOWER(REPLACE(REPLACE(REPLACE(REPLACE(codigo_proveedor, ' ', ''), '-', ''), '_', ''), '/', ''))"
-    norm_desc = "LOWER(REPLACE(REPLACE(REPLACE(REPLACE(descripcion, ' ', ''), '-', ''), '_', ''), '/', ''))"
+    norm_cod = _normalize_string_for_sql_search("codigo_proveedor")
+    norm_desc = _normalize_string_for_sql_search("descripcion")
     
     cond_cod = " AND ".join([f"{norm_cod} LIKE %s" for _ in tokens])
     cond_desc = " AND ".join([f"{norm_desc} LIKE %s" for _ in tokens])

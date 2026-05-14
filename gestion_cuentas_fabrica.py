@@ -123,10 +123,10 @@ def montar_interfaz(notebook):
             prov_id = res_prov[0]
 
             # Traemos movimientos ordenados por fecha/id
-            cursor.execute("""
-                SELECT id, fecha, tipo_movimiento, monto, descripcion 
+            cursor.execute(f"""
+                SELECT id, fecha, tipo_movimiento, monto, descripcion
                 FROM cuenta_corriente_proveedores 
-                WHERE id_proveedor = ? AND tipo_cuenta = ?
+                WHERE id_proveedor = %s AND tipo_cuenta = %s
                 ORDER BY fecha ASC, id ASC
             """, (prov_id, t_cuenta))
             
@@ -135,12 +135,14 @@ def montar_interfaz(notebook):
                 debe = ""
                 haber = ""
                 
-                # Convertimos fecha YYYY-MM-DD a DD-MM-YYYY para mostrar bonito
-                fecha_mostrar = fecha
-                try:
-                    f_obj = datetime.strptime(fecha, "%Y-%m-%d")
-                    fecha_mostrar = f_obj.strftime("%d-%m-%Y")
-                except: pass
+                # Formatear fecha para visualización (DD-MM-YYYY)
+                if hasattr(fecha, 'strftime'):
+                    fecha_mostrar = fecha.strftime("%d-%m-%Y")
+                else:
+                    try:
+                        fecha_mostrar = datetime.strptime(str(fecha), "%Y-%m-%d").strftime("%d-%m-%Y")
+                    except:
+                        fecha_mostrar = str(fecha)
                 
                 if tipo in ['Factura', 'Saldo Inicial']:
                     debe = f"$ {monto:,.2f}"
@@ -172,12 +174,15 @@ def montar_interfaz(notebook):
                 var_monto.set(str(row[1]))
                 var_desc.set(row[2])
                 
-                # Convertir YYYY-MM-DD a DD-MM-YYYY para el input
-                try:
-                    fecha_dt = datetime.strptime(row[3], "%Y-%m-%d")
-                    var_fecha.set(fecha_dt.strftime("%d-%m-%Y"))
-                except:
-                    var_fecha.set(row[3])
+                # Cargar fecha en el input con formato DD-MM-YYYY
+                f_val = row[3]
+                if hasattr(f_val, 'strftime'):
+                    var_fecha.set(f_val.strftime("%d-%m-%Y"))
+                else:
+                    try:
+                        var_fecha.set(datetime.strptime(str(f_val), "%Y-%m-%d").strftime("%d-%m-%Y"))
+                    except:
+                        var_fecha.set(str(f_val))
                 
                 # Cambiamos visualmente el botón para indicar edición
                 btn_registrar.config(text="💾 GUARDAR CAMBIOS", bootstyle="warning") 
@@ -188,18 +193,17 @@ def montar_interfaz(notebook):
     def eliminar_registro(row_id):
         """Elimina el registro de la DB"""
         if messagebox.askyesno("Confirmar", "¿Eliminar este movimiento?\nEsto recalculará el saldo."):
-            conn = database.conectar()
-            if conn:
+            try:
                 conn = database.conectar()
-                cursor.execute("DELETE FROM cuenta_corriente_proveedores WHERE id=%s", (row_id,))
-                conn.commit()
-                conn.close()
-                
-                if frame.editando_id == row_id:
-                    reset_form()
-                
-                calcular_y_mostrar() # Recalculate after deletion
-            else:
+                if conn:
+                    cursor = conn.cursor()
+                    cursor.execute("DELETE FROM cuenta_corriente_proveedores WHERE id=%s", (row_id,))
+                    conn.commit()
+                    conn.close()
+                    if frame.editando_id == row_id:
+                        reset_form()
+                    calcular_y_mostrar() # Recalculate after deletion
+            except Exception as e:
                 messagebox.showerror("Error", f"No se pudo eliminar: {e}")
 
     def on_tree_click(event):
@@ -246,7 +250,6 @@ def montar_interfaz(notebook):
                 messagebox.showerror("Error de Fecha", "Formato de fecha inválido.\nUse: DD-MM-AAAA (Ej: 25-12-2023)")
                 return
 
-            conn = sqlite3.connect(database.get_db_path())
             conn = database.conectar()
             if not conn: return
             cursor = conn.cursor()
@@ -262,17 +265,16 @@ def montar_interfaz(notebook):
             if frame.editando_id:
                 # MODO EDICIÓN: ACTUALIZAR
                 cursor.execute("""
-                    UPDATE cuenta_corriente_proveedores 
-                    SET tipo_movimiento=?, monto=?, descripcion=?, tipo_cuenta=?, fecha=?
-                    WHERE id=?
+                    UPDATE cuenta_corriente_proveedores
                     SET tipo_movimiento=%s, monto=%s, descripcion=%s, tipo_cuenta=%s, fecha=%s
                     WHERE id=%s
                 """, (tipo, monto_f, desc, var_tipo_cuenta.get(), fecha_db, frame.editando_id))
             else:
                 # MODO NUEVO: INSERTAR
                 cursor.execute("""
-                    INSERT INTO cuenta_corriente_proveedores 
-                    VALUES (%s, %s, %s, %s, 'N/A', %s, %s)
+                    INSERT INTO cuenta_corriente_proveedores
+                    (id_proveedor, tipo_cuenta, tipo_movimiento, monto, descripcion, fecha)
+                    VALUES (%s, %s, %s, %s, %s, %s)
                 """, (prov_id, var_tipo_cuenta.get(), tipo, monto_f, desc, fecha_db))
             
             conn.commit()
@@ -290,7 +292,6 @@ def montar_interfaz(notebook):
     def cargar_provs():
         conn = database.conectar()
         if conn:
-            conn = database.conectar()
             cursor = conn.cursor()
             cursor.execute("SELECT nombre FROM proveedores ORDER BY nombre ASC")
             lista = [r[0] for r in cursor.fetchall()]

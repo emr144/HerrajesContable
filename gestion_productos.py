@@ -3,6 +3,30 @@ from tkinter import ttk, messagebox
 import styles as st
 import database # Importamos para obtener la ruta
 
+# --- Funciones Auxiliares para Normalización de Búsqueda ---
+def _normalize_string_for_sql_search(column_name):
+    """Genera un fragmento SQL para normalizar una cadena para búsqueda.
+    Elimina espacios, guiones, guiones bajos, barras y acentos comunes en español.
+    """
+    n = f"LOWER({column_name})"
+    n = f"REPLACE({n}, ' ', '')"
+    n = f"REPLACE({n}, '-', '')"
+    n = f"REPLACE({n}, '_', '')"
+    n = f"REPLACE({n}, '/', '')"
+    n = f"REPLACE({n}, 'á', 'a')"
+    n = f"REPLACE({n}, 'é', 'e')"
+    n = f"REPLACE({n}, 'í', 'i')"
+    n = f"REPLACE({n}, 'ó', 'o')"
+    n = f"REPLACE({n}, 'ú', 'u')"
+    n = f"REPLACE({n}, 'ü', 'u')"
+    n = f"REPLACE({n}, 'ñ', 'n')"
+    return n
+
+def _normalize_python_string_for_search(text):
+    """Normaliza una cadena de Python para comparación, eliminando acentos y caracteres especiales."""
+    text = text.lower().replace(' ', '').replace('-', '').replace('_', '').replace('/', '')
+    return text.replace('á', 'a').replace('é', 'e').replace('í', 'i').replace('ó', 'o').replace('ú', 'u').replace('ü', 'u').replace('ñ', 'n')
+
 # Variable global para controlar edición
 producto_seleccionado_id = None
 
@@ -55,18 +79,18 @@ def cargar_productos():
     if ent_buscar_codigo:
         cod_f = ent_buscar_codigo.get().strip()
         if cod_f:
-            tokens = cod_f.lower().replace('-', ' ').replace('_', ' ').replace('/', ' ').split()
+            tokens = _normalize_python_string_for_search(cod_f).split()
             for t in tokens:
-                query += " AND LOWER(REPLACE(REPLACE(REPLACE(REPLACE(p.codigo_proveedor, ' ', ''), '-', ''), '_', ''), '/', '')) LIKE %s"
+                query += f" AND {_normalize_string_for_sql_search('p.codigo_proveedor')} LIKE %s"
                 params.append(f"%{t}%")
             
     # Filtro por Descripción
     if ent_buscar_desc:
         desc_f = ent_buscar_desc.get().strip()
         if desc_f:
-            tokens = desc_f.lower().replace('-', ' ').replace('_', ' ').replace('/', ' ').split()
+            tokens = _normalize_python_string_for_search(desc_f).split()
             for t in tokens:
-                query += " AND LOWER(REPLACE(REPLACE(REPLACE(REPLACE(p.descripcion, ' ', ''), '-', ''), '_', ''), '/', '')) LIKE %s"
+                query += f" AND {_normalize_string_for_sql_search('p.descripcion')} LIKE %s"
                 params.append(f"%{t}%")
         
     query += " ORDER BY p.descripcion ASC"
@@ -357,13 +381,13 @@ def on_tabla_click(event):
 
 def buscar_productos_para_edicion(termino):
     """Busca productos por descripción o código para el autocompletado de edición."""
-    conexion = database.conectar()
-    cursor = conexion.cursor()
-    tokens = termino.lower().replace('-', ' ').replace('_', ' ').replace('/', ' ').split()
+    conn = database.conectar()
+    cursor = conn.cursor()
+    tokens = _normalize_python_string_for_search(termino).split()
     if not tokens: return []
 
-    norm_desc = "LOWER(REPLACE(REPLACE(REPLACE(REPLACE(descripcion, ' ', ''), '-', ''), '_', ''), '/', ''))"
-    norm_cod = "LOWER(REPLACE(REPLACE(REPLACE(REPLACE(codigo_proveedor, ' ', ''), '-', ''), '_', ''), '/', ''))"
+    norm_desc = _normalize_string_for_sql_search("descripcion")
+    norm_cod = _normalize_string_for_sql_search("codigo_proveedor")
     
     cond_desc = " AND ".join([f"{norm_desc} LIKE %s" for _ in tokens])
     cond_cod = " AND ".join([f"{norm_cod} LIKE %s" for _ in tokens])
@@ -371,9 +395,9 @@ def buscar_productos_para_edicion(termino):
     query = f"SELECT id, codigo_proveedor, descripcion FROM productos WHERE (({cond_desc}) OR ({cond_cod})) ORDER BY descripcion LIMIT 15"
     
     params = [f"%{t}%" for t in tokens] * 2
-    cursor.execute(query, params)
+    cursor.execute(query, params) # Use %s placeholders
     resultados = cursor.fetchall()
-    conexion.close()
+    conn.close()
     return resultados
 
 def actualizar_sugerencias_edicion(event=None):

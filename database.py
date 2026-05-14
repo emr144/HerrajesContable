@@ -13,13 +13,14 @@ class SupabaseManager:
     def conectar(self):
         """Crea una conexión a Supabase (PostgreSQL)."""
         try:
+            # Importante: DATABASE_URL debe estar en tu archivo .env
             return psycopg2.connect(DATABASE_URL)
         except Exception as e:
             print(f"❌ Error al conectar a Supabase: {e}")
             return None
 
     def table(self, nombre_tabla):
-        """Simulador de interfaz para compatibilidad con el importador"""
+        """Interfaz para compatibilidad con el resto del sistema"""
         return TableHelper(self, nombre_tabla)
 
     def ejecutar_consulta(self, query, params=()):
@@ -45,6 +46,8 @@ class TableHelper:
     def __init__(self, manager, table_name):
         self.manager = manager
         self.table_name = table_name
+        self.query = ""
+        self.params = []
 
     def select(self, columns):
         self.query = f"SELECT {columns} FROM {self.table_name}"
@@ -55,24 +58,14 @@ class TableHelper:
         return self
 
     def execute(self):
-        res = self.manager.ejecutar_consulta(self.query)
-        if "id, nombre" in self.query:
-            return ResultHelper([{"id": r[0], "nombre": r[1]} for r in res] if res else [])
-        return ResultHelper(res)
-
-    def update(self, data):
-        sets = ", ".join([f"{k} = %s" for k in data.keys()])
-        self.query = f"UPDATE {self.table_name} SET {sets}"
-        self.params = list(data.values())
-        return self
-
-    def eq(self, column, value):
-        self.query += f" WHERE {column} = %s"
-        self.params.append(value)
-        return self
+        res = self.manager.ejecutar_consulta(self.query, self.params)
+        # Formateo básico para mantener compatibilidad
+        if res and "id, nombre" in self.query:
+            return ResultHelper([{"id": r[0], "nombre": r[1]} for r in res])
+        return ResultHelper(res if res else [])
 
     def upsert(self, data_list):
-        """Inserta o actualiza en bloque asegurando el COMMIT final."""
+        """Inserta o actualiza en bloque (PostgreSQL Syntax)."""
         if not data_list: return self
         conn = self.manager.conectar()
         if not conn: return self
@@ -96,7 +89,7 @@ class TableHelper:
         except Exception as e:
             print(f"❌ Error en upsert: {e}")
             conn.rollback()
-            raise e # Lanzamos el error para que la interfaz lo capture
+            raise e 
         finally:
             cursor.close()
             conn.close()
@@ -106,21 +99,29 @@ class ResultHelper:
     def __init__(self, data):
         self.data = data
 
+# --- Instancia global para ser usada por otros archivos ---
+db = SupabaseManager()
+
 def conectar():
+    """Función de acceso directo para otros módulos"""
     return db.conectar()
 
 def crear_base_datos():
+    """Inicializa las tablas si no existen en Supabase"""
     conexion = conectar()
     if not conexion: return
     cursor = conexion.cursor()
     try:
         # Tabla Proveedores
         cursor.execute('''CREATE TABLE IF NOT EXISTS proveedores (
-            id SERIAL PRIMARY KEY, nombre TEXT NOT NULL UNIQUE, contacto TEXT,
-            descuento_global NUMERIC(10, 2) DEFAULT 0.0, incremento_global NUMERIC(10, 2) DEFAULT 0.0,
+            id SERIAL PRIMARY KEY, 
+            nombre TEXT NOT NULL UNIQUE, 
+            contacto TEXT,
+            descuento_global NUMERIC(10, 2) DEFAULT 0.0, 
+            incremento_global NUMERIC(10, 2) DEFAULT 0.0,
             fecha_modif_coeficiente DATE DEFAULT CURRENT_DATE)''')
 
-        # Tabla Productos con UNIQUE explícito
+        # Tabla Productos
         cursor.execute('''CREATE TABLE IF NOT EXISTS productos (
             id SERIAL PRIMARY KEY, 
             proveedor_id INTEGER REFERENCES proveedores (id) ON DELETE SET NULL,
@@ -135,14 +136,6 @@ def crear_base_datos():
             fecha_lista DATE, 
             CONSTRAINT productos_uq UNIQUE(proveedor_id, codigo_proveedor))''')
 
-        # Fix de seguridad: Intentar crear la restricción si el CREATE TABLE IF NOT EXISTS no la aplicó
-        try:
-            cursor.execute("ALTER TABLE productos ADD CONSTRAINT productos_uq UNIQUE(proveedor_id, codigo_proveedor)")
-        except:
-            conexion.rollback() # Ignorar si ya existe
-
-        cursor.execute("INSERT INTO clientes (id, nombre) SELECT 1, 'Consumidor Final' WHERE NOT EXISTS (SELECT 1 FROM clientes WHERE id = 1)")
-        
         conexion.commit()
         print("🚀 Estructura de Supabase verificada.")
     except Exception as e:
@@ -151,5 +144,3 @@ def crear_base_datos():
     finally:
         cursor.close()
         conexion.close()
-
-db = SupabaseManager()
