@@ -36,6 +36,8 @@ carrito = []
 total_sin_descuento = 0.0
 combo_lista_precios = None # Nuevo selector de lista de precios
 lista_proveedores_cache = [] # Cache para filtrado
+tabla_busqueda = None # Tabla de resultados en el paso 2
+label_subtotal_carrito = None # Nuevo label para el subtotal del carrito
 var_tarjeta = None # Variable para el recargo de tarjeta
 
 codigo_seleccionado = ""
@@ -118,8 +120,20 @@ def actualizar_total_visual():
     
     if total_sin_descuento == 0:
         label_total.config(text="TOTAL: $ -", fg=st.ACCENT)
+        label_subtotal_carrito.config(text="SUBTOTAL CARRITO: $ 0.00")
     else:
         label_total.config(text=f"TOTAL: $ {total_final:.2f}", fg="darkgreen")
+        label_subtotal_carrito.config(text=f"SUBTOTAL CARRITO: $ {total_sin_descuento:.2f}")
+
+    # Gestionar Renglón de Total en la Tabla
+    if tabla.exists("total_row"):
+        tabla.delete("total_row")
+    
+    if total_sin_descuento > 0:
+        # Insertamos el renglón al final con un estilo destacado (tag)
+        tabla.insert("", "end", iid="total_row", values=(
+            "", ">> TOTAL PRODUCTOS <<", "", "", f"$ {total_sin_descuento:.2f}", "", ""
+        ), tags=('total_tag',))
 
 def recalcular_carrito(event=None):
     """Recalcula los precios de todo el carrito cuando se cambia la lista de precios"""
@@ -159,10 +173,13 @@ def recalcular_carrito(event=None):
 
     actualizar_total_visual()
 
+
 def agregar_producto(event=None):
     global total_sin_descuento, codigo_seleccionado
     codigo = codigo_seleccionado
     try:
+        if not entrada_cantidad.get().strip():
+            return
         cantidad = int(entrada_cantidad.get().strip())
     except ValueError:
         messagebox.showerror("Error", "La cantidad debe ser un número.")
@@ -205,6 +222,7 @@ def agregar_producto(event=None):
         codigo_seleccionado = ""
         label_prod_sel.config(text="")
         entrada_cantidad.delete(0, tk.END)
+        ent_p2_desc.focus_set() # Volver al buscador automáticamente
     else:
         messagebox.showwarning("No encontrado", f"El código '{codigo}' no existe.")
 
@@ -336,121 +354,82 @@ def guardar_presupuesto(imprimir=False):
     if var_tarjeta.get():
         total_final *= 1.10
 
-    nombre_cliente = combo_cliente.get().strip() or "Consumidor Final"
-    tipo_cliente = combo_lista_precios.get() + (" + TARJETA" if var_tarjeta.get() else "")
-    
-    conexion = database.conectar()
-    cursor = conexion.cursor()
-    # Guardamos el tipo de cliente (Profesional, Particular 15%, etc)
-    cursor.execute("INSERT INTO presupuestos (cliente_nombre, total, cliente_tipo) VALUES (%s, %s, %s) RETURNING id", (nombre_cliente, float(total_final), tipo_cliente))
-    presupuesto_id = cursor.fetchone()[0]
-    
-    for item in carrito:
-        cursor.execute('INSERT INTO presupuesto_detalles (presupuesto_id, producto_id, cantidad, precio_unitario_congelado) VALUES (%s, %s, %s, %s)',
-                       (presupuesto_id, item['prod_id'], item['cantidad'], item['precio_unitario']))
-    conexion.commit()
-    conexion.close()
+    try:
+        nombre_cliente = combo_cliente.get().strip() or "Consumidor Final"
+        tipo_cliente = combo_lista_precios.get() + (" + TARJETA" if var_tarjeta.get() else "")
+        
+        conexion = database.conectar()
+        cursor = conexion.cursor()
+        # Guardamos el tipo de cliente (Profesional, Particular 15%, etc)
+        cursor.execute("INSERT INTO presupuestos (cliente_nombre, total, cliente_tipo) VALUES (%s, %s, %s) RETURNING id", (nombre_cliente, float(total_final), tipo_cliente))
+        presupuesto_id = cursor.fetchone()[0]
+        
+        for item in carrito:
+            cursor.execute('INSERT INTO presupuesto_detalles (presupuesto_id, producto_id, cantidad, precio_unitario_congelado) VALUES (%s, %s, %s, %s)',
+                           (presupuesto_id, item['prod_id'], item['cantidad'], item['precio_unitario']))
+        conexion.commit()
+        conexion.close()
 
-    if imprimir:
-        generar_ticket_pdf(presupuesto_id)
-    
-    messagebox.showinfo("Éxito", f"Presupuesto N° {presupuesto_id} guardado.")
-    cancelar_venta()
+        if imprimir:
+            generar_ticket_pdf(presupuesto_id)
+        
+        messagebox.showinfo("Éxito", f"Presupuesto N° {presupuesto_id} guardado.")
+        cancelar_venta()
+    except Exception as e:
+        messagebox.showerror("Error al guardar", f"No se pudo guardar la venta: {e}")
 
 def cancelar_venta():
     global total_sin_descuento, carrito, codigo_seleccionado, var_tarjeta
     carrito.clear()
     total_sin_descuento = 0.0
     codigo_seleccionado = ""
-    var_tarjeta.set(False)
+    if var_tarjeta: var_tarjeta.set(False)
     label_prod_sel.config(text="")
+    label_feedback_p2.config(text="")
     actualizar_total_visual()
     for row in tabla.get_children(): tabla.delete(row)
     entrada_cantidad.delete(0, tk.END)
 
-def abrir_buscador_productos():
-    top = tk.Toplevel()
-    top.title("Buscador de Productos")
+def buscar_p2(_=None):
+    """Lógica de búsqueda integrada en Paso 2"""
+    for row in tabla_busqueda.get_children(): 
+        tabla_busqueda.delete(row)
     
-    # Obtener dimensiones de la pantalla para calcular el 3/4 (75%)
-    screen_width = top.winfo_screenwidth()
-    screen_height = top.winfo_screenheight()
-    width = int(screen_width * 0.75)
-    height = int(screen_height * 0.75)
-    # Calcular coordenadas para centrar la ventana
-    x = (screen_width // 2) - (width // 2)
-    y = (screen_height // 2) - (height // 2)
-    top.geometry(f"{width}x{height}+{x}+{y}")
+    prov = None if combo_p2_prov.get() == "TODOS" else combo_p2_prov.get()
+    res = buscar_productos_db(termino=ent_p2_desc.get(), filtro_proveedor=prov, filtro_codigo=ent_p2_cod.get())
     
-    st.aplicar_estilo_ventana(top)
-    
-    frame_f = tk.Frame(top, bg=st.BG_MAIN, padx=10, pady=10)
-    frame_f.pack(fill=tk.X)
-    
-    tk.Label(frame_f, text="Fábrica:", bg=st.BG_MAIN, fg="white").grid(row=0, column=0, padx=5)
-    c_prov = ttk.Combobox(frame_f, values=["TODOS"] + obtener_proveedores_lista(), font=st.FONT_INPUT)
-    c_prov.set("TODOS")
-    c_prov.grid(row=0, column=1, padx=5)
-    
-    def filtrar_provs(event):
-        if event.keysym in ('Down', 'Up', 'Return', 'Escape', 'Tab', 'Left', 'Right'): return
-        texto = c_prov.get().lower()
-        if not texto or texto == "todos":
-            c_prov['values'] = ["TODOS"] + lista_proveedores_cache
-        else:
-            filtrados = [p for p in lista_proveedores_cache if p.lower().startswith(texto)]
-            c_prov['values'] = filtrados
-            if filtrados:
-                c_prov.event_generate('<Down>')
+    for r in res:
+        cod, desc, prov_nom, costo, coef, iva, desc_g, inc_g = r
+        precio_prof = costo * (1 - (desc_g or 0)) * (1 + (inc_g or 0)) * coef * (1 + iva)
+        tabla_busqueda.insert("", "end", values=(cod, desc, prov_nom, f"$ {precio_prof:.2f}"))
 
-    tk.Label(frame_f, text="Código:", bg=st.BG_MAIN, fg="white").grid(row=0, column=2, padx=5)
-    e_cod = tk.Entry(frame_f, **st.estilo_entrada())
-    e_cod.grid(row=0, column=3, padx=5)
-    
-    tk.Label(frame_f, text="Producto:", bg=st.BG_MAIN, fg="white").grid(row=0, column=4, padx=5)
-    e_desc = tk.Entry(frame_f, **st.estilo_entrada())
-    e_desc.grid(row=0, column=5, padx=5)
-    
-    cols = ("cod", "desc", "prov", "precio")
-    t_busca = ttk.Treeview(top, columns=cols, show="headings")
-    t_busca.heading("cod", text="CÓDIGO"); t_busca.heading("desc", text="DESCRIPCIÓN"); t_busca.heading("prov", text="PROVEEDOR"); t_busca.heading("precio", text="P. PROFESIONAL")
-    t_busca.column("cod", width=100); t_busca.column("desc", width=350); t_busca.column("prov", width=150); t_busca.column("precio", width=120, anchor="e")
-    t_busca.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+def seleccionar_p2(event=None):
+    """Selecciona un producto de la tabla de búsqueda"""
+    global codigo_seleccionado
+    sel = tabla_busqueda.selection()
+    if sel:
+        val = tabla_busqueda.item(sel[0], 'values')
+        codigo_seleccionado = val[0]
+        label_prod_sel.config(text=f"Seleccionado: {val[0]} | {val[1][:40]}...")
+        entrada_cantidad.focus_set()
 
-    def buscar(_=None):
-        for row in t_busca.get_children(): t_busca.delete(row)
-        prov = None if c_prov.get() == "TODOS" else c_prov.get()
-        res = buscar_productos_db(termino=e_desc.get(), filtro_proveedor=prov, filtro_codigo=e_cod.get())
-        for r in res:
-            cod, desc, prov_nom, costo, coef, iva, desc_g, inc_g = r
-            precio_prof = costo * (1 - (desc_g or 0)) * (1 + (inc_g or 0)) * coef * (1 + iva)
-            t_busca.insert("", "end", values=(cod, desc, prov_nom, f"$ {precio_prof:.2f}"))
-
-    e_cod.bind("<KeyRelease>", buscar); e_desc.bind("<KeyRelease>", buscar); c_prov.bind("<<ComboboxSelected>>", buscar); c_prov.bind("<KeyRelease>", filtrar_provs)
-    
-    def seleccionar():
-        global codigo_seleccionado
-        sel = t_busca.selection()
-        if sel:
-            val = t_busca.item(sel[0], 'values')
-            codigo_seleccionado = val[0]
-            label_prod_sel.config(text=f"{val[0]} | {val[1][:50]}...", foreground=st.ACCENT)
-            top.destroy()
-            entrada_cantidad.focus()
-
-    f_btn = tk.Frame(top, bg=st.BG_MAIN, pady=10)
-    f_btn.pack(fill=tk.X)
-    tk.Button(f_btn, text="ACEPTAR", command=seleccionar, **st.get_btn_style(st.ACCENT)).pack(side=tk.RIGHT, padx=10)
-    tk.Button(f_btn, text="CANCELAR", command=top.destroy, **st.get_btn_style(st.RED_ERROR)).pack(side=tk.RIGHT, padx=10)
-    
-    buscar()
+def filtrar_provs_p2(event):
+    if event.keysym in ('Down', 'Up', 'Return', 'Escape', 'Tab', 'Left', 'Right'): return
+    texto = combo_p2_prov.get().lower()
+    if not texto or texto == "todos":
+        combo_p2_prov['values'] = ["TODOS"] + lista_proveedores_cache
+    else:
+        filtrados = [p for p in lista_proveedores_cache if p.lower().startswith(texto)]
+        combo_p2_prov['values'] = filtrados
+        if filtrados:
+            combo_p2_prov.event_generate('<Down>')
 
 def on_tabla_click(event):
     region = tabla.identify_region(event.x, event.y)
     if region != "cell": return
     col = tabla.identify_column(event.x)
     item_id = tabla.identify_row(event.y)
-    if not item_id: return
+    if not item_id or item_id == "total_row": return
 
     if col == "#6": # Modificar (Clip)
         valores = tabla.item(item_id, 'values')
@@ -464,88 +443,113 @@ def on_tabla_click(event):
 
 # --- INTERFAZ ---
 def montar_interfaz(parent):
-    global combo_cliente, entrada_cantidad, tabla, label_total, combo_lista_precios, label_prod_sel, var_tarjeta
+    global combo_cliente, entrada_cantidad, tabla, label_total, combo_lista_precios, label_prod_sel, var_tarjeta, label_subtotal_carrito
+    global tabla_busqueda, ent_p2_cod, ent_p2_desc, combo_p2_prov # ent_p2_cod ya no es dummy
     
     ventana = tk.Frame(parent, bg=st.BG_MAIN)
-
-    # --- Barra de Venta Refinada y Funcional ---
-    frame_top = ttk.Frame(ventana, style="Venta.TFrame", padding=(15, 10))
-    frame_top.pack(fill=tk.X, padx=15, pady=(10, 5))
-
-    # Configuración de pesos para un diseño elástico y profesional
-    frame_top.columnconfigure(1, weight=1)  # Cliente
-    frame_top.columnconfigure(6, weight=2)  # Info producto seleccionado
     var_tarjeta = tk.BooleanVar(value=False)
 
-    # 1. CLIENTE Y LISTA DE PRECIOS
-    ttk.Label(frame_top, text="CLIENTE:", style="Venta.TLabel").grid(row=0, column=0, padx=(5, 5), sticky="w")
-    combo_cliente = ttk.Combobox(frame_top, values=obtener_clientes(), font=st.FONT_INPUT)
-    combo_cliente.grid(row=0, column=1, padx=(0, 15), sticky="ew")
+    # --- CABECERA: CLIENTE Y CONFIGURACIÓN ---
+    f_header = tk.Frame(ventana, bg=st.BG_CARD, padx=15, pady=10)
+    f_header.pack(fill=tk.X, padx=15, pady=(10, 5))
 
-    ttk.Label(frame_top, text="LISTA:", style="Venta.TLabel").grid(row=0, column=2, padx=(10, 5), sticky="w")
-    opciones_precios = ["Profesional", "Particular 15%", "Particular 30%"]
-    combo_lista_precios = ttk.Combobox(frame_top, values=opciones_precios, state="readonly", font=st.FONT_INPUT, width=15)
+    tk.Label(f_header, text="CLIENTE:", font=st.FONT_LABEL, bg=st.BG_CARD, fg=st.TEXT_SECONDARY).pack(side=tk.LEFT, padx=5)
+    combo_cliente = ttk.Combobox(f_header, values=obtener_clientes(), font=st.FONT_INPUT, width=30)
+    combo_cliente.pack(side=tk.LEFT, padx=5)
+
+    tk.Label(f_header, text="LISTA:", font=st.FONT_LABEL, bg=st.BG_CARD, fg=st.TEXT_SECONDARY).pack(side=tk.LEFT, padx=(20, 5))
+    combo_lista_precios = ttk.Combobox(f_header, values=["Profesional", "Particular 15%", "Particular 30%"], state="readonly", font=st.FONT_INPUT, width=15)
     combo_lista_precios.set("Particular 15%")
-    combo_lista_precios.grid(row=0, column=3, padx=(0, 15), sticky="w")
+    combo_lista_precios.pack(side=tk.LEFT, padx=5)
     combo_lista_precios.bind("<<ComboboxSelected>>", recalcular_carrito)
+
+    chk_tarjeta = tk.Checkbutton(f_header, text="TARJETA (+10%)", variable=var_tarjeta, 
+                                 command=actualizar_total_visual, bg=st.BG_CARD, fg=st.ACCENT, 
+                                 selectcolor=st.BG_MAIN, font=st.FONT_LABEL, activebackground=st.BG_CARD)
+    chk_tarjeta.pack(side=tk.LEFT, padx=20)
+
+    # --- BOTONES DE ACCIÓN RÁPIDA (ARRIBA A LA DERECHA) ---
+    f_acciones_header = tk.Frame(f_header, bg=st.BG_CARD)
+    f_acciones_header.pack(side=tk.RIGHT)
+
+    tk.Button(f_acciones_header, text="❌ CANCELAR", command=cancelar_venta, **st.estilo_boton(st.RED_ERROR)).pack(side=tk.RIGHT, padx=5)
+    tk.Button(f_acciones_header, text="💾 GUARDAR", command=lambda: guardar_presupuesto(False), **st.estilo_boton(st.ACCENT)).pack(side=tk.RIGHT, padx=5)
+    tk.Button(f_acciones_header, text="💾🖨️ IMPRIMIR", command=lambda: guardar_presupuesto(True), **st.estilo_boton()).pack(side=tk.RIGHT, padx=5)
+
+    # --- SECCIÓN BÚSQUEDA (Panel Superior) ---
+    f_busqueda = tk.Frame(ventana, bg=st.BG_MAIN, padx=15)
+    f_busqueda.pack(fill=tk.X, pady=5)
     
-    chk_tarjeta = tk.Checkbutton(frame_top, text="TARJETA (+10%)", variable=var_tarjeta, command=actualizar_total_visual, bg=st.BG_CARD, fg=st.ACCENT, selectcolor=st.BG_MAIN, activebackground=st.BG_CARD, font=st.FONT_LABEL)
-    chk_tarjeta.grid(row=0, column=4, padx=(10, 15))
+    # Usamos grid para mejor control de los campos de búsqueda
+    f_busqueda.columnconfigure(1, weight=1) # Columna para ent_p2_cod
+    f_busqueda.columnconfigure(3, weight=2) # Columna para ent_p2_desc
 
-    # 2. BÚSQUEDA Y PRODUCTO SELECCIONADO
-    btn_abrir_busca = ttk.Button(frame_top, text="🔍 BUSCAR PRODUCTO", command=abrir_buscador_productos, bootstyle="info-outline")
-    btn_abrir_busca.grid(row=0, column=5, padx=(10, 10))
+    tk.Label(f_busqueda, text="CÓDIGO:", font=st.FONT_LABEL, bg=st.BG_MAIN, fg="white").grid(row=0, column=0, padx=5, sticky="w")
+    ent_p2_cod = tk.Entry(f_busqueda, font=st.FONT_INPUT, bg=st.BG_INPUT, fg="white", bd=0)
+    ent_p2_cod.grid(row=0, column=1, padx=5, sticky="ew")
+    ent_p2_cod.bind("<KeyRelease>", buscar_p2)
 
-    label_prod_sel = ttk.Label(frame_top, text="", font=st.FONT_NORMAL, foreground=st.ACCENT, background=st.BG_CARD)
-    label_prod_sel.grid(row=0, column=6, sticky="w", padx=(5, 15))
+    tk.Label(f_busqueda, text="DESCRIPCIÓN:", font=st.FONT_LABEL, bg=st.BG_MAIN, fg="white").grid(row=0, column=2, padx=(15, 5), sticky="w")
+    ent_p2_desc = tk.Entry(f_busqueda, font=st.FONT_INPUT, bg=st.BG_INPUT, fg="white", bd=0)
+    ent_p2_desc.grid(row=0, column=3, padx=5, sticky="ew")
+    ent_p2_desc.bind("<KeyRelease>", buscar_p2)
 
-    # 3. CANTIDAD Y ACCIÓN
-    frame_accion = ttk.Frame(frame_top, style="Venta.TFrame")
-    frame_accion.grid(row=0, column=7, columnspan=3, sticky="e")
+    tk.Label(f_busqueda, text="FÁBRICA:", font=st.FONT_LABEL, bg=st.BG_MAIN, fg="white").grid(row=0, column=4, padx=(15, 5), sticky="w")
+    combo_p2_prov = ttk.Combobox(f_busqueda, values=["TODOS"] + obtener_proveedores_lista(), font=st.FONT_INPUT, width=15)
+    combo_p2_prov.set("TODOS")
+    combo_p2_prov.grid(row=0, column=5, padx=5, sticky="ew")
+    combo_p2_prov.bind("<<ComboboxSelected>>", buscar_p2)
+    combo_p2_prov.bind("<KeyRelease>", filtrar_provs_p2) # Re-añadido para filtrar sugerencias
 
-    ttk.Label(frame_accion, text="CANT:", style="Venta.TLabel").pack(side=tk.LEFT, padx=(5, 5))
-    entrada_cantidad = ttk.Entry(frame_accion, width=6, font=st.FONT_INPUT, justify="center")
-    entrada_cantidad.pack(side=tk.LEFT, padx=(0, 10))
+    # Tabla de Resultados de Búsqueda (Compacta)
+    cols_b = ("cod", "desc", "prov", "precio")
+    tabla_busqueda = ttk.Treeview(ventana, columns=cols_b, show="headings", height=5)
+    tabla_busqueda.heading("cod", text="CÓDIGO"); tabla_busqueda.heading("desc", text="DESCRIPCIÓN"); tabla_busqueda.heading("prov", text="PROVEEDOR"); tabla_busqueda.heading("precio", text="P. PROFESIONAL")
+    tabla_busqueda.column("cod", width=100); tabla_busqueda.column("desc", width=400); tabla_busqueda.column("prov", width=150); tabla_busqueda.column("precio", width=120, anchor="e")
+    tabla_busqueda.pack(fill=tk.X, padx=15, pady=5)
+    tabla_busqueda.bind("<<TreeviewSelect>>", seleccionar_p2)
+    tabla_busqueda.bind("<Double-1>", lambda e: entrada_cantidad.focus_set())
+
+    # --- BARRA DE ACCIÓN: CANTIDAD Y AÑADIR ---
+    f_add = tk.Frame(ventana, bg=st.BG_MAIN, pady=5)
+    f_add.pack(fill=tk.X, padx=15)
+    
+    label_prod_sel = tk.Label(f_add, text="", font=st.FONT_NORMAL, fg=st.ACCENT, bg=st.BG_MAIN)
+    label_prod_sel.pack(side=tk.LEFT, padx=10)
+    
+    tk.Label(f_add, text="CANT:", bg=st.BG_MAIN, fg="white").pack(side=tk.LEFT, padx=5)
+    entrada_cantidad = tk.Entry(f_add, width=6, font=st.FONT_INPUT, justify="center")
+    entrada_cantidad.pack(side=tk.LEFT, padx=5)
     entrada_cantidad.bind("<Return>", agregar_producto)
+    tk.Button(f_add, text="➕ AÑADIR", command=agregar_producto, **st.estilo_boton(st.ACCENT)).pack(side=tk.LEFT, padx=10)
 
-    btn_agregar = ttk.Button(frame_accion, text="➕ AÑADIR", command=agregar_producto, bootstyle="success-outline")
-    btn_agregar.pack(side=tk.LEFT)
-
-    # TABLA CON COLUMNA SUBTOTAL
+    # --- TABLA DE CARRITO (Panel Inferior - Expandible) ---
     columnas = ("cod", "desc", "cant", "p_unit", "subtotal", "mod", "del")
     tabla = ttk.Treeview(ventana, columns=columnas, show="headings")
-    tabla.heading("cod", text="CÓDIGO")
-    tabla.heading("desc", text="DESCRIPCIÓN")
-    tabla.heading("cant", text="CANT.")
-    tabla.heading("p_unit", text="P. UNITARIO")
-    tabla.heading("subtotal", text="SUBTOTAL")
-    tabla.heading("mod", text="📎")
-    tabla.heading("del", text="🗑️")
-
-    tabla.column("cod", width=100)
-    tabla.column("desc", width=400)
-    tabla.column("cant", width=80, anchor="center")
-    tabla.column("p_unit", width=150, anchor="e")
-    tabla.column("subtotal", width=150, anchor="e")
-    tabla.column("mod", width=40, anchor="center")
-    tabla.column("del", width=40, anchor="center")
-    tabla.pack(fill=tk.BOTH, expand=True, padx=15, pady=10)
+    tabla.heading("cod", text="CÓDIGO"); tabla.heading("desc", text="DESCRIPCIÓN"); tabla.heading("cant", text="CANT."); tabla.heading("p_unit", text="P. UNITARIO"); tabla.heading("subtotal", text="SUBTOTAL"); tabla.heading("mod", text="📎"); tabla.heading("del", text="🗑️")
+    tabla.column("cod", width=100); tabla.column("desc", width=400); tabla.column("cant", width=80, anchor="center"); tabla.column("p_unit", width=120, anchor="e"); tabla.column("subtotal", width=120, anchor="e"); tabla.column("mod", width=40, anchor="center"); tabla.column("del", width=40, anchor="center")
+    tabla.pack(fill=tk.BOTH, expand=True, padx=15, pady=5)
     tabla.bind("<Button-1>", on_tabla_click)
+    tabla.tag_configure('total_tag', background=st.BG_CARD, foreground=st.ACCENT, font=st.FONT_LABEL)
+    
+    # Nuevo label para el subtotal del carrito
+    label_subtotal_carrito = tk.Label(ventana, text="SUBTOTAL CARRITO: $ 0.00", font=st.FONT_LABEL, bg=st.BG_MAIN, fg=st.TEXT_PRIMARY)
+    label_subtotal_carrito.pack(fill=tk.X, padx=15, pady=(0, 5), anchor="e")
 
-    # Pie de ventana
-    frame_bot = tk.Frame(ventana, pady=20, bg=st.BG_MAIN); frame_bot.pack(fill=tk.X, padx=15)
-    label_total = tk.Label(frame_bot, text="TOTAL: $ -", font=("Inter", 28, "bold"), fg=st.ACCENT, bg=st.BG_MAIN)
+    # --- PIE: TOTALES Y CIERRE ---
+    f_footer = tk.Frame(ventana, bg=st.BG_MAIN, pady=10)
+    f_footer.pack(fill=tk.X, padx=15)
+    
+    label_total = tk.Label(f_footer, text="TOTAL: $ -", font=("Inter", 24, "bold"), fg=st.ACCENT, bg=st.BG_MAIN)
     label_total.pack(side=tk.LEFT)
 
-    btn_cancelar = tk.Button(frame_bot, text="❌ CANCELAR", command=cancelar_venta, **st.estilo_boton(st.RED_ERROR))
-    btn_cancelar.pack(side=tk.RIGHT, padx=5)
+    f_acciones_finales = tk.Frame(f_footer, bg=st.BG_MAIN)
+    f_acciones_finales.pack(side=tk.RIGHT)
 
-    btn_aceptar = tk.Button(frame_bot, text="✔️ ACEPTAR (GUARDAR)", command=lambda: guardar_presupuesto(False), **st.estilo_boton(st.ACCENT))
-    btn_aceptar.pack(side=tk.RIGHT, padx=5)
+    tk.Button(f_acciones_finales, text="❌ CANCELAR TODO", command=cancelar_venta, **st.estilo_boton(st.RED_ERROR)).pack(side=tk.RIGHT, padx=5)
+    tk.Button(f_acciones_finales, text="💾 GUARDAR VENTA", command=lambda: guardar_presupuesto(False), **st.estilo_boton(st.ACCENT)).pack(side=tk.RIGHT, padx=5)
+    tk.Button(f_acciones_finales, text="💾🖨️ GUARDAR E IMPRIMIR", command=lambda: guardar_presupuesto(True), **st.estilo_boton()).pack(side=tk.RIGHT, padx=5)
 
-    btn_imprimir = tk.Button(frame_bot, text="💾🖨️ IMPRIMIR (GUARDAR)", command=lambda: guardar_presupuesto(True), **st.estilo_boton())
-    btn_imprimir.pack(side=tk.RIGHT, padx=5)
-    
     return ventana
 
 if __name__ == '__main__':
