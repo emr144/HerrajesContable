@@ -30,6 +30,9 @@ def _normalize_python_string_for_search(text):
     text = text.lower().replace(' ', '').replace('-', '').replace('_', '').replace('/', '')
     return text.replace('á', 'a').replace('é', 'e').replace('í', 'i').replace('ó', 'o').replace('ú', 'u').replace('ü', 'u').replace('ñ', 'n')
 
+# Global para mapear sugerencias
+sugerencias_map = {}
+
 def obtener_productos(filtro=""):
     """Consulta la DB buscando por código o por descripción"""
     conexion = database.conectar()
@@ -44,7 +47,7 @@ def obtener_productos(filtro=""):
     cond_cod = " AND ".join([f"{norm_cod} LIKE %s" for _ in tokens])
     cond_desc = " AND ".join([f"{norm_desc} LIKE %s" for _ in tokens])
 
-    query = f"SELECT codigo_proveedor, descripcion FROM productos WHERE (({cond_cod}) OR ({cond_desc})) AND estado = 'ACTIVO' LIMIT 10"
+    query = f"SELECT id, codigo_proveedor, descripcion FROM productos WHERE (({cond_cod}) OR ({cond_desc})) AND estado = 'ACTIVO' LIMIT 10"
     
     params = [f"%{t}%" for t in tokens] * 2
     cursor.execute(query, params) # Use %s placeholders
@@ -56,6 +59,7 @@ def actualizar_sugerencias(event=None):
     """Se ejecuta cada vez que el usuario escribe en la caja de búsqueda"""
     texto = entrada_busqueda.get().strip()
     lista_sugerencias.delete(0, tk.END)
+    sugerencias_map.clear()
     
     if len(texto) < 2:
         lista_sugerencias.place_forget()
@@ -65,7 +69,9 @@ def actualizar_sugerencias(event=None):
     
     if productos:
         for p in productos:
-            lista_sugerencias.insert(tk.END, f"{p[0]} - {p[1]}")
+            display = f"{p[1]} - {p[2]}"
+            lista_sugerencias.insert(tk.END, display)
+            sugerencias_map[display] = p[0] # Guardamos el ID
         
         # Posicionamiento dinámico de la lista
         lista_sugerencias.place(x=entrada_busqueda.winfo_x(), 
@@ -80,44 +86,48 @@ def seleccionar_producto(event=None):
         return
     
     seleccion = lista_sugerencias.get(lista_sugerencias.curselection())
-    codigo = seleccion.split(" - ")[0]
+    producto_id = sugerencias_map.get(seleccion)
     
     entrada_busqueda.delete(0, tk.END)
-    entrada_busqueda.insert(0, codigo)
+    # Insertamos el código solo visualmente
+    entrada_busqueda.insert(0, seleccion.split(" - ")[0])
     lista_sugerencias.place_forget()
-    mostrar_detalle(codigo)
+    mostrar_detalle(producto_id=producto_id)
 
-def mostrar_detalle(codigo_buscado=None):
+def mostrar_detalle(codigo_buscado=None, producto_id=None):
     """Muestra la info y la foto en tamaño grande"""
-    if not codigo_buscado:
-        codigo_buscado = entrada_busqueda.get().strip().upper()
-
-    if not codigo_buscado: return
-
     conexion = database.conectar()
     if not conexion: return
     cursor = conexion.cursor() # Use cursor from psycopg2 connection
+
+    if producto_id:
+        where_clause = "WHERE p.id = %s"
+        param = producto_id
+    else:
+        where_clause = "WHERE p.codigo_proveedor = %s"
+        param = entrada_busqueda.get().strip().upper()
+
     query = '''
-        SELECT p.descripcion, p.costo_base, p.coeficiente_ganancia, p.iva, pr.descuento_global, pr.incremento_global
+        SELECT p.descripcion, p.costo_base, p.coeficiente_ganancia, p.iva, pr.descuento_global, pr.incremento_global, p.codigo_proveedor
         FROM productos p
         JOIN proveedores pr ON p.proveedor_id = pr.id
-        WHERE p.codigo_proveedor = %s
+        {where_clause}
     ''' # Use %s placeholder
-    cursor.execute(query, (codigo_buscado,)) # Use %s placeholder
+    cursor.execute(query, (param,))
     producto = cursor.fetchone()
     conexion.close()
 
     if producto:
-        desc, costo, coef, iva, desc_g, inc_g = producto
+        desc, costo, coef, iva, desc_g, inc_g, cod_real = producto
         # Aplicamos el descuento e incremento del proveedor al precio final
         precio_final = costo * (1 - (desc_g or 0)) * (1 + (inc_g or 0)) * coef * (1 + iva)
         
         label_desc.config(text=desc)
-        label_codigo_info.config(text=f"Código: {codigo_buscado}")
+        label_codigo_info.config(text=f"Código: {cod_real}")
         label_precio.config(text=f"Precio Venta: $ {precio_final:.2f}")
 
         # --- GESTIÓN DE IMAGEN ---
-        ruta_imagen = f"imagenes_productos/{codigo_buscado}.jpg"
+        ruta_imagen = f"imagenes_productos/{cod_real}.jpg"
         if os.path.exists(ruta_imagen):
             try:
                 img = Image.open(ruta_imagen)

@@ -39,8 +39,8 @@ lista_proveedores_cache = [] # Cache para filtrado
 tabla_busqueda = None # Tabla de resultados en el paso 2
 label_subtotal_carrito = None # Nuevo label para el subtotal del carrito
 var_tarjeta = None # Variable para el recargo de tarjeta
-
-codigo_seleccionado = ""
+producto_id_seleccionado = None
+codigo_seleccionado = "" # Se mantiene solo para el label visual
 desc_seleccionada = None # Variable de control visual
 
 # --- FUNCIONES DE LÓGICA ---
@@ -68,7 +68,7 @@ def buscar_productos_db(termino="", filtro_proveedor=None, filtro_codigo=""):
     cursor = conexion.cursor()
     
     query = '''
-        SELECT p.codigo_proveedor, p.descripcion, pr.nombre,
+        SELECT p.id, p.codigo_proveedor, p.descripcion, pr.nombre,
                p.costo_base, p.coeficiente_ganancia, p.iva,
                pr.descuento_global, pr.incremento_global
         FROM productos p
@@ -175,8 +175,9 @@ def recalcular_carrito(event=None):
 
 
 def agregar_producto(event=None):
-    global total_sin_descuento, codigo_seleccionado
-    codigo = codigo_seleccionado
+    global total_sin_descuento, producto_id_seleccionado, codigo_seleccionado
+    if producto_id_seleccionado is None: return
+
     try:
         if not entrada_cantidad.get().strip():
             return
@@ -185,22 +186,22 @@ def agregar_producto(event=None):
         messagebox.showerror("Error", "La cantidad debe ser un número.")
         return
 
-    if not codigo or cantidad <= 0: return
+    if cantidad <= 0: return
 
     conexion = database.conectar()
     cursor = conexion.cursor()
     query = '''
-        SELECT p.id, p.descripcion, p.costo_base, p.coeficiente_ganancia, p.iva, pr.descuento_global, pr.incremento_global
+        SELECT p.id, p.descripcion, p.costo_base, p.coeficiente_ganancia, p.iva, pr.descuento_global, pr.incremento_global, p.codigo_proveedor
         FROM productos p
         JOIN proveedores pr ON p.proveedor_id = pr.id
-        WHERE p.codigo_proveedor = %s
+        WHERE p.id = %s
     '''
-    cursor.execute(query, (codigo,))
+    cursor.execute(query, (producto_id_seleccionado,))
     producto = cursor.fetchone()
     conexion.close()
 
     if producto:
-        prod_id, desc, costo, coef, iva, desc_g, inc_g = producto
+        prod_id, desc, costo, coef, iva, desc_g, inc_g, cod_prov = producto
         # Precio base (Profesional / Lista) aplicando el descuento del proveedor
         precio_base = costo * (1 - (desc_g or 0)) * (1 + (inc_g or 0)) * coef * (1 + iva)
         
@@ -211,14 +212,15 @@ def agregar_producto(event=None):
         subtotal = precio_unitario * cantidad
         
         # Guardamos precio_base_lista para poder recalcular si cambiamos de categoria
-        carrito.append({'prod_id': prod_id, 'cantidad': cantidad, 'precio_unitario': precio_unitario, 'precio_base_lista': precio_base, 'codigo': codigo, 'descripcion': desc})
+        carrito.append({'prod_id': prod_id, 'cantidad': cantidad, 'precio_unitario': precio_unitario, 'precio_base_lista': precio_base, 'codigo': cod_prov, 'descripcion': desc})
         
         # INSERTAMOS EN LA TABLA CON LA COLUMNA SUBTOTAL
-        tabla.insert("", "end", values=(codigo, desc, cantidad, f"$ {precio_unitario:.2f}", f"$ {subtotal:.2f}", "📎", "🗑️"))
+        tabla.insert("", "end", values=(cod_prov, desc, cantidad, f"$ {precio_unitario:.2f}", f"$ {subtotal:.2f}", "📎", "🗑️"))
         
         total_sin_descuento += subtotal
         actualizar_total_visual()
         
+        producto_id_seleccionado = None
         codigo_seleccionado = ""
         label_prod_sel.config(text="")
         entrada_cantidad.delete(0, tk.END)
@@ -399,15 +401,17 @@ def buscar_p2(_=None):
     res = buscar_productos_db(termino=ent_p2_desc.get(), filtro_proveedor=prov, filtro_codigo=ent_p2_cod.get())
     
     for r in res:
-        cod, desc, prov_nom, costo, coef, iva, desc_g, inc_g = r
+        p_id, cod, desc, prov_nom, costo, coef, iva, desc_g, inc_g = r
         precio_prof = costo * (1 - (desc_g or 0)) * (1 + (inc_g or 0)) * coef * (1 + iva)
-        tabla_busqueda.insert("", "end", values=(cod, desc, prov_nom, f"$ {precio_prof:.2f}"))
+        # El ID se guarda en el 'iid' del Treeview (invisible para el usuario)
+        tabla_busqueda.insert("", "end", iid=p_id, values=(cod, desc, prov_nom, f"$ {precio_prof:.2f}"))
 
 def seleccionar_p2(event=None):
     """Selecciona un producto de la tabla de búsqueda"""
-    global codigo_seleccionado
+    global producto_id_seleccionado, codigo_seleccionado
     sel = tabla_busqueda.selection()
     if sel:
+        producto_id_seleccionado = sel[0] # El iid que es el ID de la DB
         val = tabla_busqueda.item(sel[0], 'values')
         codigo_seleccionado = val[0]
         label_prod_sel.config(text=f"Seleccionado: {val[0]} | {val[1][:40]}...")

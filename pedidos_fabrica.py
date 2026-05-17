@@ -38,6 +38,7 @@ tabla_pendientes = None
 tabla_items_nuevo = None
 lista_pedido_actual = []
 codigo_seleccionado = ""
+producto_id_seleccionado = None
 pedido_editando_id = None
 combo_prov_gen = None
 ent_cant_gen = None
@@ -129,12 +130,20 @@ def cargar_pedidos_pendientes(event=None):
 
 def agregar_item_a_pedido():
     """Agrega el producto seleccionado al pedido actual."""
-    global lista_pedido_actual, codigo_seleccionado
+    global lista_pedido_actual, producto_id_seleccionado, codigo_seleccionado
     
-    if not codigo_seleccionado:
+    if not producto_id_seleccionado:
         messagebox.showwarning("Atención", "Primero seleccione un producto.")
         return
-    
+
+    # Obtenemos descripción de la base de datos solo para visualización
+    conexion = database.conectar()
+    cursor = conexion.cursor()
+    cursor.execute("SELECT descripcion FROM productos WHERE id = %s", (producto_id_seleccionado,))
+    res_desc = cursor.fetchone()
+    conexion.close()
+    descripcion = res_desc[0] if res_desc else "Desconocido"
+
     try:
         cantidad = float(ent_cant_gen.get())
         if cantidad <= 0: raise ValueError
@@ -143,25 +152,10 @@ def agregar_item_a_pedido():
         return
     
     unidad = combo_unid_gen.get()
-    
-    # Recuperar los datos del producto seleccionado (id, codigo, descripcion)
-    # Asumimos que `codigo_seleccionado` es el código del proveedor y `lbl_prod_sel_display` tiene la descripción
-    # Necesitamos el prod_id real de la DB.
-    conexion = database.conectar()
-    cursor = conexion.cursor()
-    cursor.execute("SELECT id, descripcion FROM productos WHERE codigo_proveedor = %s", (codigo_seleccionado,))
-    prod_data = cursor.fetchone()
-    conexion.close()
-    
-    if not prod_data:
-        messagebox.showerror("Error", "Producto no encontrado en la base de datos.")
-        return
-        
-    prod_id, descripcion = prod_data
 
     # Verificar si el producto ya está en la lista y actualizar cantidad
     for item in lista_pedido_actual:
-        if item['prod_id'] == prod_id and item['unidad'] == unidad:
+        if item['prod_id'] == producto_id_seleccionado and item['unidad'] == unidad:
             item['cantidad'] += cantidad
             # Actualizar en la tabla visual
             for child in tabla_items_nuevo.get_children():
@@ -172,10 +166,11 @@ def agregar_item_a_pedido():
                     ent_cant_gen.insert(0, "1")
                     lbl_prod_sel_display.config(text="")
                     codigo_seleccionado = ""
+                    producto_id_seleccionado = None
                     return
 
     # Si no está, agregarlo como nuevo
-    item = {'prod_id': prod_id, 'codigo': codigo_seleccionado, 'descripcion': descripcion, 'cantidad': cantidad, 'unidad': unidad}
+    item = {'prod_id': producto_id_seleccionado, 'codigo': codigo_seleccionado, 'descripcion': descripcion, 'cantidad': cantidad, 'unidad': unidad}
     lista_pedido_actual.append(item)
     tabla_items_nuevo.insert("", "end", values=(item['codigo'], item['descripcion'], item['cantidad'], item['unidad'], "📎", "🗑️"))
     
@@ -183,6 +178,7 @@ def agregar_item_a_pedido():
     ent_cant_gen.insert(0, "1")
     lbl_prod_sel_display.config(text="")
     codigo_seleccionado = ""
+    producto_id_seleccionado = None
 
 def modificar_item_pedido(item_id):
     """Modifica la cantidad o unidad de un item en el pedido actual."""
@@ -326,15 +322,19 @@ def abrir_buscador_productos_pedido():
             # r: (id, cod, desc, prov, costo, coef, iva, desc_g, inc_g)
             costo, coef, iva, desc_g, inc_g = r[4], r[5], r[6], r[7], r[8]
             precio_prof = costo * (1 - (desc_g or 0)) * (1 + (inc_g or 0)) * coef * (1 + iva)
-            t_busca.insert("", "end", values=(r[1], r[2], r[3], f"$ {precio_prof:.2f}"))
+            t_busca.insert("", "end", iid=r[0], values=(r[1], r[2], r[3], f"$ {precio_prof:.2f}"))
 
     e_cod.bind("<KeyRelease>", buscar); e_desc.bind("<KeyRelease>", buscar)
     
     def seleccionar():
-        global codigo_seleccionado
+        global producto_id_seleccionado, codigo_seleccionado
         sel = t_busca.selection()
         if sel:
             val = t_busca.item(sel[0], 'values')
+            # En el buscador avanzado, asumimos que el primer valor es el código. 
+            # Para ser precisos, obtendremos el ID real desde la base de datos en la función buscar.
+            # Modificar la función buscar para que guarde el ID en el Treeview:
+            producto_id_seleccionado = sel[0]
             codigo_seleccionado = val[0]
             lbl_prod_sel_display.config(text=f"{val[0]} | {val[1][:50]}...", foreground=st.ACCENT)
             top.destroy()
@@ -460,7 +460,7 @@ def actualizar_sugerencias_prod(event=None):
 
 def seleccionar_producto_para_pedido(event=None):
     """Maneja la selección de un producto de la lista de sugerencias."""
-    global codigo_seleccionado
+    global producto_id_seleccionado, codigo_seleccionado
     if not lista_sugerencias_prod.curselection(): return
     
     seleccion_texto = lista_sugerencias_prod.get(lista_sugerencias_prod.curselection())
@@ -468,6 +468,7 @@ def seleccionar_producto_para_pedido(event=None):
     
     prod_info = sugerencias_map_prod.get(seleccion_texto)
     if prod_info:
+        producto_id_seleccionado = prod_info['id']
         codigo_seleccionado = prod_info['codigo']
         lbl_prod_sel_display.config(text=f"{prod_info['codigo']} | {prod_info['descripcion'][:50]}...")
         ent_buscar_prod.delete(0, tk.END)
