@@ -116,9 +116,10 @@ def actualizar_total_visual():
     global total_sin_descuento
     
     multiplicador_tarjeta = 1.10 if var_tarjeta.get() else 1.0
-    total_final = total_sin_descuento * multiplicador_tarjeta
+    # Redondeamos a 2 decimales para asegurar precisión en el cálculo del 10%
+    total_final = round(total_sin_descuento * multiplicador_tarjeta, 2)
     
-    if total_sin_descuento == 0:
+    if total_sin_descuento <= 0:
         label_total.config(text="TOTAL: $ -", fg=st.ACCENT)
         label_subtotal_carrito.config(text="SUBTOTAL CARRITO: $ 0.00")
     else:
@@ -130,9 +131,11 @@ def actualizar_total_visual():
         tabla.delete("total_row")
     
     if total_sin_descuento > 0:
+        texto_total = ">> TOTAL (CON TARJETA) <<" if var_tarjeta.get() else ">> TOTAL PRODUCTOS <<"
+        valor_mostrar = total_final if var_tarjeta.get() else total_sin_descuento
         # Insertamos el renglón al final con un estilo destacado (tag)
         tabla.insert("", "end", iid="total_row", values=(
-            "", ">> TOTAL PRODUCTOS <<", "", "", f"$ {total_sin_descuento:.2f}", "", ""
+            "", texto_total, "", "", f"$ {valor_mostrar:.2f}", "", ""
         ), tags=('total_tag',))
 
 def recalcular_carrito(event=None):
@@ -350,11 +353,11 @@ def guardar_presupuesto(imprimir=False):
         messagebox.showwarning("Atención", "El carrito está vacío.")
         return
     
-    total_final = total_sin_descuento # El total ya incluye los aumentos/precios finales
+    total_final = round(total_sin_descuento, 2) # El total ya incluye los aumentos/precios finales
     
     # Aplicamos recargo de tarjeta si corresponde
     if var_tarjeta.get():
-        total_final *= 1.10
+        total_final = round(total_final * 1.10, 2)
 
     try:
         nombre_cliente = combo_cliente.get().strip() or "Consumidor Final"
@@ -387,10 +390,18 @@ def cancelar_venta():
     codigo_seleccionado = ""
     if var_tarjeta: var_tarjeta.set(False)
     label_prod_sel.config(text="")
-    label_feedback_p2.config(text="")
+    try: label_feedback_p2.config(text="")
+    except: pass
     actualizar_total_visual()
     for row in tabla.get_children(): tabla.delete(row)
     entrada_cantidad.delete(0, tk.END)
+    ent_p2_cod.delete(0, tk.END)
+    ent_p2_desc.delete(0, tk.END)
+
+def limpiar_busqueda():
+    ent_p2_cod.delete(0, tk.END)
+    ent_p2_desc.delete(0, tk.END)
+    buscar_p2()
 
 def buscar_p2(_=None):
     """Lógica de búsqueda integrada en Paso 2"""
@@ -479,6 +490,7 @@ def montar_interfaz(parent):
     tk.Button(f_acciones_header, text="❌ CANCELAR", command=cancelar_venta, **st.estilo_boton(st.RED_ERROR)).pack(side=tk.RIGHT, padx=5)
     tk.Button(f_acciones_header, text="💾 GUARDAR", command=lambda: guardar_presupuesto(False), **st.estilo_boton(st.ACCENT)).pack(side=tk.RIGHT, padx=5)
     tk.Button(f_acciones_header, text="💾🖨️ IMPRIMIR", command=lambda: guardar_presupuesto(True), **st.estilo_boton()).pack(side=tk.RIGHT, padx=5)
+    tk.Button(f_acciones_header, text="🧹 LIMPIAR", command=cancelar_venta, **st.estilo_boton(st.ORANGE)).pack(side=tk.RIGHT, padx=5)
 
     # --- SECCIÓN BÚSQUEDA (Panel Superior) ---
     f_busqueda = tk.Frame(ventana, bg=st.BG_MAIN, padx=15)
@@ -504,6 +516,7 @@ def montar_interfaz(parent):
     combo_p2_prov.grid(row=0, column=5, padx=5, sticky="ew")
     combo_p2_prov.bind("<<ComboboxSelected>>", buscar_p2)
     combo_p2_prov.bind("<KeyRelease>", filtrar_provs_p2) # Re-añadido para filtrar sugerencias
+    tk.Button(f_busqueda, text="🧹", command=limpiar_busqueda, **st.estilo_boton(st.BG_CARD)).grid(row=0, column=6, padx=5)
 
     # Tabla de Resultados de Búsqueda (Compacta)
     cols_b = ("cod", "desc", "prov", "precio")
@@ -550,6 +563,7 @@ def montar_interfaz(parent):
     f_acciones_finales = tk.Frame(f_footer, bg=st.BG_MAIN)
     f_acciones_finales.pack(side=tk.RIGHT)
 
+    tk.Button(f_acciones_finales, text="🧹 LIMPIAR TODO", command=cancelar_venta, **st.estilo_boton(st.ORANGE)).pack(side=tk.RIGHT, padx=5)
     tk.Button(f_acciones_finales, text="❌ CANCELAR TODO", command=cancelar_venta, **st.estilo_boton(st.RED_ERROR)).pack(side=tk.RIGHT, padx=5)
     tk.Button(f_acciones_finales, text="💾 GUARDAR VENTA", command=lambda: guardar_presupuesto(False), **st.estilo_boton(st.ACCENT)).pack(side=tk.RIGHT, padx=5)
     tk.Button(f_acciones_finales, text="💾🖨️ GUARDAR E IMPRIMIR", command=lambda: guardar_presupuesto(True), **st.estilo_boton()).pack(side=tk.RIGHT, padx=5)
