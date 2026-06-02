@@ -3,6 +3,29 @@ from tkinter import ttk, messagebox
 import styles as st  # Importamos tu archivo de estilos
 import database # Importamos para obtener la ruta
 
+# --- Funciones Auxiliares para Normalización de Búsqueda ---
+def _normalize_string_for_sql_search(column_name):
+    n = f"LOWER({column_name})"
+    for char in [" ", "-", "_", "/", ".", ",", "(", ")", "[", "]", "*", "+", "|", ":", ";"]:
+        n = f"REPLACE({n}, '{char}', '')"
+    replacements = [
+        ('á','a'),('é','e'),('í','i'),('ó','o'),('ú','u'),('ü','u'),('ñ','n'),('ç','c'),
+        ('Á','a'),('É','e'),('Í','i'),('Ó','o'),('Ú','u'),('Ü','u'),('Ñ','n'),('Ç','c')
+    ]
+    for old, new in replacements:
+        n = f"REPLACE({n}, '{old}', '{new}')"
+    return n
+
+def _normalize_python_string_for_search(text):
+    if not text: return ""
+    text = text.lower()
+    for char in [" ", "-", "_", "/", ".", ",", "(", ")", "[", "]", "*", "+", "|", ":", ";"]:
+        text = text.replace(char, "")
+    replacements = [('á','a'),('é','e'),('í','i'),('ó','o'),('ú','u'),('ü','u'),('ñ','n'),('ç','c')]
+    for old, new in replacements:
+        text = text.replace(old, new)
+    return text
+
 # Variable global para controlar edición
 cliente_seleccionado_id = None
 
@@ -16,8 +39,11 @@ def cargar_clientes(filtro=""):
     query_base = "SELECT id, nombre, telefono, email, cuit_dni FROM clientes"
     
     if filtro:
-        query = f"{query_base} WHERE nombre LIKE %s OR email LIKE %s OR cuit_dni LIKE %s ORDER BY nombre ASC"
-        param = f"%{filtro}%"
+        norm_nombre = _normalize_string_for_sql_search('nombre')
+        norm_email = _normalize_string_for_sql_search('email')
+        norm_cuit = _normalize_string_for_sql_search('cuit_dni')
+        query = f"{query_base} WHERE {norm_nombre} LIKE ? OR {norm_email} LIKE ? OR {norm_cuit} LIKE ? ORDER BY nombre ASC"
+        param = f"%{_normalize_python_string_for_search(filtro)}%"
         cursor.execute(query, (param, param, param))
     else:
         query = f"{query_base} ORDER BY nombre ASC"
@@ -55,13 +81,13 @@ def guardar_cliente():
     if cliente_seleccionado_id:
         # UPDATE
         cursor.execute("""
-            UPDATE clientes SET nombre=%s, telefono=%s, email=%s, cuit_dni=%s WHERE id=%s
+            UPDATE clientes SET nombre=?, telefono=?, email=?, cuit_dni=? WHERE id=?
         """, (nombre, ent_tel.get(), ent_email.get(), ent_cuit.get(), cliente_seleccionado_id))
         mensaje = "Cliente actualizado correctamente"
     else:
         # INSERT
         cursor.execute("""
-            INSERT INTO clientes (nombre, telefono, email, cuit_dni) VALUES (%s, %s, %s, %s)
+            INSERT INTO clientes (nombre, telefono, email, cuit_dni) VALUES (?, ?, ?, ?)
         """, (nombre, ent_tel.get(), ent_email.get(), ent_cuit.get()))
         mensaje = "Cliente guardado correctamente"
         
@@ -92,7 +118,7 @@ def eliminar_cliente_por_id(cliente_id, nombre):
     if messagebox.askyesno("Confirmar", f"¿Eliminar a '{nombre}'?"):
         conexion = database.conectar()
         cursor = conexion.cursor()
-        cursor.execute("DELETE FROM clientes WHERE id = %s", (cliente_id,))
+        cursor.execute("DELETE FROM clientes WHERE id = ?", (cliente_id,))
         conexion.commit()
         conexion.close()
         cargar_clientes(ent_buscar.get()) # Recargamos usando el filtro actual

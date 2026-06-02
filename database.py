@@ -1,22 +1,18 @@
-import psycopg2
+import sqlite3
 import os
-from dotenv import load_dotenv
 
-# Carga la URL desde el archivo .env
-load_dotenv()
-DATABASE_URL = os.getenv("DATABASE_URL")
+DB_PATH = "herrajes.db"
 
-class SupabaseManager:
+class DatabaseManager:
     def __init__(self):
-        self.url = DATABASE_URL
+        self.url = DB_PATH
 
     def conectar(self):
-        """Crea una conexión a Supabase (PostgreSQL)."""
+        """Crea una conexión a SQLite local."""
         try:
-            # Importante: DATABASE_URL debe estar en tu archivo .env
-            return psycopg2.connect(DATABASE_URL)
+            return sqlite3.connect(DB_PATH)
         except Exception as e:
-            print(f"❌ Error al conectar a Supabase: {e}")
+            print(f"❌ Error al conectar a SQLite: {e}")
             return None
 
     def table(self, nombre_tabla):
@@ -28,6 +24,8 @@ class SupabaseManager:
         if not conn: return None
         cursor = None
         try:
+            # Adaptamos los placeholders de %s (PostgreSQL) a ? (SQLite) e ILIKE a LIKE
+            query = query.replace("%s", "?").replace("ILIKE", "LIKE")
             cursor = conn.cursor()
             cursor.execute(query, params)
             if query.strip().upper().startswith("SELECT"):
@@ -41,6 +39,9 @@ class SupabaseManager:
         finally:
             if cursor: cursor.close()
             if conn: conn.close()
+
+# Alias para mantener compatibilidad con el resto de los módulos
+SupabaseManager = DatabaseManager
 
 class TableHelper:
     def __init__(self, manager, table_name):
@@ -65,7 +66,7 @@ class TableHelper:
         return ResultHelper(res if res else [])
 
     def upsert(self, data_list):
-        """Inserta o actualiza en bloque (PostgreSQL Syntax)."""
+        """Inserta o actualiza en bloque (SQLite Syntax)."""
         if not data_list: return self
         conn = self.manager.conectar()
         if not conn: return self
@@ -73,15 +74,27 @@ class TableHelper:
         try:
             for item in data_list:
                 cols = ", ".join(item.keys())
-                vals = ", ".join(["%s"] * len(item))
-                updates = ", ".join([f"{k} = EXCLUDED.{k}" for k in item.keys() if k not in ['proveedor_id', 'codigo_proveedor']])
+                vals = ", ".join(["?"] * len(item))
                 
-                query = f"""
-                    INSERT INTO {self.table_name} ({cols}) 
-                    VALUES ({vals}) 
-                    ON CONFLICT (proveedor_id, codigo_proveedor) 
-                    DO UPDATE SET {updates}
-                """
+                # Identificamos el target del conflicto según la tabla para SQLite
+                conflict_target = ""
+                if self.table_name == "productos":
+                    conflict_target = "proveedor_id, codigo_proveedor"
+                elif self.table_name == "proveedores":
+                    conflict_target = "nombre"
+                
+                if conflict_target:
+                    keys_to_update = [k for k in item.keys() if k not in conflict_target.split(", ")]
+                    updates = ", ".join([f"{k} = excluded.{k}" for k in keys_to_update])
+                    query = f"""
+                        INSERT INTO {self.table_name} ({cols}) 
+                        VALUES ({vals}) 
+                        ON CONFLICT ({conflict_target}) 
+                        DO UPDATE SET {updates}
+                    """
+                else:
+                    query = f"INSERT OR REPLACE INTO {self.table_name} ({cols}) VALUES ({vals})"
+
                 cursor.execute(query, list(item.values()))
             
             conn.commit()
@@ -100,44 +113,44 @@ class ResultHelper:
         self.data = data
 
 # --- Instancia global para ser usada por otros archivos ---
-db = SupabaseManager()
+db = DatabaseManager()
 
 def conectar():
     """Función de acceso directo para otros módulos"""
     return db.conectar()
 
 def crear_base_datos():
-    """Inicializa las tablas si no existen en Supabase"""
+    """Inicializa las tablas si no existen en SQLite"""
     conexion = conectar()
     if not conexion: return
     cursor = conexion.cursor()
     try:
         # Tabla Proveedores
         cursor.execute('''CREATE TABLE IF NOT EXISTS proveedores (
-            id SERIAL PRIMARY KEY, 
+            id INTEGER PRIMARY KEY AUTOINCREMENT, 
             nombre TEXT NOT NULL UNIQUE, 
             contacto TEXT,
-            descuento_global NUMERIC(10, 2) DEFAULT 0.0, 
-            incremento_global NUMERIC(10, 2) DEFAULT 0.0,
+            descuento_global REAL DEFAULT 0.0, 
+            incremento_global REAL DEFAULT 0.0,
             fecha_modif_coeficiente DATE DEFAULT CURRENT_DATE)''')
 
         # Tabla Productos
         cursor.execute('''CREATE TABLE IF NOT EXISTS productos (
-            id SERIAL PRIMARY KEY, 
+            id INTEGER PRIMARY KEY AUTOINCREMENT, 
             proveedor_id INTEGER REFERENCES proveedores (id) ON DELETE SET NULL,
             codigo_proveedor TEXT NOT NULL, 
             descripcion TEXT NOT NULL, 
-            costo_base NUMERIC(12, 2) NOT NULL, 
-            coeficiente_ganancia NUMERIC(10, 2) NOT NULL, 
-            iva NUMERIC(5, 2) DEFAULT 0.21, 
+            costo_base REAL NOT NULL, 
+            coeficiente_ganancia REAL NOT NULL, 
+            iva REAL DEFAULT 0.21, 
             estado TEXT DEFAULT 'ACTIVO', 
             ultima_actualizacion DATE DEFAULT CURRENT_DATE,
             numero_lista TEXT, 
             fecha_lista DATE, 
-            CONSTRAINT productos_uq UNIQUE(proveedor_id, codigo_proveedor))''')
+            UNIQUE(proveedor_id, codigo_proveedor))''')
 
         conexion.commit()
-        print("🚀 Estructura de Supabase verificada.")
+        print("🚀 Estructura de SQLite verificada.")
     except Exception as e:
         print(f"⚠️ Aviso en inicialización: {e}")
         conexion.rollback()

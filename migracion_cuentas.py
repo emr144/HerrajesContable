@@ -1,4 +1,4 @@
-import psycopg2
+import sqlite3
 import database # Importamos para obtener la ruta
 
 def aplicar_migracion():
@@ -8,27 +8,31 @@ def aplicar_migracion():
     if not conexion:
         print("🚫 No se pudo establecer conexión para la migración de cuentas.")
         return
-    cursor = conexion.cursor() # Use cursor from psycopg2 connection
+    cursor = conexion.cursor()
 
     # 1. Crear la tabla si no existe
-    # This table is already created in database.py, so this part is mostly for ensuring columns.
-    # If it were to create, it should use PostgreSQL syntax.
-    # For now, we'll focus on column checks.
-
-    # 2. Verificar columnas faltantes (Migración de versiones viejas)
-    # For PostgreSQL, we query information_schema.columns
     cursor.execute("""
-        SELECT column_name FROM information_schema.columns 
-        WHERE table_schema = CURRENT_SCHEMA AND table_name = 'cuenta_corriente_proveedores'
+        CREATE TABLE IF NOT EXISTS cuenta_corriente_proveedores (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id_proveedor INTEGER REFERENCES proveedores(id),
+            tipo_cuenta TEXT NOT NULL DEFAULT 'Formal',
+            tipo_movimiento TEXT NOT NULL,
+            monto REAL NOT NULL,
+            descripcion TEXT,
+            fecha DATE DEFAULT CURRENT_DATE
+        )
     """)
-    columnas_existentes = [info[0] for info in cursor.fetchall()]
+
+    # 2. Verificar columnas faltantes para SQLite
+    cursor.execute("PRAGMA table_info(cuenta_corriente_proveedores)")
+    columnas_existentes = [info[1] for info in cursor.fetchall()]
 
     # Si falta 'tipo_cuenta', la agregamos
     if 'tipo_cuenta' not in columnas_existentes:
         try:
             cursor.execute("ALTER TABLE cuenta_corriente_proveedores ADD COLUMN tipo_cuenta TEXT NOT NULL DEFAULT 'Formal'")
             print("✅ Columna 'tipo_cuenta' agregada exitosamente.")
-        except psycopg2.Error as e:
+        except sqlite3.Error as e:
             print(f"⚠️ Error intentando agregar columna 'tipo_cuenta': {e}")
 
     # Ensure FOREIGN KEY is set up correctly if table was created without it

@@ -72,7 +72,7 @@ def cargar_productos():
     if combo_buscar_prov:
         prov_f = combo_buscar_prov.get()
         if prov_f and prov_f != "TODOS":
-            query += " AND pr.nombre = %s"
+            query += " AND pr.nombre = ?"
             params.append(prov_f)
             
     # Filtro por Código
@@ -81,7 +81,7 @@ def cargar_productos():
         if cod_f:
             tokens = _normalize_python_string_for_search(cod_f).split()
             for t in tokens:
-                query += f" AND {_normalize_string_for_sql_search('p.codigo_proveedor')} LIKE %s"
+                query += f" AND {_normalize_string_for_sql_search('p.codigo_proveedor')} LIKE ?"
                 params.append(f"%{t}%")
             
     # Filtro por Descripción
@@ -90,7 +90,7 @@ def cargar_productos():
         if desc_f:
             tokens = _normalize_python_string_for_search(desc_f).split()
             for t in tokens:
-                query += f" AND {_normalize_string_for_sql_search('p.descripcion')} LIKE %s"
+                query += f" AND {_normalize_string_for_sql_search('p.descripcion')} LIKE ?"
                 params.append(f"%{t}%")
         
     query += " ORDER BY p.descripcion ASC"
@@ -143,8 +143,8 @@ def guardar_producto():
     conexion = database.conectar()
     cursor = conexion.cursor()
     cursor.execute("""
-        UPDATE productos SET descripcion=%s, costo_base=%s
-        WHERE id=%s
+        UPDATE productos SET descripcion=?, costo_base=?
+        WHERE id=?
     """, (desc, costo, producto_seleccionado_id))
     conexion.commit()
     conexion.close()
@@ -159,7 +159,7 @@ def cargar_datos_para_editar(item_id):
     
     conexion = database.conectar()
     cursor = conexion.cursor()
-    cursor.execute("SELECT descripcion, costo_base, coeficiente_ganancia FROM productos WHERE id=%s", (item_id,))
+    cursor.execute("SELECT descripcion, costo_base, coeficiente_ganancia FROM productos WHERE id=?", (item_id,))
     valores = cursor.fetchone()
     conexion.close()
 
@@ -182,7 +182,7 @@ def eliminar_producto_por_id(producto_id, descripcion):
         try:
             conexion = database.conectar()
             cursor = conexion.cursor()
-            cursor.execute("DELETE FROM productos WHERE id = %s", (producto_id,))
+            cursor.execute("DELETE FROM productos WHERE id = ?", (producto_id,))
             conexion.commit()
             conexion.close()
             cargar_productos()
@@ -234,7 +234,7 @@ def modificar_coef_por_proveedor_dialogo():
             conn = database.conectar()
             cur = conn.cursor()
             # Buscamos el coeficiente del primer producto activo que encontremos
-            cur.execute("SELECT coeficiente_ganancia FROM productos WHERE proveedor_id = %s AND estado = 'ACTIVO' LIMIT 1", (prov_id,))
+            cur.execute("SELECT coeficiente_ganancia FROM productos WHERE proveedor_id = ? AND estado = 'ACTIVO' LIMIT 1", (prov_id,))
             res = cur.fetchone()
             conn.close()
             if res:
@@ -279,11 +279,11 @@ def modificar_coef_por_proveedor_dialogo():
                 cur = conn.cursor()
                 
                 # 1. Actualizar productos
-                cur.execute("UPDATE productos SET coeficiente_ganancia = %s WHERE proveedor_id = %s", (nuevo_coef, proveedor_id))
+                cur.execute("UPDATE productos SET coeficiente_ganancia = ? WHERE proveedor_id = ?", (nuevo_coef, proveedor_id))
                 actualizados = cur.rowcount
                 
                 # 2. Actualizar fecha en proveedor
-                cur.execute("UPDATE proveedores SET fecha_modif_coeficiente = CURRENT_DATE WHERE id = %s", (proveedor_id,))
+                cur.execute("UPDATE proveedores SET fecha_modif_coeficiente = CURRENT_DATE WHERE id = ?", (proveedor_id,))
                 
                 conn.commit()
                 conn.close()
@@ -349,7 +349,7 @@ def eliminar_por_proveedor_dialogo():
             try:
                 conn = database.conectar()
                 cur = conn.cursor()
-                cur.execute("DELETE FROM productos WHERE proveedor_id = %s", (proveedor_id,))
+                cur.execute("DELETE FROM productos WHERE proveedor_id = ?", (proveedor_id,))
                 conn.commit()
                 eliminados = cur.rowcount
                 conn.close()
@@ -389,8 +389,8 @@ def buscar_productos_para_edicion(termino):
     norm_desc = _normalize_string_for_sql_search("descripcion")
     norm_cod = _normalize_string_for_sql_search("codigo_proveedor")
     
-    cond_desc = " AND ".join([f"{norm_desc} LIKE %s" for _ in tokens])
-    cond_cod = " AND ".join([f"{norm_cod} LIKE %s" for _ in tokens])
+    cond_desc = " AND ".join([f"{norm_desc} LIKE ?" for _ in tokens])
+    cond_cod = " AND ".join([f"{norm_cod} LIKE ?" for _ in tokens])
 
     query = f"SELECT id, codigo_proveedor, descripcion FROM productos WHERE (({cond_desc}) OR ({cond_cod})) ORDER BY descripcion LIMIT 15"
     

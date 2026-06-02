@@ -1,4 +1,4 @@
-import psycopg2
+import sqlite3
 import database
 
 def limpiar_residuos_db():

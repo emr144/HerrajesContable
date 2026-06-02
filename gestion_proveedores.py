@@ -3,6 +3,29 @@ from tkinter import ttk, messagebox
 import styles as st
 import database # Importamos para obtener la ruta
 
+# --- Funciones Auxiliares para Normalización de Búsqueda ---
+def _normalize_string_for_sql_search(column_name):
+    n = f"LOWER({column_name})"
+    for char in [" ", "-", "_", "/", ".", ",", "(", ")", "[", "]", "*", "+", "|", ":", ";"]:
+        n = f"REPLACE({n}, '{char}', '')"
+    replacements = [
+        ('á','a'),('é','e'),('í','i'),('ó','o'),('ú','u'),('ü','u'),('ñ','n'),('ç','c'),
+        ('Á','a'),('É','e'),('Í','i'),('Ó','o'),('Ú','u'),('Ü','u'),('Ñ','n'),('Ç','c')
+    ]
+    for old, new in replacements:
+        n = f"REPLACE({n}, '{old}', '{new}')"
+    return n
+
+def _normalize_python_string_for_search(text):
+    if not text: return ""
+    text = text.lower()
+    for char in [" ", "-", "_", "/", ".", ",", "(", ")", "[", "]", "*", "+", "|", ":", ";"]:
+        text = text.replace(char, "")
+    replacements = [('á','a'),('é','e'),('í','i'),('ó','o'),('ú','u'),('ü','u'),('ñ','n'),('ç','c')]
+    for old, new in replacements:
+        text = text.replace(old, new)
+    return text
+
 # Variable global para controlar edición
 proveedor_seleccionado_id = None
 
@@ -20,8 +43,10 @@ def cargar_proveedores(filtro=""):
     """
     
     if filtro:
-        query = f"SELECT * FROM ({query_base}) AS sub WHERE nombre ILIKE %s OR contacto ILIKE %s ORDER BY nombre ASC"
-        param = f"{filtro}%"
+        norm_nombre = _normalize_string_for_sql_search('nombre')
+        norm_contacto = _normalize_string_for_sql_search('contacto')
+        query = f"SELECT * FROM ({query_base}) AS sub WHERE {norm_nombre} LIKE ? OR {norm_contacto} LIKE ? ORDER BY nombre ASC"
+        param = f"%{_normalize_python_string_for_search(filtro)}%"
         cursor.execute(query, (param, param))
     else:
         query = f"{query_base} ORDER BY nombre ASC"
@@ -64,11 +89,11 @@ def guardar_proveedor():
     cursor = conexion.cursor()
     
     if proveedor_seleccionado_id:
-        cursor.execute("UPDATE proveedores SET nombre=%s, contacto=%s WHERE id=%s", 
+        cursor.execute("UPDATE proveedores SET nombre=?, contacto=? WHERE id=?", 
                        (nombre, contacto, proveedor_seleccionado_id))
         mensaje = "Proveedor actualizado correctamente."
     else:
-        cursor.execute("INSERT INTO proveedores (nombre, contacto) VALUES (%s, %s)", 
+        cursor.execute("INSERT INTO proveedores (nombre, contacto) VALUES (?, ?)", 
                        (nombre, contacto))
         mensaje = "Proveedor guardado correctamente."
         
@@ -84,7 +109,7 @@ def cargar_datos_para_editar(item_id):
     
     conexion = database.conectar()
     cursor = conexion.cursor()
-    cursor.execute("SELECT id, nombre, contacto FROM proveedores WHERE id=%s", (item_id,))
+    cursor.execute("SELECT id, nombre, contacto FROM proveedores WHERE id=?", (item_id,))
     valores = cursor.fetchone()
     conexion.close()
 
@@ -106,7 +131,7 @@ def eliminar_proveedor_por_id(proveedor_id, nombre):
         try:
             conexion = database.conectar()
             cursor = conexion.cursor()
-            cursor.execute("DELETE FROM proveedores WHERE id = %s", (proveedor_id,))
+            cursor.execute("DELETE FROM proveedores WHERE id = ?", (proveedor_id,))
             conexion.commit()
             conexion.close()
             cargar_proveedores(ent_buscar.get())

@@ -12,17 +12,14 @@ def _normalize_string_for_sql_search(column_name):
     Elimina espacios, guiones, guiones bajos, barras y acentos comunes en español.
     """
     n = f"LOWER({column_name})"
-    n = f"REPLACE({n}, ' ', '')"
-    n = f"REPLACE({n}, '-', '')"
-    n = f"REPLACE({n}, '_', '')"
-    n = f"REPLACE({n}, '/', '')"
-    n = f"REPLACE({n}, 'á', 'a')"
-    n = f"REPLACE({n}, 'é', 'e')"
-    n = f"REPLACE({n}, 'í', 'i')"
-    n = f"REPLACE({n}, 'ó', 'o')"
-    n = f"REPLACE({n}, 'ú', 'u')"
-    n = f"REPLACE({n}, 'ü', 'u')"
-    n = f"REPLACE({n}, 'ñ', 'n')"
+    for char in [" ", "-", "_", "/", ".", ",", "(", ")", "[", "]", "*", "+", "|", ":", ";"]:
+        n = f"REPLACE({n}, '{char}', '')"
+    replacements = [
+        ('á','a'),('é','e'),('í','i'),('ó','o'),('ú','u'),('ü','u'),('ñ','n'),('ç','c'),
+        ('Á','a'),('É','e'),('Í','i'),('Ó','o'),('Ú','u'),('Ü','u'),('Ñ','n'),('Ç','c')
+    ]
+    for old, new in replacements:
+        n = f"REPLACE({n}, '{old}', '{new}')"
     return n
 
 def _normalize_python_string_for_search(text):
@@ -85,7 +82,7 @@ def buscar_productos_para_pedido(termino="", proveedor_nombre=None):
         cond_parts = []
         params = []
         for t in tokens:
-            cond_parts.append(f"({norm_desc} LIKE %s OR {norm_cod} LIKE %s)")
+            cond_parts.append(f"({norm_desc} LIKE ? OR {norm_cod} LIKE ?)")
             params.extend([f"%{t}%", f"%{t}%"])
         
         query = f"""
@@ -93,7 +90,7 @@ def buscar_productos_para_pedido(termino="", proveedor_nombre=None):
                    p.costo_base, p.coeficiente_ganancia, p.iva, pr.descuento_global, pr.incremento_global 
             FROM productos p 
             JOIN proveedores pr ON p.proveedor_id = pr.id 
-            WHERE pr.nombre = %s AND {' AND '.join(cond_parts)} 
+            WHERE pr.nombre = ? AND {' AND '.join(cond_parts)} 
             ORDER BY p.descripcion
         """
         cursor.execute(query, (proveedor_nombre,) + tuple(params))
@@ -139,7 +136,7 @@ def agregar_item_a_pedido():
     # Obtenemos descripción de la base de datos solo para visualización
     conexion = database.conectar()
     cursor = conexion.cursor()
-    cursor.execute("SELECT descripcion FROM productos WHERE id = %s", (producto_id_seleccionado,))
+    cursor.execute("SELECT descripcion FROM productos WHERE id = ?", (producto_id_seleccionado,))
     res_desc = cursor.fetchone()
     conexion.close()
     descripcion = res_desc[0] if res_desc else "Desconocido"
@@ -219,20 +216,20 @@ def guardar_pedido_final():
     conexion = database.conectar()
     cursor = conexion.cursor()
     
-    cursor.execute("SELECT id FROM proveedores WHERE nombre = %s", (proveedor_nombre,))
+    cursor.execute("SELECT id FROM proveedores WHERE nombre = ?", (proveedor_nombre,))
     prov_id = cursor.fetchone()[0]
 
     if pedido_editando_id:
         # Actualizar pedido existente
-        cursor.execute("UPDATE pedidos_fabrica SET proveedor_id = %s, fecha_creacion = CURRENT_TIMESTAMP WHERE id = %s", (prov_id, pedido_editando_id))
-        cursor.execute("DELETE FROM pedidos_fabrica_detalle WHERE pedido_id = %s", (pedido_editando_id,))
+        cursor.execute("UPDATE pedidos_fabrica SET proveedor_id = ?, fecha_creacion = CURRENT_TIMESTAMP WHERE id = ?", (prov_id, pedido_editando_id))
+        cursor.execute("DELETE FROM pedidos_fabrica_detalle WHERE pedido_id = ?", (pedido_editando_id,))
     else:
         # Crear nuevo pedido
-        cursor.execute("INSERT INTO pedidos_fabrica (proveedor_id) VALUES (%s) RETURNING id", (prov_id,))
+        cursor.execute("INSERT INTO pedidos_fabrica (proveedor_id) VALUES (?) RETURNING id", (prov_id,))
         pedido_editando_id = cursor.fetchone()[0]
 
     for item in lista_pedido_actual:
-        cursor.execute("INSERT INTO pedidos_fabrica_detalle (pedido_id, producto_id, cantidad, unidad_medida) VALUES (%s, %s, %s, %s)",
+        cursor.execute("INSERT INTO pedidos_fabrica_detalle (pedido_id, producto_id, cantidad, unidad_medida) VALUES (?, ?, ?, ?)",
                        (pedido_editando_id, item['prod_id'], item['cantidad'], item['unidad']))
     
     conexion.commit()
@@ -260,7 +257,7 @@ def abrir_generador(pedido_id=None, proveedor_fijo=None):
                 JOIN proveedores p ON pf.proveedor_id = p.id
                 JOIN pedidos_fabrica_detalle pfd ON pf.id = pfd.pedido_id
                 JOIN productos prod ON pfd.producto_id = prod.id
-                WHERE pf.id = %s
+                WHERE pf.id = ?
             """, (pedido_id,))
             filas = cursor.fetchall()
             if filas:

@@ -2,7 +2,8 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 import os
 import psycopg2
-from PIL import Image, ImageTk
+import sqlite3 # Import sqlite3
+from PIL import Image, ImageTk # Keep PIL imports
 import styles as st # Importamos los estilos
 import database # Importamos para obtener la ruta
 
@@ -12,17 +13,14 @@ def _normalize_string_for_sql_search(column_name):
     Elimina espacios, guiones, guiones bajos, barras y acentos comunes en español.
     """
     n = f"LOWER({column_name})"
-    n = f"REPLACE({n}, ' ', '')"
-    n = f"REPLACE({n}, '-', '')"
-    n = f"REPLACE({n}, '_', '')"
-    n = f"REPLACE({n}, '/', '')"
-    n = f"REPLACE({n}, 'á', 'a')"
-    n = f"REPLACE({n}, 'é', 'e')"
-    n = f"REPLACE({n}, 'í', 'i')"
-    n = f"REPLACE({n}, 'ó', 'o')"
-    n = f"REPLACE({n}, 'ú', 'u')"
-    n = f"REPLACE({n}, 'ü', 'u')"
-    n = f"REPLACE({n}, 'ñ', 'n')"
+    for char in [" ", "-", "_", "/", ".", ",", "(", ")", "[", "]", "*", "+", "|", ":", ";"]:
+        n = f"REPLACE({n}, '{char}', '')"
+    replacements = [
+        ('á','a'),('é','e'),('í','i'),('ó','o'),('ú','u'),('ü','u'),('ñ','n'),('ç','c'),
+        ('Á','a'),('É','e'),('Í','i'),('Ó','o'),('Ú','u'),('Ü','u'),('Ñ','n'),('Ç','c')
+    ]
+    for old, new in replacements:
+        n = f"REPLACE({n}, '{old}', '{new}')"
     return n
 
 def _normalize_python_string_for_search(text):
@@ -37,15 +35,15 @@ def obtener_productos(filtro=""):
     """Consulta la DB buscando por código o por descripción"""
     conexion = database.conectar()
     if not conexion: return []
-    cursor = conexion.cursor() # Use cursor from psycopg2 connection
+    cursor = conexion.cursor()
     tokens = _normalize_python_string_for_search(filtro).split()
     if not tokens: return []
 
     norm_cod = _normalize_string_for_sql_search("codigo_proveedor")
     norm_desc = _normalize_string_for_sql_search("descripcion")
     
-    cond_cod = " AND ".join([f"{norm_cod} LIKE %s" for _ in tokens])
-    cond_desc = " AND ".join([f"{norm_desc} LIKE %s" for _ in tokens])
+    cond_cod = " AND ".join([f"{norm_cod} LIKE ?" for _ in tokens])
+    cond_desc = " AND ".join([f"{norm_desc} LIKE ?" for _ in tokens])
 
     query = f"SELECT id, codigo_proveedor, descripcion FROM productos WHERE (({cond_cod}) OR ({cond_desc})) AND estado = 'ACTIVO' LIMIT 10"
     
@@ -97,14 +95,14 @@ def seleccionar_producto(event=None):
 def mostrar_detalle(codigo_buscado=None, producto_id=None):
     """Muestra la info y la foto en tamaño grande"""
     conexion = database.conectar()
-    if not conexion: return
-    cursor = conexion.cursor() # Use cursor from psycopg2 connection
+    if not conexion: return # No need to import sqlite3 here, database.py handles it
+    cursor = conexion.cursor()
 
     if producto_id:
-        where_clause = "WHERE p.id = %s"
+        where_clause = "WHERE p.id = ?"
         param = producto_id
     else:
-        where_clause = "WHERE p.codigo_proveedor = %s"
+        where_clause = "WHERE p.codigo_proveedor = ?"
         param = entrada_busqueda.get().strip().upper()
 
     query = '''

@@ -9,27 +9,31 @@ import database # Importamos para obtener la ruta
 # --- Funciones Auxiliares para Normalización de Búsqueda ---
 def _normalize_string_for_sql_search(column_name):
     """Genera un fragmento SQL para normalizar una cadena para búsqueda.
-    Elimina espacios, guiones, guiones bajos, barras y acentos comunes en español.
+    Elimina espacios, tildes y símbolos comunes de separación.
     """
-    # Primero pasamos a minúsculas para que los REPLACE de acentos funcionen con mayúsculas acentuadas
     n = f"LOWER({column_name})"
-    n = f"REPLACE({n}, ' ', '')"
-    n = f"REPLACE({n}, '-', '')"
-    n = f"REPLACE({n}, '_', '')"
-    n = f"REPLACE({n}, '/', '')"
-    n = f"REPLACE({n}, 'á', 'a')"
-    n = f"REPLACE({n}, 'é', 'e')"
-    n = f"REPLACE({n}, 'í', 'i')"
-    n = f"REPLACE({n}, 'ó', 'o')"
-    n = f"REPLACE({n}, 'ú', 'u')"
-    n = f"REPLACE({n}, 'ü', 'u')"
-    n = f"REPLACE({n}, 'ñ', 'n')"
+    # Eliminar símbolos de separación
+    for char in [" ", "-", "_", "/", ".", ",", "(", ")", "[", "]", "*", "+", "|", ":", ";"]:
+        n = f"REPLACE({n}, '{char}', '')"
+    # Normalizar tildes y caracteres especiales
+    replacements = [
+        ('á','a'),('é','e'),('í','i'),('ó','o'),('ú','u'),('ü','u'),('ñ','n'),('ç','c'),
+        ('Á','a'),('É','e'),('Í','i'),('Ó','o'),('Ú','u'),('Ü','u'),('Ñ','n'),('Ç','c')
+    ]
+    for old, new in replacements:
+        n = f"REPLACE({n}, '{old}', '{new}')"
     return n
 
 def _normalize_python_string_for_search(text):
     """Normaliza una cadena de Python para comparación, eliminando acentos y caracteres especiales."""
-    text = text.lower().replace(' ', '').replace('-', '').replace('_', '').replace('/', '')
-    return text.replace('á', 'a').replace('é', 'e').replace('í', 'i').replace('ó', 'o').replace('ú', 'u').replace('ü', 'u').replace('ñ', 'n')
+    if not text: return ""
+    text = text.lower()
+    for char in [" ", "-", "_", "/", ".", ",", "(", ")", "[", "]", "*", "+", "|", ":", ";"]:
+        text = text.replace(char, "")
+    replacements = [('á','a'),('é','e'),('í','i'),('ó','o'),('ú','u'),('ü','u'),('ñ','n'),('ç','c')]
+    for old, new in replacements:
+        text = text.replace(old, new)
+    return text
 
 # Variables globales
 carrito = []
@@ -80,17 +84,17 @@ def buscar_productos_db(termino="", filtro_proveedor=None, filtro_codigo=""):
     if filtro_codigo:
         tokens = _normalize_python_string_for_search(filtro_codigo).split()
         for t in tokens:
-            query += f" AND {_normalize_string_for_sql_search('p.codigo_proveedor')} LIKE %s"
+            query += f" AND {_normalize_string_for_sql_search('p.codigo_proveedor')} LIKE ?"
             args.append(f'%{t}%')
 
     if termino:
         tokens = _normalize_python_string_for_search(termino).split()
         for t in tokens:
-            query += f" AND {_normalize_string_for_sql_search('p.descripcion')} LIKE %s"
+            query += f" AND {_normalize_string_for_sql_search('p.descripcion')} LIKE ?"
             args.append(f'%{t}%')
 
     if filtro_proveedor:
-        query += " AND pr.nombre = %s"
+        query += " AND pr.nombre = ?"
         args.append(filtro_proveedor)
 
     query += " ORDER BY p.descripcion ASC"
@@ -197,7 +201,7 @@ def agregar_producto(event=None):
         SELECT p.id, p.descripcion, p.costo_base, p.coeficiente_ganancia, p.iva, pr.descuento_global, pr.incremento_global, p.codigo_proveedor
         FROM productos p
         JOIN proveedores pr ON p.proveedor_id = pr.id
-        WHERE p.id = %s
+        WHERE p.id = ?
     '''
     cursor.execute(query, (producto_id_seleccionado,))
     producto = cursor.fetchone()
@@ -252,13 +256,13 @@ def generar_ticket_pdf(presupuesto_id=None, vista_previa=False):
         if not vista_previa and presupuesto_id:
             conexion = database.conectar()
             cursor = conexion.cursor()
-            cursor.execute("SELECT cliente_nombre, fecha, total, cliente_tipo FROM presupuestos WHERE id = %s", (presupuesto_id,))
+            cursor.execute("SELECT cliente_nombre, fecha, total, cliente_tipo FROM presupuestos WHERE id = ?", (presupuesto_id,))
             datos_venta = cursor.fetchone()
             cursor.execute('''
                 SELECT p.descripcion, d.cantidad, d.precio_unitario_congelado 
                 FROM presupuesto_detalles d
                 JOIN productos p ON d.producto_id = p.id
-                WHERE d.presupuesto_id = %s
+                WHERE d.presupuesto_id = ?
             ''', (presupuesto_id,))
             items = cursor.fetchall()
             conexion.close()
@@ -366,11 +370,11 @@ def guardar_presupuesto(imprimir=False):
         conexion = database.conectar()
         cursor = conexion.cursor()
         # Guardamos el tipo de cliente (Profesional, Particular 15%, etc)
-        cursor.execute("INSERT INTO presupuestos (cliente_nombre, total, cliente_tipo) VALUES (%s, %s, %s) RETURNING id", (nombre_cliente, float(total_final), tipo_cliente))
+        cursor.execute("INSERT INTO presupuestos (cliente_nombre, total, cliente_tipo) VALUES (?, ?, ?) RETURNING id", (nombre_cliente, float(total_final), tipo_cliente))
         presupuesto_id = cursor.fetchone()[0]
         
         for item in carrito:
-            cursor.execute('INSERT INTO presupuesto_detalles (presupuesto_id, producto_id, cantidad, precio_unitario_congelado) VALUES (%s, %s, %s, %s)',
+            cursor.execute('INSERT INTO presupuesto_detalles (presupuesto_id, producto_id, cantidad, precio_unitario_congelado) VALUES (?, ?, ?, ?)',
                            (presupuesto_id, item['prod_id'], item['cantidad'], item['precio_unitario']))
         conexion.commit()
         conexion.close()

@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import ttkbootstrap as tb
 import psycopg2
+import sqlite3 # Import sqlite3
 import styles as st 
 import database # Importamos para obtener la ruta
 from datetime import datetime
@@ -117,7 +118,7 @@ def montar_interfaz(notebook):
             if not conn: return
             cursor = conn.cursor()
             
-            cursor.execute("SELECT id FROM proveedores WHERE nombre=%s", (prov_nombre,))
+            cursor.execute("SELECT id FROM proveedores WHERE nombre=?", (prov_nombre,))
             res_prov = cursor.fetchone()
             if not res_prov: return
             prov_id = res_prov[0]
@@ -126,7 +127,7 @@ def montar_interfaz(notebook):
             cursor.execute(f"""
                 SELECT id, fecha, tipo_movimiento, monto, descripcion
                 FROM cuenta_corriente_proveedores 
-                WHERE id_proveedor = %s AND tipo_cuenta = %s
+                WHERE id_proveedor = ? AND tipo_cuenta = ?
                 ORDER BY fecha ASC, id ASC
             """, (prov_id, t_cuenta))
             
@@ -164,7 +165,7 @@ def montar_interfaz(notebook):
             conn = database.conectar()
             if not conn: return
             cursor = conn.cursor()
-            cursor.execute("SELECT tipo_movimiento, monto, descripcion, fecha FROM cuenta_corriente_proveedores WHERE id=%s", (row_id,))
+            cursor.execute("SELECT tipo_movimiento, monto, descripcion, fecha FROM cuenta_corriente_proveedores WHERE id=?", (row_id,))
             row = cursor.fetchone()
             conn.close()
             
@@ -197,7 +198,7 @@ def montar_interfaz(notebook):
                 conn = database.conectar()
                 if conn:
                     cursor = conn.cursor()
-                    cursor.execute("DELETE FROM cuenta_corriente_proveedores WHERE id=%s", (row_id,))
+                    cursor.execute("DELETE FROM cuenta_corriente_proveedores WHERE id=?", (row_id,))
                     conn.commit()
                     conn.close()
                     if frame.editando_id == row_id:
@@ -253,7 +254,7 @@ def montar_interfaz(notebook):
             conn = database.conectar()
             if not conn: return
             cursor = conn.cursor()
-            cursor.execute("SELECT id FROM proveedores WHERE nombre=%s", (prov_nombre,))
+            cursor.execute("SELECT id FROM proveedores WHERE nombre=?", (prov_nombre,))
             res = cursor.fetchone()
             
             if not res:
@@ -266,15 +267,15 @@ def montar_interfaz(notebook):
                 # MODO EDICIÓN: ACTUALIZAR
                 cursor.execute("""
                     UPDATE cuenta_corriente_proveedores
-                    SET tipo_movimiento=%s, monto=%s, descripcion=%s, tipo_cuenta=%s, fecha=%s
-                    WHERE id=%s
+                    SET tipo_movimiento=?, monto=?, descripcion=?, tipo_cuenta=?, fecha=?
+                    WHERE id=?
                 """, (tipo, monto_f, desc, var_tipo_cuenta.get(), fecha_db, frame.editando_id))
             else:
                 # MODO NUEVO: INSERTAR
                 cursor.execute("""
                     INSERT INTO cuenta_corriente_proveedores
                     (id_proveedor, tipo_cuenta, tipo_movimiento, monto, descripcion, fecha)
-                    VALUES (%s, %s, %s, %s, %s, %s)
+                    VALUES (?, ?, ?, ?, ?, ?)
                 """, (prov_id, var_tipo_cuenta.get(), tipo, monto_f, desc, fecha_db))
             
             conn.commit()

@@ -17,7 +17,8 @@ try:
     import importar_excel
     import pedidos_fabrica
     import gestion_cuentas_fabrica
-    import database 
+    import database
+    import migraciones # Importar el nuevo módulo de migraciones
 except ImportError as e:
     print(f"❌ Error al importar módulos: {e}")
     input("Presiona Enter para salir...")
@@ -83,6 +84,7 @@ class App(tb.Window):
         menubar.add_cascade(label="☁️ Archivo & Nube", menu=archivo_menu)
         archivo_menu.add_command(label="⚙️ Configurar Letra", command=self.abrir_configuracion_fuente)
         archivo_menu.add_separator()
+        archivo_menu.add_command(label="🛠️ Actualizar Estructura DB", command=migraciones.ejecutar_todas_las_migraciones)
         archivo_menu.add_command(label="Salir", command=self.quit)
 
     def abrir_configuracion_fuente(self):
@@ -147,9 +149,9 @@ class App(tb.Window):
 # --- BLOQUE DE EJECUCIÓN PRINCIPAL ---
 if __name__ == "__main__":
     try:
-        print("⚙️ Iniciando conexión con Supabase...")
-        # 1. Intentar crear las tablas automáticamente en PostgreSQL
-        database.crear_base_datos() 
+        print("⚙️ Iniciando conexión con la base de datos local y aplicando migraciones...")
+        # 1. Ejecutar todas las migraciones al inicio para asegurar la estructura
+        migraciones.ejecutar_todas_las_migraciones()
         
         print("🎨 Preparando interfaz gráfica...")
         app = App()
