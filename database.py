@@ -1,16 +1,42 @@
 import sqlite3
 import os
+import sys
 
-DB_PATH = "herrajes.db"
+def obtener_ruta_bd():
+    """
+    Determina la ruta absoluta de la base de datos.
+    Busca primero una configuración en 'ruta_db.txt' y, si no existe,
+    usa 'herrajes.db' en el directorio del ejecutable o script.
+    """
+    # 1. Detectar directorio base (donde está el .exe o el script .py)
+    if getattr(sys, 'frozen', False):
+        base_path = os.path.dirname(sys.executable)
+    else:
+        base_path = os.path.dirname(os.path.abspath(__file__))
+
+    # 2. Verificar si existe configuración de Nube/Drive
+    ruta_txt = os.path.join(base_path, "ruta_db.txt")
+    if os.path.exists(ruta_txt):
+        try:
+            with open(ruta_txt, "r") as f:
+                cloud_path = f.read().strip().strip('"')
+                if cloud_path and os.path.exists(cloud_path):
+                    return cloud_path
+        except Exception as e:
+            print(f"⚠️ Error leyendo ruta_db.txt: {e}")
+
+    # 3. Retornar ruta local por defecto
+    return os.path.join(base_path, "herrajes.db")
 
 class DatabaseManager:
     def __init__(self):
-        self.url = DB_PATH
+        self.url = obtener_ruta_bd()
 
     def conectar(self):
         """Crea una conexión a SQLite local."""
         try:
-            return sqlite3.connect(DB_PATH)
+            # Recalculamos la ruta en cada conexión por si el archivo de config cambió
+            return sqlite3.connect(obtener_ruta_bd())
         except Exception as e:
             print(f"❌ Error al conectar a SQLite: {e}")
             return None
