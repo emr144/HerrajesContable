@@ -6,26 +6,31 @@ import database # Importamos para obtener la ruta
 # --- Funciones Auxiliares para Normalización de Búsqueda ---
 def _normalize_string_for_sql_search(column_name):
     """Genera un fragmento SQL para normalizar una cadena para búsqueda.
-    Elimina espacios, guiones, guiones bajos, barras y acentos comunes en español.
+    Elimina espacios, tildes y símbolos comunes de separación.
     """
     n = f"LOWER({column_name})"
-    n = f"REPLACE({n}, ' ', '')"
-    n = f"REPLACE({n}, '-', '')"
-    n = f"REPLACE({n}, '_', '')"
-    n = f"REPLACE({n}, '/', '')"
-    n = f"REPLACE({n}, 'á', 'a')"
-    n = f"REPLACE({n}, 'é', 'e')"
-    n = f"REPLACE({n}, 'í', 'i')"
-    n = f"REPLACE({n}, 'ó', 'o')"
-    n = f"REPLACE({n}, 'ú', 'u')"
-    n = f"REPLACE({n}, 'ü', 'u')"
-    n = f"REPLACE({n}, 'ñ', 'n')"
+    # Eliminar símbolos de separación
+    for char in [" ", "-", "_", "/", ".", ",", "(", ")", "[", "]", "*", "+", "|", ":", ";"]:
+        n = f"REPLACE({n}, '{char}', '')"
+    # Normalizar tildes y caracteres especiales
+    replacements = [
+        ('á','a'),('é','e'),('í','i'),('ó','o'),('ú','u'),('ü','u'),('ñ','n'),('ç','c'),
+        ('Á','a'),('É','e'),('Í','i'),('Ó','o'),('Ú','u'),('Ü','u'),('Ñ','n'),('Ç','c')
+    ]
+    for old, new in replacements:
+        n = f"REPLACE({n}, '{old}', '{new}')"
     return n
 
 def _normalize_python_string_for_search(text):
     """Normaliza una cadena de Python para comparación, eliminando acentos y caracteres especiales."""
-    text = text.lower().replace(' ', '').replace('-', '').replace('_', '').replace('/', '')
-    return text.replace('á', 'a').replace('é', 'e').replace('í', 'i').replace('ó', 'o').replace('ú', 'u').replace('ü', 'u').replace('ñ', 'n')
+    if not text: return ""
+    text = text.lower()
+    for char in [" ", "-", "_", "/", ".", ",", "(", ")", "[", "]", "*", "+", "|", ":", ";"]:
+        text = text.replace(char, "")
+    replacements = [('á','a'),('é','e'),('í','i'),('ó','o'),('ú','u'),('ü','u'),('ñ','n'),('ç','c')]
+    for old, new in replacements:
+        text = text.replace(old, new)
+    return text
 
 # Variable global para controlar edición
 producto_seleccionado_id = None
@@ -395,7 +400,7 @@ def buscar_productos_para_edicion(termino):
     query = f"SELECT id, codigo_proveedor, descripcion FROM productos WHERE (({cond_desc}) OR ({cond_cod})) ORDER BY descripcion LIMIT 15"
     
     params = [f"%{t}%" for t in tokens] * 2
-    cursor.execute(query, params) # Use %s placeholders
+    cursor.execute(query, params)
     resultados = cursor.fetchall()
     conn.close()
     return resultados
