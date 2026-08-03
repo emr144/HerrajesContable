@@ -12,10 +12,8 @@ def _normalize_string_for_sql_search(column_name):
     Elimina espacios, tildes y símbolos comunes de separación.
     """
     n = f"LOWER({column_name})"
-    # Eliminar símbolos de separación
     for char in [" ", "-", "_", "/", ".", ",", "(", ")", "[", "]", "*", "+", "|", ":", ";"]:
         n = f"REPLACE({n}, '{char}', '')"
-    # Normalizar tildes y caracteres especiales
     replacements = [
         ('á','a'),('é','e'),('í','i'),('ó','o'),('ú','u'),('ü','u'),('ñ','n'),('ç','c'),
         ('Á','a'),('É','e'),('Í','i'),('Ó','o'),('Ú','u'),('Ü','u'),('Ñ','n'),('Ç','c')
@@ -38,14 +36,14 @@ def _normalize_python_string_for_search(text):
 # Variables globales
 carrito = []
 total_sin_descuento = 0.0
-combo_lista_precios = None # Nuevo selector de lista de precios
-lista_proveedores_cache = [] # Cache para filtrado
-tabla_busqueda = None # Tabla de resultados en el paso 2
-label_subtotal_carrito = None # Nuevo label para el subtotal del carrito
-var_tarjeta = None # Variable para el recargo de tarjeta
+combo_lista_precios = None
+lista_proveedores_cache = []
+tabla_busqueda = None
+label_subtotal_carrito = None
+var_tarjeta = None
 producto_id_seleccionado = None
-codigo_seleccionado = "" # Se mantiene solo para el label visual
-desc_seleccionada = None # Variable de control visual
+codigo_seleccionado = ""
+desc_seleccionada = None
 
 # --- FUNCIONES DE LÓGICA ---
 
@@ -114,13 +112,12 @@ def obtener_multiplicador_precio():
     elif "30%" in seleccion:
         return 1.30
     else:
-        return 1.0 # Profesional (Precio de lista estándar)
+        return 1.0
 
 def actualizar_total_visual():
     global total_sin_descuento
     
     multiplicador_tarjeta = 1.10 if var_tarjeta.get() else 1.0
-    # Redondeamos a 2 decimales para asegurar precisión en el cálculo del 10%
     total_final = round(total_sin_descuento * multiplicador_tarjeta, 2)
     
     if total_sin_descuento <= 0:
@@ -130,56 +127,37 @@ def actualizar_total_visual():
         label_total.config(text=f"TOTAL: $ {total_final:.2f}", fg="darkgreen")
         label_subtotal_carrito.config(text=f"SUBTOTAL CARRITO: $ {total_sin_descuento:.2f}")
 
-    # Gestionar Renglón de Total en la Tabla
     if tabla.exists("total_row"):
         tabla.delete("total_row")
     
     if total_sin_descuento > 0:
         texto_total = ">> TOTAL (CON TARJETA) <<" if var_tarjeta.get() else ">> TOTAL PRODUCTOS <<"
         valor_mostrar = total_final if var_tarjeta.get() else total_sin_descuento
-        # Insertamos el renglón al final con un estilo destacado (tag)
         tabla.insert("", "end", iid="total_row", values=(
             "", texto_total, "", "", f"$ {valor_mostrar:.2f}", "", ""
         ), tags=('total_tag',))
 
 def recalcular_carrito(event=None):
-    """Recalcula los precios de todo el carrito cuando se cambia la lista de precios"""
+    """Recalcular precios del carrito"""
     global total_sin_descuento
     
-    # Limpiamos la tabla visual y el total
     for item in tabla.get_children():
         tabla.delete(item)
     total_sin_descuento = 0.0
 
     multiplicador = obtener_multiplicador_precio()
 
-    # Recorremos el carrito y actualizamos precios
     for item in carrito:
-        # Recuperamos el precio base original que guardamos
         precio_base = item['precio_base_lista']
-        
-        # Calculamos nuevo precio final
         nuevo_precio_unitario = precio_base * multiplicador
         nuevo_subtotal = nuevo_precio_unitario * item['cantidad']
         
-        # Actualizamos el diccionario del carrito
         item['precio_unitario'] = nuevo_precio_unitario
-        
-        # Re-insertamos en la tabla visual
-        # Necesitamos recuperar codigo y descripcion. 
-        # Nota: Idealmente deberíamos guardarlos en el dict carrito para no consultar DB,
-        # pero para mantener compatibilidad rápida, usaremos los datos que ya tenemos o consultamos si faltan.
-        # En este código, 'carrito' solo tiene IDs. 
-        # Para evitar re-consultar DB masivamente, usaremos los valores almacenados en 'item' si los agregamos.
-        
-        # Mejor estrategia: Al agregar al carrito, guardamos descripcion y codigo tambien.
-        # Ver funcion agregar_producto abajo modificada.
 
         tabla.insert("", "end", values=(item['codigo'], item['descripcion'], item['cantidad'], f"$ {nuevo_precio_unitario:.2f}", f"$ {nuevo_subtotal:.2f}", "📎", "🗑️"))
         total_sin_descuento += nuevo_subtotal
 
     actualizar_total_visual()
-
 
 def agregar_producto(event=None):
     global total_sin_descuento, producto_id_seleccionado, codigo_seleccionado
@@ -209,19 +187,15 @@ def agregar_producto(event=None):
 
     if producto:
         prod_id, desc, costo, coef, iva, desc_g, inc_g, cod_prov = producto
-        # Precio base (Profesional / Lista) aplicando el descuento del proveedor
         precio_base = costo * (1 - (desc_g or 0)) * (1 + (inc_g or 0)) * coef * (1 + iva)
         
-        # Precio final con el aumento seleccionado
         multiplicador = obtener_multiplicador_precio()
         precio_unitario = precio_base * multiplicador
         
         subtotal = precio_unitario * cantidad
         
-        # Guardamos precio_base_lista para poder recalcular si cambiamos de categoria
         carrito.append({'prod_id': prod_id, 'cantidad': cantidad, 'precio_unitario': precio_unitario, 'precio_base_lista': precio_base, 'codigo': cod_prov, 'descripcion': desc})
         
-        # INSERTAMOS EN LA TABLA CON LA COLUMNA SUBTOTAL
         tabla.insert("", "end", values=(cod_prov, desc, cantidad, f"$ {precio_unitario:.2f}", f"$ {subtotal:.2f}", "📎", "🗑️"))
         
         total_sin_descuento += subtotal
@@ -231,12 +205,11 @@ def agregar_producto(event=None):
         codigo_seleccionado = ""
         label_prod_sel.config(text="")
         entrada_cantidad.delete(0, tk.END)
-        ent_p2_desc.focus_set() # Volver al buscador automáticamente
+        ent_p2_desc.focus_set()
     else:
-        messagebox.showwarning("No encontrado", f"El código '{codigo}' no existe.")
+        messagebox.showwarning("No encontrado", "El producto no existe.")
 
 def borrar_item_especifico(item_id):
-    """Elimina el producto seleccionado de la tabla y resta su valor del total"""
     global total_sin_descuento
     valores = tabla.item(item_id, "values")
     subtotal_item = float(valores[4].replace("$ ", ""))
@@ -247,11 +220,11 @@ def borrar_item_especifico(item_id):
         carrito.pop(indice)
         
     tabla.delete(item_id)
-    
     actualizar_total_visual()
 
+# --- NUEVA FUNCIÓN DE TICKET LIMPIA Y SIN ENJAULADO ---
 def generar_ticket_pdf(presupuesto_id=None, vista_previa=False):
-    """Genera un PDF con el detalle de la venta. Si presupuesto_id es None, usa el carrito actual."""
+    """Genera un PDF con formato de ticket térmico (58mm), descripciones multilínea y sin recuadros."""
     try:
         if not vista_previa and presupuesto_id:
             conexion = database.conectar()
@@ -276,68 +249,96 @@ def generar_ticket_pdf(presupuesto_id=None, vista_previa=False):
             tipo_cliente = combo_lista_precios.get()
             items = [(i['descripcion'], i['cantidad'], i['precio_unitario']) for i in carrito]
             ticket_num = "PREVIEW"
-        
-        # 3. Construimos el PDF (Formato Ticket 58mm)
-        # Calculamos altura dinámica: Base 80mm + 10mm por producto
-        altura_ticket = 80 + (len(items) * 10)
+
+        # 1. Ajuste de formato: 58mm de ancho, alto dinámico estimado
+        # Estimamos ~10mm por item considerando que pueden ocupar 2 renglones
+        altura_ticket = 85 + (len(items) * 12)
         
         pdf = FPDF(orientation='P', unit='mm', format=(58, altura_ticket))
-        pdf.set_margins(2, 2, 2) # Márgenes estrechos (2mm)
+        pdf.set_margins(1.5, 2, 1.5) # Márgenes mínimos laterales (1.5mm)
+        pdf.set_auto_page_break(auto=True, margin=2)
         pdf.add_page()
         
-        # Encabezado
-        pdf.set_font("Arial", "B", 12)
-        pdf.cell(0, 5, "Herrajes Santa Fe", ln=True, align="C")
-        pdf.set_font("Arial", size=8)
-        pdf.cell(0, 5, "Comprobante de Venta", ln=True, align="C")
-        pdf.ln(2)
+        # 2. Encabezado
+        pdf.set_font("Arial", "B", 11)
+        pdf.set_text_color(0, 0, 0)
+        pdf.cell(0, 4, "HERRAJES SANTA FE", ln=True, align="C")
+        pdf.set_font("Arial", "", 7)
+        pdf.cell(0, 4, "Comprobante de Venta", ln=True, align="C")
         
-        # Datos Cliente
-        pdf.set_font("Arial", "B", 8)
-        pdf.cell(0, 4, f"Ticket N: {ticket_num}", ln=True)
-        pdf.cell(0, 4, f"Fecha: {fecha}", ln=True)
-        pdf.multi_cell(0, 4, f"Cliente: {cliente}")
-        pdf.ln(2)
+        # Línea separadora limpia
+        pdf.set_font("Arial", "", 7)
+        pdf.cell(0, 3, "- " * 22, ln=True, align="C")
         
-        # Tabla de Productos
-        # Anchos ajustados para 58mm: Desc(22) + Cant(6) + Precio(12) + Total(14) = 54mm
-        pdf.set_fill_color(230, 230, 230)
-        pdf.set_font("Arial", "B", 6)
-        pdf.cell(22, 5, "Desc", 1, 0, 'C', 1)
-        pdf.cell(6, 5, "Cant", 1, 0, 'C', 1)
-        pdf.cell(12, 5, "Precio", 1, 0, 'C', 1)
-        pdf.cell(14, 5, "Total", 1, 1, 'C', 1)
+        # 3. Datos del Cliente
+        pdf.set_font("Arial", "B", 7)
+        pdf.cell(14, 3.5, "Ticket N°:", 0, 0)
+        pdf.set_font("Arial", "", 7)
+        pdf.cell(0, 3.5, str(ticket_num), ln=True)
         
-        pdf.set_font("Arial", size=6)
+        pdf.set_font("Arial", "B", 7)
+        pdf.cell(14, 3.5, "Fecha:", 0, 0)
+        pdf.set_font("Arial", "", 7)
+        pdf.cell(0, 3.5, str(fecha), ln=True)
+        
+        pdf.set_font("Arial", "B", 7)
+        pdf.cell(14, 3.5, "Cliente:", 0, 0)
+        pdf.set_font("Arial", "", 7)
+        pdf.multi_cell(0, 3.5, str(cliente))
+        
+        # Línea separadora limpia
+        pdf.cell(0, 3, "- " * 22, ln=True, align="C")
+        
+        # 4. Cabecera de Productos (Sin bordes/casilleros)
+        pdf.set_font("Arial", "B", 7)
+        pdf.cell(8, 4, "Cant", 0, 0, 'L')
+        pdf.cell(32, 4, "Descripción", 0, 0, 'L')
+        pdf.cell(15, 4, "Total", 0, 1, 'R')
+        pdf.cell(0, 2, "- " * 22, ln=True, align="C")
+        
+        # 5. Lista de Productos
+        pdf.set_font("Arial", "", 7)
         for desc, cant, precio in items:
             subtotal = cant * precio
-            # Recortar descripción para que entre en una línea corta
-            desc_fmt = (desc[:12] + '..') if len(desc) > 14 else desc
+            y_inicial = pdf.get_y()
             
-            pdf.cell(22, 5, desc_fmt, 1)
-            pdf.cell(6, 5, f"{cant:g}", 1, 0, 'C')
-            pdf.cell(12, 5, f"{precio:.2f}", 1, 0, 'R')
-            pdf.cell(14, 5, f"{subtotal:.2f}", 1, 1, 'R')
+            # Imprime Cantidad a la izquierda
+            pdf.cell(8, 3.5, f"{cant:g}", 0, 0, 'L')
             
-        # Total
-        pdf.ln(4)
-        pdf.set_font("Arial", "B", 10)
-        pdf.cell(0, 6, "TOTAL:", 0, 1, 'R') # Mover "TOTAL" a su propia línea
-        pdf.set_font("Arial", "B", 14) # Aumentamos el tamaño del número
-        pdf.cell(0, 8, f"$ {total:.2f}", 0, 1, 'R') # Valor total en la siguiente línea con más altura
-
-        # Mensaje condicional según categoría
+            # Imprime Descripción con multi_cell para permitir 2 o más renglones
+            # Ancho de 32mm para dar espacio a la columna de Total
+            pdf.multi_cell(32, 3.5, str(desc), border=0, align='L')
+            y_final_desc = pdf.get_y()
+            
+            # Coloca el Total alineado con la primera línea del producto
+            pdf.set_xy(41.5, y_inicial)
+            pdf.cell(15, 3.5, f"${subtotal:.2f}", 0, 1, 'R')
+            
+            # Mueve el cursor al punto más bajo (por si la descripción ocupó 2 o 3 renglones)
+            if y_final_desc > pdf.get_y():
+                pdf.set_y(y_final_desc)
+                
+            pdf.ln(1) # Pequeño espacio entre productos
+            
+        # 6. Totalización
+        pdf.cell(0, 2, "- " * 22, ln=True, align="C")
+        pdf.ln(1)
+        pdf.set_font("Arial", "B", 8)
+        pdf.cell(25, 4, "TOTAL:", 0, 0, 'L')
+        pdf.set_font("Arial", "B", 11)
+        pdf.cell(0, 4, f"$ {total:.2f}", 0, 1, 'R')
+        
         if tipo_cliente and "Profesional" in tipo_cliente:
-            pdf.ln(2)
+            pdf.ln(1)
             pdf.set_font("Arial", "I", 6)
-            pdf.cell(0, 4, "** Descuento Cliente Frecuente / Gremio **", ln=True, align="C")
+            pdf.cell(0, 3, "* Descuento Gremio Aplicado *", ln=True, align="C")
 
         # Pie
-        pdf.ln(4)
+        pdf.ln(3)
         pdf.set_font("Arial", "I", 7)
-        pdf.cell(0, 4, "Gracias por su compra", ln=True, align="C")
+        pdf.cell(0, 4, "¡Gracias por su compra!", ln=True, align="C")
         
-        # 4. Guardar y Abrir
+        # Guardar y abrir
         if not os.path.exists("comprobantes"):
             os.makedirs("comprobantes")
         
@@ -345,7 +346,6 @@ def generar_ticket_pdf(presupuesto_id=None, vista_previa=False):
         ruta_pdf = os.path.abspath(f"comprobantes/{nombre_archivo}")
         pdf.output(ruta_pdf)
         
-        # Abrir archivo (Windows)
         os.startfile(ruta_pdf)
         
     except Exception as e:
@@ -357,9 +357,8 @@ def guardar_presupuesto(imprimir=False):
         messagebox.showwarning("Atención", "El carrito está vacío.")
         return
     
-    total_final = round(total_sin_descuento, 2) # El total ya incluye los aumentos/precios finales
+    total_final = round(total_sin_descuento, 2)
     
-    # Aplicamos recargo de tarjeta si corresponde
     if var_tarjeta.get():
         total_final = round(total_final * 1.10, 2)
 
@@ -369,7 +368,6 @@ def guardar_presupuesto(imprimir=False):
         
         conexion = database.conectar()
         cursor = conexion.cursor()
-        # Guardamos el tipo de cliente (Profesional, Particular 15%, etc)
         cursor.execute("INSERT INTO presupuestos (cliente_nombre, total, cliente_tipo) VALUES (?, ?, ?) RETURNING id", (nombre_cliente, float(total_final), tipo_cliente))
         presupuesto_id = cursor.fetchone()[0]
         
@@ -408,7 +406,6 @@ def limpiar_busqueda():
     buscar_p2()
 
 def buscar_p2(_=None):
-    """Lógica de búsqueda integrada en Paso 2"""
     for row in tabla_busqueda.get_children(): 
         tabla_busqueda.delete(row)
     
@@ -418,15 +415,13 @@ def buscar_p2(_=None):
     for r in res:
         p_id, cod, desc, prov_nom, costo, coef, iva, desc_g, inc_g = r
         precio_prof = costo * (1 - (desc_g or 0)) * (1 + (inc_g or 0)) * coef * (1 + iva)
-        # El ID se guarda en el 'iid' del Treeview (invisible para el usuario)
         tabla_busqueda.insert("", "end", iid=p_id, values=(cod, desc, prov_nom, f"$ {precio_prof:.2f}"))
 
 def seleccionar_p2(event=None):
-    """Selecciona un producto de la tabla de búsqueda"""
     global producto_id_seleccionado, codigo_seleccionado
     sel = tabla_busqueda.selection()
     if sel:
-        producto_id_seleccionado = sel[0] # El iid que es el ID de la DB
+        producto_id_seleccionado = sel[0]
         val = tabla_busqueda.item(sel[0], 'values')
         codigo_seleccionado = val[0]
         label_prod_sel.config(text=f"Seleccionado: {val[0]} | {val[1][:40]}...")
@@ -450,25 +445,25 @@ def on_tabla_click(event):
     item_id = tabla.identify_row(event.y)
     if not item_id or item_id == "total_row": return
 
-    if col == "#6": # Modificar (Clip)
+    if col == "#6":
         valores = tabla.item(item_id, 'values')
         nueva_cant = simpledialog.askinteger("Modificar Cantidad", f"Producto: {valores[1]}\nIngrese nueva cantidad:", initialvalue=int(valores[2]))
         if nueva_cant is not None and nueva_cant > 0:
             idx = tabla.index(item_id)
             carrito[idx]['cantidad'] = nueva_cant
             recalcular_carrito()
-    elif col == "#7": # Eliminar (Tachito)
+    elif col == "#7":
         borrar_item_especifico(item_id)
 
 # --- INTERFAZ ---
 def montar_interfaz(parent):
     global combo_cliente, entrada_cantidad, tabla, label_total, combo_lista_precios, label_prod_sel, var_tarjeta, label_subtotal_carrito
-    global tabla_busqueda, ent_p2_cod, ent_p2_desc, combo_p2_prov # ent_p2_cod ya no es dummy
+    global tabla_busqueda, ent_p2_cod, ent_p2_desc, combo_p2_prov
     
     ventana = tk.Frame(parent, bg=st.BG_MAIN)
     var_tarjeta = tk.BooleanVar(value=False)
 
-    # --- CABECERA: CLIENTE Y CONFIGURACIÓN ---
+    # CABECERA
     f_header = tk.Frame(ventana, bg=st.BG_CARD, padx=15, pady=10)
     f_header.pack(fill=tk.X, padx=15, pady=(10, 5))
 
@@ -487,7 +482,7 @@ def montar_interfaz(parent):
                                  selectcolor=st.BG_MAIN, font=st.FONT_LABEL, activebackground=st.BG_CARD)
     chk_tarjeta.pack(side=tk.LEFT, padx=20)
 
-    # --- BOTONES DE ACCIÓN RÁPIDA (ARRIBA A LA DERECHA) ---
+    # BOTONES DE ACCIÓN RÁPIDA
     f_acciones_header = tk.Frame(f_header, bg=st.BG_CARD)
     f_acciones_header.pack(side=tk.RIGHT)
 
@@ -496,13 +491,12 @@ def montar_interfaz(parent):
     tk.Button(f_acciones_header, text="💾🖨️ IMPRIMIR", command=lambda: guardar_presupuesto(True), **st.estilo_boton()).pack(side=tk.RIGHT, padx=5)
     tk.Button(f_acciones_header, text="🧹 LIMPIAR", command=cancelar_venta, **st.estilo_boton(st.ORANGE)).pack(side=tk.RIGHT, padx=5)
 
-    # --- SECCIÓN BÚSQUEDA (Panel Superior) ---
+    # SECCIÓN BÚSQUEDA
     f_busqueda = tk.Frame(ventana, bg=st.BG_MAIN, padx=15)
     f_busqueda.pack(fill=tk.X, pady=5)
     
-    # Usamos grid para mejor control de los campos de búsqueda
-    f_busqueda.columnconfigure(1, weight=1) # Columna para ent_p2_cod
-    f_busqueda.columnconfigure(3, weight=2) # Columna para ent_p2_desc
+    f_busqueda.columnconfigure(1, weight=1)
+    f_busqueda.columnconfigure(3, weight=2)
 
     tk.Label(f_busqueda, text="CÓDIGO:", font=st.FONT_LABEL, bg=st.BG_MAIN, fg="white").grid(row=0, column=0, padx=5, sticky="w")
     ent_p2_cod = tk.Entry(f_busqueda, font=st.FONT_INPUT, bg=st.BG_INPUT, fg="white", bd=0)
@@ -519,19 +513,25 @@ def montar_interfaz(parent):
     combo_p2_prov.set("TODOS")
     combo_p2_prov.grid(row=0, column=5, padx=5, sticky="ew")
     combo_p2_prov.bind("<<ComboboxSelected>>", buscar_p2)
-    combo_p2_prov.bind("<KeyRelease>", filtrar_provs_p2) # Re-añadido para filtrar sugerencias
+    combo_p2_prov.bind("<KeyRelease>", filtrar_provs_p2)
     tk.Button(f_busqueda, text="🧹", command=limpiar_busqueda, **st.estilo_boton(st.BG_CARD)).grid(row=0, column=6, padx=5)
 
-    # Tabla de Resultados de Búsqueda (Compacta)
+    # TABLA BÚSQUEDA
     cols_b = ("cod", "desc", "prov", "precio")
     tabla_busqueda = ttk.Treeview(ventana, columns=cols_b, show="headings", height=5)
-    tabla_busqueda.heading("cod", text="CÓDIGO"); tabla_busqueda.heading("desc", text="DESCRIPCIÓN"); tabla_busqueda.heading("prov", text="PROVEEDOR"); tabla_busqueda.heading("precio", text="P. PROFESIONAL")
-    tabla_busqueda.column("cod", width=100); tabla_busqueda.column("desc", width=400); tabla_busqueda.column("prov", width=150); tabla_busqueda.column("precio", width=120, anchor="e")
+    tabla_busqueda.heading("cod", text="CÓDIGO")
+    tabla_busqueda.heading("desc", text="DESCRIPCIÓN")
+    tabla_busqueda.heading("prov", text="PROVEEDOR")
+    tabla_busqueda.heading("precio", text="P. PROFESIONAL")
+    tabla_busqueda.column("cod", width=100)
+    tabla_busqueda.column("desc", width=400)
+    tabla_busqueda.column("prov", width=150)
+    tabla_busqueda.column("precio", width=120, anchor="e")
     tabla_busqueda.pack(fill=tk.X, padx=15, pady=5)
     tabla_busqueda.bind("<<TreeviewSelect>>", seleccionar_p2)
     tabla_busqueda.bind("<Double-1>", lambda e: entrada_cantidad.focus_set())
 
-    # --- BARRA DE ACCIÓN: CANTIDAD Y AÑADIR ---
+    # CANTIDAD Y AÑADIR
     f_add = tk.Frame(ventana, bg=st.BG_MAIN, pady=5)
     f_add.pack(fill=tk.X, padx=15)
     
@@ -544,20 +544,31 @@ def montar_interfaz(parent):
     entrada_cantidad.bind("<Return>", agregar_producto)
     tk.Button(f_add, text="➕ AÑADIR", command=agregar_producto, **st.estilo_boton(st.ACCENT)).pack(side=tk.LEFT, padx=10)
 
-    # --- TABLA DE CARRITO (Panel Inferior - Expandible) ---
+    # TABLA CARRITO
     columnas = ("cod", "desc", "cant", "p_unit", "subtotal", "mod", "del")
     tabla = ttk.Treeview(ventana, columns=columnas, show="headings")
-    tabla.heading("cod", text="CÓDIGO"); tabla.heading("desc", text="DESCRIPCIÓN"); tabla.heading("cant", text="CANT."); tabla.heading("p_unit", text="P. UNITARIO"); tabla.heading("subtotal", text="SUBTOTAL"); tabla.heading("mod", text="📎"); tabla.heading("del", text="🗑️")
-    tabla.column("cod", width=100); tabla.column("desc", width=400); tabla.column("cant", width=80, anchor="center"); tabla.column("p_unit", width=120, anchor="e"); tabla.column("subtotal", width=120, anchor="e"); tabla.column("mod", width=40, anchor="center"); tabla.column("del", width=40, anchor="center")
+    tabla.heading("cod", text="CÓDIGO")
+    tabla.heading("desc", text="DESCRIPCIÓN")
+    tabla.heading("cant", text="CANT.")
+    tabla.heading("p_unit", text="P. UNITARIO")
+    tabla.heading("subtotal", text="SUBTOTAL")
+    tabla.heading("mod", text="📎")
+    tabla.heading("del", text="🗑️")
+    tabla.column("cod", width=100)
+    tabla.column("desc", width=400)
+    tabla.column("cant", width=80, anchor="center")
+    tabla.column("p_unit", width=120, anchor="e")
+    tabla.column("subtotal", width=120, anchor="e")
+    tabla.column("mod", width=40, anchor="center")
+    tabla.column("del", width=40, anchor="center")
     tabla.pack(fill=tk.BOTH, expand=True, padx=15, pady=5)
     tabla.bind("<Button-1>", on_tabla_click)
     tabla.tag_configure('total_tag', background=st.BG_CARD, foreground=st.ACCENT, font=st.FONT_LABEL)
     
-    # Nuevo label para el subtotal del carrito
     label_subtotal_carrito = tk.Label(ventana, text="SUBTOTAL CARRITO: $ 0.00", font=st.FONT_LABEL, bg=st.BG_MAIN, fg=st.TEXT_PRIMARY)
     label_subtotal_carrito.pack(fill=tk.X, padx=15, pady=(0, 5), anchor="e")
 
-    # --- PIE: TOTALES Y CIERRE ---
+    # PIE: TOTALES
     f_footer = tk.Frame(ventana, bg=st.BG_MAIN, pady=10)
     f_footer.pack(fill=tk.X, padx=15)
     

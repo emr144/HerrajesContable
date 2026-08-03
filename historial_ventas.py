@@ -56,31 +56,47 @@ def generar_ticket_pdf(presupuesto_id):
         pdf.add_page()
         
         # Encabezado
+        pdf.set_draw_color(60, 60, 60)
+        pdf.set_line_width(0.3)
+        pdf.rect(1.5, 1.5, 55, altura_ticket - 3)
+
         pdf.set_font("Arial", "B", 12)
+        pdf.set_text_color(40, 40, 40)
         pdf.cell(0, 5, "Herrajes Santa Fe", ln=True, align="C")
-        pdf.set_font("Arial", size=8)
-        pdf.cell(0, 5, "Comprobante de Venta", ln=True, align="C")
-        pdf.ln(2)
+        pdf.set_font("Arial", "", 7)
+        pdf.cell(0, 4, "Comprobante de Venta", ln=True, align="C")
+        pdf.line(5, 14, 53, 14)
+        pdf.ln(1)
         
         # Datos Cliente
-        pdf.set_font("Arial", "B", 8)
-        pdf.cell(0, 4, f"Ticket N: {presupuesto_id}", ln=True)
-        pdf.cell(0, 4, f"Fecha: {fecha}", ln=True)
-        pdf.multi_cell(0, 4, f"Cliente: {cliente}")
-        pdf.ln(2)
+        pdf.set_font("Arial", "B", 7)
+        pdf.cell(20, 4, "Ticket N:", 0, 0)
+        pdf.set_font("Arial", "", 7)
+        pdf.cell(0, 4, str(presupuesto_id), ln=True)
+        pdf.set_font("Arial", "B", 7)
+        pdf.cell(20, 4, "Fecha:", 0, 0)
+        pdf.set_font("Arial", "", 7)
+        pdf.cell(0, 4, str(fecha), ln=True)
+        pdf.set_font("Arial", "B", 7)
+        pdf.cell(20, 4, "Cliente:", 0, 0)
+        pdf.set_font("Arial", "", 7)
+        pdf.multi_cell(0, 4, str(cliente))
+        pdf.ln(1)
+        pdf.line(5, 30, 53, 30)
         
         # Tabla
-        pdf.set_fill_color(230, 230, 230)
+        pdf.set_fill_color(235, 235, 235)
         pdf.set_font("Arial", "B", 6)
         pdf.cell(22, 5, "Desc", 1, 0, 'C', 1)
         pdf.cell(6, 5, "Cant", 1, 0, 'C', 1)
         pdf.cell(12, 5, "Precio", 1, 0, 'C', 1)
         pdf.cell(14, 5, "Total", 1, 1, 'C', 1)
+        pdf.line(5, 36, 53, 36)
         
         pdf.set_font("Arial", size=6)
         for desc, cant, precio in items:
             subtotal = cant * precio
-            desc_fmt = (desc[:12] + '..') if len(desc) > 14 else desc
+            desc_fmt = (desc[:16] + '..') if len(desc) > 17 else desc
             
             pdf.cell(22, 5, desc_fmt, 1)
             pdf.cell(6, 5, f"{cant:g}", 1, 0, 'C')
@@ -88,11 +104,15 @@ def generar_ticket_pdf(presupuesto_id):
             pdf.cell(14, 5, f"{subtotal:.2f}", 1, 1, 'R')
             
         # Total
-        pdf.ln(4)
-        pdf.set_font("Arial", "B", 10)
-        pdf.cell(0, 6, "TOTAL:", 0, 1, 'R') # Mover "TOTAL" a su propia línea
-        pdf.set_font("Arial", "B", 14) # Aumentamos el tamaño del número
-        pdf.cell(0, 8, f"$ {total:.2f}", 0, 1, 'R') # Valor total en la siguiente línea con más altura
+        pdf.ln(2)
+        pdf.set_draw_color(120, 120, 120)
+        pdf.line(5, pdf.get_y(), 53, pdf.get_y())
+        pdf.ln(1)
+        pdf.set_font("Arial", "B", 9)
+        pdf.cell(0, 5, "TOTAL:", 0, 1, 'R')
+        pdf.set_font("Arial", "B", 13)
+        pdf.cell(0, 7, f"$ {total:.2f}", 0, 1, 'R')
+        pdf.set_text_color(0, 0, 0)
 
         # Mensaje condicional (Nuevo sistema de precios)
         if tipo_cliente and "Profesional" in tipo_cliente:
