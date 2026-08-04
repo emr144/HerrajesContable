@@ -562,11 +562,12 @@ def montar_interfaz(parent):
     
     ventana = tk.Frame(parent, bg=st.BG_MAIN)
     ventana.columnconfigure(0, weight=1)
+    ventana.rowconfigure(4, weight=1)
     var_tarjeta = tk.BooleanVar(value=False)
 
     # CABECERA
     f_header = tk.Frame(ventana, bg=st.BG_CARD, padx=15, pady=10)
-    f_header.pack(fill=tk.X, padx=15, pady=(10, 5))
+    f_header.grid(row=0, column=0, sticky="ew", padx=15, pady=(10, 5))
 
     tk.Label(f_header, text="CLIENTE:", font=st.FONT_LABEL, bg=st.BG_CARD, fg=st.TEXT_SECONDARY).pack(side=tk.LEFT, padx=5)
     combo_cliente = ttk.Combobox(f_header, values=obtener_clientes(), font=st.FONT_INPUT, width=30)
@@ -594,7 +595,7 @@ def montar_interfaz(parent):
 
     # SECCIÓN BÚSQUEDA
     f_busqueda = tk.Frame(ventana, bg=st.BG_MAIN, padx=15)
-    f_busqueda.pack(fill=tk.X, pady=5)
+    f_busqueda.grid(row=1, column=0, sticky="ew", pady=5)
     
     f_busqueda.columnconfigure(1, weight=1)
     f_busqueda.columnconfigure(3, weight=2)
@@ -634,13 +635,13 @@ def montar_interfaz(parent):
     tabla_busqueda.column("precio_prof", width=140, minwidth=120, anchor="e", stretch=False)
     tabla_busqueda.column("precio_15", width=140, minwidth=120, anchor="e", stretch=False)
     tabla_busqueda.column("precio_30", width=140, minwidth=120, anchor="e", stretch=False)
-    tabla_busqueda.pack(fill=tk.BOTH, expand=True, padx=15, pady=5)
+    tabla_busqueda.grid(row=2, column=0, sticky="nsew", padx=15, pady=5)
     tabla_busqueda.bind("<<TreeviewSelect>>", seleccionar_p2)
     tabla_busqueda.bind("<Double-1>", lambda e: entrada_cantidad.focus_set())
 
     # CANTIDAD Y AÑADIR
     f_add = tk.Frame(ventana, bg=st.BG_MAIN, pady=5)
-    f_add.pack(fill=tk.X, padx=15)
+    f_add.grid(row=3, column=0, sticky="ew", padx=15)
     
     label_prod_sel = tk.Label(f_add, text="", font=st.FONT_NORMAL, fg=st.ACCENT, bg=st.BG_MAIN)
     label_prod_sel.pack(side=tk.LEFT, padx=10)
@@ -669,16 +670,16 @@ def montar_interfaz(parent):
     tabla.column("subtotal", width=110, minwidth=90, anchor="e", stretch=False)
     tabla.column("mod", width=60, minwidth=50, anchor="center", stretch=False)
     tabla.column("del", width=60, minwidth=50, anchor="center", stretch=False)
-    tabla.pack(fill=tk.BOTH, expand=True, padx=15, pady=5)
+    tabla.grid(row=4, column=0, sticky="nsew", padx=15, pady=5)
     tabla.bind("<Button-1>", on_tabla_click)
     tabla.tag_configure('total_tag', background=st.BG_CARD, foreground=st.ACCENT, font=st.FONT_LABEL)
     
     label_subtotal_carrito = tk.Label(ventana, text="SUBTOTAL CARRITO: $ 0.00", font=st.FONT_LABEL, bg=st.BG_MAIN, fg=st.TEXT_PRIMARY)
-    label_subtotal_carrito.pack(fill=tk.X, padx=15, pady=(0, 5), anchor="e")
+    label_subtotal_carrito.grid(row=5, column=0, sticky="e", padx=15, pady=(0, 5))
 
     # PIE: TOTALES
     f_footer = tk.Frame(ventana, bg=st.BG_MAIN, pady=10)
-    f_footer.pack(fill=tk.X, padx=15)
+    f_footer.grid(row=6, column=0, sticky="ew", padx=15)
     
     label_total = tk.Label(f_footer, text="TOTAL: $ -", font=("Inter", 24, "bold"), fg=st.ACCENT, bg=st.BG_MAIN)
     label_total.pack(side=tk.LEFT)
