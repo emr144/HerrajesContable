@@ -109,11 +109,9 @@ def cargar_productos():
         # Calculamos el precio de venta aplicando descuento e incremento global del proveedor
         precio_venta = costo * (1 - (desc_g or 0)) * (1 + (inc_g or 0)) * coef * (1 + iva) * multiplicador
         
-        # Preparamos los valores para que se vean bien en la tabla
+        # Preparamos los valores para que se vean bien en la tabla (sin columnas de acción)
         valores_display = (cod, desc, prov, f"$ {costo:.2f}", coef, f"$ {precio_venta:.2f}")
-        valores_con_accion = valores_display + ('✏️', '🗑️') # Los íconos de acción
-        
-        tabla.insert("", "end", values=valores_con_accion, iid=p_id)
+        tabla.insert("", "end", values=valores_display, iid=p_id)
 
     label_contador.config(text=f"Total Productos: {len(registros)}")
     conexion.close()
@@ -368,19 +366,11 @@ def eliminar_por_proveedor_dialogo():
     btn_confirmar.pack(fill="x", pady=15)
 
 def on_tabla_click(event):
-    """Manejador de clics en la tabla para editar o eliminar."""
-    if tabla.identify_region(event.x, event.y) != "cell": return
-
-    columna_id_str = tabla.identify_column(event.x)
-    item_id = tabla.identify_row(event.y)
-    if not item_id: return
-        
-    valores = tabla.item(item_id, 'values')
-    
-    if columna_id_str == "#7": 
-        cargar_datos_para_editar(item_id)
-    elif columna_id_str == "#8": 
-        eliminar_producto_por_id(item_id, valores[1]) # Pasamos ID y descripción
+    """Manejador de clics en la tabla: ya no realiza acciones de editar/eliminar.
+    Mantiene la selección estándar de la fila para posibles acciones desde el formulario.
+    """
+    # No se realizan acciones específicas al clicar columnas; se respeta la selección por defecto.
+    return
 
 # --- FUNCIONES PARA BUSCADOR EN FORMULARIO DE EDICIÓN ---
 
@@ -546,7 +536,8 @@ def montar_interfaz(parent):
     
     cargar_proveedores_filtro()
 
-    columnas = ("código", "descripción", "proveedor", "costo", "coef", "p_venta", "editar", "eliminar")
+    # Eliminamos las columnas de 'editar' y 'eliminar' para ampliar 'descripción'
+    columnas = ("código", "descripción", "proveedor", "costo", "coef", "p_venta")
     
     # Frame contenedor para tabla y scrollbar
     frame_tabla = tk.Frame(frame_derecho, bg=st.BG_MAIN)
@@ -568,23 +559,22 @@ def montar_interfaz(parent):
 
     # Definir los encabezados amigables para que se entienda qué es cada columna
     cabeceras = {
-        "código": "CÓDIGO", "descripción": "PRODUCTO", 
-        "proveedor": "FÁBRICA", "costo": "COSTO", "coef": "COEF.", 
-        "p_venta": "P. VENTA", "editar": "✏️", "eliminar": "🗑️"
+        "código": "CÓDIGO", "descripción": "PRODUCTO",
+        "proveedor": "FÁBRICA", "costo": "COSTO", "coef": "COEF.",
+        "p_venta": "P. VENTA"
     }
     for col in columnas:
         tabla.heading(col, text=cabeceras.get(col, col.upper()))
 
-    # Ajuste de anchos de columnas
-    tabla.column("código", width=90)
-    tabla.column("descripción", width=500) # Mucho más espacio para el nombre del producto
-    tabla.column("proveedor", width=120)
-    tabla.column("costo", width=80, anchor="e")
-    tabla.column("coef", width=50, anchor="center")
-    tabla.column("p_venta", width=110, anchor="e")
-    tabla.column("editar", width=40, anchor="center")
-    tabla.column("eliminar", width=40, anchor="center")
+    # Ajuste de anchos de columnas: todas las columnas menos 'descripción' son 2.5x más anchas
+    tabla.column("código", width=225, minwidth=150, stretch=False)
+    tabla.column("descripción", width=680, minwidth=300, stretch=True) # Más espacio para la descripción
+    tabla.column("proveedor", width=300, minwidth=200, stretch=False)
+    tabla.column("costo", width=200, minwidth=150, anchor="e", stretch=False)
+    tabla.column("coef", width=125, minwidth=100, anchor="center", stretch=False)
+    tabla.column("p_venta", width=275, minwidth=200, anchor="e", stretch=False)
 
+    # Ya no manejamos acciones de editar/eliminar por clic en columnas
     tabla.bind("<Button-1>", on_tabla_click)
     cargar_productos()
     

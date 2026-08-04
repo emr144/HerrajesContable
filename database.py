@@ -1,6 +1,98 @@
 import sqlite3
 import os
 import sys
+import psycopg2
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
+def obtener_url_supabase():
+    """Devuelve la URL de Supabase desde el .env si existe."""
+    return os.getenv("DATABASE_URL") or None
+
+
+def conectar_supabase():
+    """Crea la conexión a Supabase usando la URL configurada."""
+    url = obtener_url_supabase()
+    if not url or "TU_URL_DE_SUPABASE_AQUI" in url:
+        print("⚠️ No hay DATABASE_URL válida para Supabase.")
+        return None
+    try:
+        return psycopg2.connect(url)
+    except Exception as e:
+        print(f"⚠️ Error al conectar con Supabase: {e}")
+        return None
+
+
+def sincronizar_cuenta_corriente_proveedores():
+    """Trae los movimientos de cuenta corriente desde Supabase y los replica en SQLite."""
+    conn_pg = conectar_supabase()
+    if not conn_pg:
+        return False
+
+    conn_sl = None
+    try:
+        with conn_pg.cursor() as cur_pg:
+            cur_pg.execute("""
+                SELECT id, id_proveedor, fecha, tipo_cuenta, tipo_movimiento, monto, metodo_pago, descripcion
+                FROM cuenta_corriente_proveedores
+                ORDER BY id
+            """)
+            filas = cur_pg.fetchall()
+
+        conn_sl = conectar()
+        if not conn_sl:
+            return False
+
+        cursor = conn_sl.cursor()
+        cursor.execute('''CREATE TABLE IF NOT EXISTS cuenta_corriente_proveedores (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            proveedor_id INTEGER REFERENCES proveedores (id) ON DELETE CASCADE,
+            tipo_cuenta TEXT NOT NULL,
+            tipo_movimiento TEXT NOT NULL,
+            monto REAL NOT NULL,
+            descripcion TEXT,
+            fecha DATE NOT NULL,
+            metodo_pago TEXT)''')
+
+        cursor.execute("PRAGMA table_info(cuenta_corriente_proveedores)")
+        columnas_existentes = [info[1] for info in cursor.fetchall()]
+        if 'tipo_cuenta' not in columnas_existentes:
+            cursor.execute("ALTER TABLE cuenta_corriente_proveedores ADD COLUMN tipo_cuenta TEXT NOT NULL DEFAULT 'Formal'")
+        if 'metodo_pago' not in columnas_existentes:
+            cursor.execute("ALTER TABLE cuenta_corriente_proveedores ADD COLUMN metodo_pago TEXT")
+        if 'proveedor_id' not in columnas_existentes and 'id_proveedor' in columnas_existentes:
+            cursor.execute("ALTER TABLE cuenta_corriente_proveedores RENAME COLUMN id_proveedor TO proveedor_id")
+
+        for row in filas:
+            row_id, id_proveedor, fecha, tipo_cuenta, tipo_movimiento, monto, metodo_pago, descripcion = row
+            cursor.execute("""
+                INSERT INTO cuenta_corriente_proveedores (id, proveedor_id, fecha, tipo_cuenta, tipo_movimiento, monto, metodo_pago, descripcion)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                    proveedor_id = excluded.proveedor_id,
+                    fecha = excluded.fecha,
+                    tipo_cuenta = excluded.tipo_cuenta,
+                    tipo_movimiento = excluded.tipo_movimiento,
+                    monto = excluded.monto,
+                    metodo_pago = excluded.metodo_pago,
+                    descripcion = excluded.descripcion
+            """, (row_id, id_proveedor, fecha, tipo_cuenta, tipo_movimiento, monto, metodo_pago, descripcion))
+
+        conn_sl.commit()
+        print(f"✅ Sincronizados {len(filas)} movimientos desde Supabase.")
+        return True
+    except Exception as e:
+        print(f"❌ Error sincronizando cuenta_corriente_proveedores: {e}")
+        if conn_sl:
+            conn_sl.rollback()
+        return False
+    finally:
+        if conn_pg:
+            conn_pg.close()
+        if conn_sl:
+            conn_sl.close()
 
 def obtener_ruta_bd():
     """
@@ -175,6 +267,24 @@ def crear_base_datos():
             fecha_lista DATE, 
             UNIQUE(proveedor_id, codigo_proveedor))''')
 
+        # Tabla Cuenta Corriente Proveedores
+        cursor.execute('''CREATE TABLE IF NOT EXISTS cuenta_corriente_proveedores (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            proveedor_id INTEGER REFERENCES proveedores (id) ON DELETE CASCADE,
+            tipo_cuenta TEXT NOT NULL,
+            tipo_movimiento TEXT NOT NULL,
+            monto REAL NOT NULL,
+            descripcion TEXT,
+            fecha DATE NOT NULL,
+            metodo_pago TEXT)''')
+
+        cursor.execute("PRAGMA table_info(cuenta_corriente_proveedores)")
+        columnas_existentes = [info[1] for info in cursor.fetchall()]
+        if 'tipo_cuenta' not in columnas_existentes:
+            cursor.execute("ALTER TABLE cuenta_corriente_proveedores ADD COLUMN tipo_cuenta TEXT NOT NULL DEFAULT 'Formal'")
+        if 'metodo_pago' not in columnas_existentes:
+            cursor.execute("ALTER TABLE cuenta_corriente_proveedores ADD COLUMN metodo_pago TEXT")
+
         conexion.commit()
         print("🚀 Estructura de SQLite verificada.")
     except Exception as e:
@@ -183,3 +293,6 @@ def crear_base_datos():
     finally:
         cursor.close()
         conexion.close()
+
+# Aseguramos la creación de tablas al importar/iniciar
+crear_base_datos()

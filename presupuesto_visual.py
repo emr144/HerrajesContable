@@ -145,17 +145,29 @@ def recalcular_carrito(event=None):
         tabla.delete(item)
     total_sin_descuento = 0.0
 
-    multiplicador = obtener_multiplicador_precio()
+    multiplicador_global = obtener_multiplicador_precio()
 
     for item in carrito:
         precio_base = item['precio_base_lista']
-        nuevo_precio_unitario = precio_base * multiplicador
-        nuevo_subtotal = nuevo_precio_unitario * item['cantidad']
-        
+
+        markup_mode = item.get('markup_mode', 'global')
+        if markup_mode == 'fixed':
+            # porcentaje almacenado como decimal (ej. 0.15)
+            pct = float(item.get('markup_percent', multiplicador_global - 1.0))
+            nuevo_precio_unitario = round(precio_base * (1.0 + pct), 2)
+        else:
+            # 'global' -> usa la lista seleccionada
+            nuevo_precio_unitario = round(precio_base * multiplicador_global, 2)
+
+        nuevo_subtotal = round(nuevo_precio_unitario * item['cantidad'], 2)
+
         item['precio_unitario'] = nuevo_precio_unitario
 
-        tabla.insert("", "end", values=(item['codigo'], item['descripcion'], item['cantidad'], f"$ {nuevo_precio_unitario:.2f}", f"$ {nuevo_subtotal:.2f}", "📎", "🗑️"))
-        total_sin_descuento += nuevo_subtotal
+        # Mostrar abreviatura del modo en la columna 'mod'
+        modo_label = 'GLB' if markup_mode == 'global' else f"{int(round(item.get('markup_percent', 0.0)*100))}%"
+
+        tabla.insert("", "end", values=(item['codigo'], item['descripcion'], item['cantidad'], f"$ {nuevo_precio_unitario:.2f}", f"$ {nuevo_subtotal:.2f}", modo_label, "🗑️"))
+        total_sin_descuento = round(total_sin_descuento + nuevo_subtotal, 2)
 
     actualizar_total_visual()
 
@@ -194,7 +206,8 @@ def agregar_producto(event=None):
         
         subtotal = precio_unitario * cantidad
         
-        carrito.append({'prod_id': prod_id, 'cantidad': cantidad, 'precio_unitario': precio_unitario, 'precio_base_lista': precio_base, 'codigo': cod_prov, 'descripcion': desc})
+        # Por defecto el ítem usa la lista global (markup_mode 'global')
+        carrito.append({'prod_id': prod_id, 'cantidad': cantidad, 'precio_unitario': precio_unitario, 'precio_base_lista': precio_base, 'codigo': cod_prov, 'descripcion': desc, 'markup_mode': 'global'})
         
         tabla.insert("", "end", values=(cod_prov, desc, cantidad, f"$ {precio_unitario:.2f}", f"$ {subtotal:.2f}", "📎", "🗑️"))
         
@@ -415,7 +428,9 @@ def buscar_p2(_=None):
     for r in res:
         p_id, cod, desc, prov_nom, costo, coef, iva, desc_g, inc_g = r
         precio_prof = costo * (1 - (desc_g or 0)) * (1 + (inc_g or 0)) * coef * (1 + iva)
-        tabla_busqueda.insert("", "end", iid=p_id, values=(cod, desc, prov_nom, f"$ {precio_prof:.2f}"))
+        precio_15 = precio_prof * 1.15
+        precio_30 = precio_prof * 1.30
+        tabla_busqueda.insert("", "end", iid=p_id, values=(cod, desc, prov_nom, f"$ {precio_prof:.2f}", f"$ {precio_15:.2f}", f"$ {precio_30:.2f}"))
 
 def seleccionar_p2(event=None):
     global producto_id_seleccionado, codigo_seleccionado
@@ -438,12 +453,97 @@ def filtrar_provs_p2(event):
         if filtrados:
             combo_p2_prov.event_generate('<Down>')
 
+
+class PricePercentDialog(simpledialog.Dialog):
+    """Diálogo para seleccionar porcentaje de ganancia por ítem.
+    Opciones: 'Global' (usar lista global), porcentajes fijos (0%, 15%, 30%) o personalizado (ingresar %).
+    Devuelve (mode, percent) donde mode es 'global' o 'fixed' y percent es decimal (ej. 0.15) cuando corresponde.
+    """
+    def __init__(self, parent, current_mode='global', current_percent=None):
+        self.current_mode = current_mode
+        self.current_percent = current_percent
+        self.result = None
+        super().__init__(parent, title="Porcentaje de ganancia por ítem")
+
+    def body(self, master):
+        tk.Label(master, text="Seleccione origen del porcentaje:").grid(row=0, column=0, sticky='w', pady=4)
+        self.mode_var = tk.StringVar(value=self.current_mode or 'global')
+
+        opciones = [
+            ('Usar lista global', 'global'),
+            ('Profesional (0%)', 'fixed_0'),
+            ('Particular 15%', 'fixed_15'),
+            ('Particular 30%', 'fixed_30'),
+            ('Personalizado %', 'custom')
+        ]
+
+        for i, (label, val) in enumerate(opciones, start=1):
+            rb = tk.Radiobutton(master, text=label, variable=self.mode_var, value=val, command=self._on_mode_change)
+            rb.grid(row=i, column=0, sticky='w')
+
+        tk.Label(master, text="Porcentaje personalizado (ej. 12.5):").grid(row=6, column=0, sticky='w', pady=(8,0))
+        self.entry_custom = tk.Entry(master)
+        self.entry_custom.grid(row=7, column=0, sticky='we')
+        if self.current_percent is not None:
+            self.entry_custom.insert(0, f"{self.current_percent*100:.2f}")
+
+        self._on_mode_change()
+        return master
+
+    def _on_mode_change(self):
+        mode = self.mode_var.get()
+        state = 'normal' if mode == 'custom' else 'disabled'
+        self.entry_custom.config(state=state)
+
+    def apply(self):
+        mode = self.mode_var.get()
+        if mode == 'global':
+            self.result = ('global', None)
+            return
+        if mode.startswith('fixed_'):
+            try:
+                pct = float(mode.split('_')[1]) / 100.0
+            except Exception:
+                pct = 0.0
+            self.result = ('fixed', pct)
+            return
+        # custom
+        try:
+            val = float(self.entry_custom.get())
+            self.result = ('fixed', round(val / 100.0, 6))
+        except Exception:
+            self.result = ('fixed', None)
+
 def on_tabla_click(event):
     region = tabla.identify_region(event.x, event.y)
     if region != "cell": return
     col = tabla.identify_column(event.x)
     item_id = tabla.identify_row(event.y)
     if not item_id or item_id == "total_row": return
+    # Columna P. UNITARIO == #4 -> permitir seleccionar modo/precio por ítem
+    if col == "#4":
+        try:
+            idx = tabla.index(item_id)
+            item = carrito[idx]
+        except Exception:
+            return
+
+        # Abrir diálogo de porcentaje
+        cur_mode = item.get('markup_mode', 'global')
+        cur_pct = item.get('markup_percent', None)
+        d = PricePercentDialog(tabla, current_mode=cur_mode, current_percent=cur_pct)
+        if d.result:
+            mode_sel, pct = d.result
+            if mode_sel == 'global':
+                item['markup_mode'] = 'global'
+                if 'markup_percent' in item: item.pop('markup_percent', None)
+            else:
+                # fixed
+                item['markup_mode'] = 'fixed'
+                if pct is not None:
+                    item['markup_percent'] = float(pct)
+            recalcular_carrito()
+        return
 
     if col == "#6":
         valores = tabla.item(item_id, 'values')
@@ -516,17 +616,23 @@ def montar_interfaz(parent):
     combo_p2_prov.bind("<KeyRelease>", filtrar_provs_p2)
     tk.Button(f_busqueda, text="🧹", command=limpiar_busqueda, **st.estilo_boton(st.BG_CARD)).grid(row=0, column=6, padx=5)
 
-    # TABLA BÚSQUEDA
-    cols_b = ("cod", "desc", "prov", "precio")
+    # TABLA BÚSQUEDA (ahora muestra 3 precios: Profesional, +15% y +30%)
+    cols_b = ("cod", "desc", "prov", "precio_prof", "precio_15", "precio_30")
     tabla_busqueda = ttk.Treeview(ventana, columns=cols_b, show="headings", height=5)
     tabla_busqueda.heading("cod", text="CÓDIGO")
     tabla_busqueda.heading("desc", text="DESCRIPCIÓN")
     tabla_busqueda.heading("prov", text="PROVEEDOR")
-    tabla_busqueda.heading("precio", text="P. PROFESIONAL")
-    tabla_busqueda.column("cod", width=100)
-    tabla_busqueda.column("desc", width=400)
-    tabla_busqueda.column("prov", width=150)
-    tabla_busqueda.column("precio", width=120, anchor="e")
+    tabla_busqueda.heading("precio_prof", text="P. PROFESIONAL")
+    tabla_busqueda.heading("precio_15", text="P. PART. 15%")
+    tabla_busqueda.heading("precio_30", text="P. PART. 30%")
+    # Ajustes de ancho y comportamiento de estiramiento (proporciones solicitadas)
+    # Tabla superior: Código (10%), Descripción (expandible ~50%), Proveedor (12-15%), Precios (10% cada uno)
+    tabla_busqueda.column("cod", width=270, minwidth=180, stretch=False)
+    tabla_busqueda.column("desc", width=520, minwidth=200, stretch=True)
+    tabla_busqueda.column("prov", width=420, minwidth=240, stretch=False)
+    tabla_busqueda.column("precio_prof", width=270, minwidth=210, anchor="e", stretch=False)
+    tabla_busqueda.column("precio_15", width=270, minwidth=210, anchor="e", stretch=False)
+    tabla_busqueda.column("precio_30", width=270, minwidth=210, anchor="e", stretch=False)
     tabla_busqueda.pack(fill=tk.X, padx=15, pady=5)
     tabla_busqueda.bind("<<TreeviewSelect>>", seleccionar_p2)
     tabla_busqueda.bind("<Double-1>", lambda e: entrada_cantidad.focus_set())
@@ -554,13 +660,14 @@ def montar_interfaz(parent):
     tabla.heading("subtotal", text="SUBTOTAL")
     tabla.heading("mod", text="📎")
     tabla.heading("del", text="🗑️")
-    tabla.column("cod", width=100)
-    tabla.column("desc", width=400)
-    tabla.column("cant", width=80, anchor="center")
-    tabla.column("p_unit", width=120, anchor="e")
-    tabla.column("subtotal", width=120, anchor="e")
-    tabla.column("mod", width=40, anchor="center")
-    tabla.column("del", width=40, anchor="center")
+    # Tabla carrito: Código reducido, Descripción expandible (~50-55%), Cantidad pequeña, Precios fijos, Iconos estrechos
+    tabla.column("cod", width=240, minwidth=180, stretch=False)
+    tabla.column("desc", width=560, minwidth=220, stretch=True)
+    tabla.column("cant", width=210, minwidth=150, anchor="center", stretch=False)
+    tabla.column("p_unit", width=360, minwidth=270, anchor="e", stretch=False)
+    tabla.column("subtotal", width=360, minwidth=270, anchor="e", stretch=False)
+    tabla.column("mod", width=120, minwidth=90, anchor="center", stretch=False)
+    tabla.column("del", width=120, minwidth=90, anchor="center", stretch=False)
     tabla.pack(fill=tk.BOTH, expand=True, padx=15, pady=5)
     tabla.bind("<Button-1>", on_tabla_click)
     tabla.tag_configure('total_tag', background=st.BG_CARD, foreground=st.ACCENT, font=st.FONT_LABEL)
