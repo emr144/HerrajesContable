@@ -2,6 +2,7 @@ import tkinter as tk
 import os
 import sys
 import traceback
+import ctypes
 from PIL import Image, ImageTk
 import ttkbootstrap as tb
 from ttkbootstrap.constants import *
@@ -26,6 +27,7 @@ except ImportError as e:
 
 class App(tb.Window):
     def __init__(self):
+        self._aplicar_dpi_awareness()
         # Inicializar la ventana con el tema oscuro
         super().__init__(themename="darkly")
         
@@ -36,9 +38,10 @@ class App(tb.Window):
             st.aplicar_estilo_ventana(self)
 
             self.title("Herrajes Contable - Panel de Gestión")
-            self.geometry("1200x800")
+            self.resizable(True, True)
             self.configurar_icono_app()
             self.tab_icons = {}
+            self.after(0, self._ajustar_tamano_ventana)
 
             # 2. Configuración de Comboboxes (Estilo oscuro suave)
             self.option_add('*TCombobox*Listbox.background', st.BG_INPUT)
@@ -65,6 +68,31 @@ class App(tb.Window):
         except Exception as e:
             print("❌ Error durante la inicialización de la interfaz:")
             traceback.print_exc()
+
+    def _aplicar_dpi_awareness(self):
+        if os.name != "nt":
+            return
+        try:
+            ctypes.windll.shcore.SetProcessDpiAwareness(2)
+        except Exception:
+            try:
+                ctypes.windll.user32.SetProcessDPIAware()
+            except Exception:
+                pass
+
+    def _ajustar_tamano_ventana(self):
+        try:
+            self.update_idletasks()
+            ancho_pantalla = self.winfo_screenwidth()
+            alto_pantalla = self.winfo_screenheight()
+            ancho = min(max(1100, int(ancho_pantalla * 0.92)), ancho_pantalla)
+            alto = min(max(720, int(alto_pantalla * 0.92)), alto_pantalla)
+            x = max(0, (ancho_pantalla - ancho) // 2)
+            y = max(0, (alto_pantalla - alto) // 2)
+            self.geometry(f"{ancho}x{alto}+{x}+{y}")
+            self.minsize(1000, 700)
+        except Exception:
+            pass
 
     def configurar_icono_app(self):
         try:

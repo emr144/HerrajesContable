@@ -447,6 +447,7 @@ def montar_interfaz(parent):
 
     frame_izquierdo = tk.Frame(ventana, bg=st.BG_MAIN, width=350); frame_izquierdo.pack(side=tk.LEFT, fill=tk.Y, padx=20, pady=20)
     frame_derecho = tk.Frame(ventana, bg=st.BG_MAIN); frame_derecho.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, pady=20, padx=(0, 20))
+    frame_derecho.columnconfigure(0, weight=1)
 
     # --- Panel Izquierdo (Formulario y Acciones) ---
     # La lista de sugerencias debe ser hija de 'ventana' para poder flotar sobre todo
@@ -479,6 +480,8 @@ def montar_interfaz(parent):
     # --- Panel Derecho (Buscador y Tabla) ---
     frame_filtros = tk.Frame(frame_derecho, bg=st.BG_MAIN)
     frame_filtros.pack(fill=tk.X, pady=(0, 10))
+    for col in (1, 3, 5, 7):
+        frame_filtros.columnconfigure(col, weight=1)
     
     # 1. Filtro Proveedor
     tk.Label(frame_filtros, text="Fábrica:", font=st.FONT_LABEL, bg=st.BG_MAIN, fg="white").grid(row=0, column=0, sticky="w")
@@ -542,6 +545,7 @@ def montar_interfaz(parent):
     # Frame contenedor para tabla y scrollbar
     frame_tabla = tk.Frame(frame_derecho, bg=st.BG_MAIN)
     frame_tabla.pack(fill=tk.BOTH, expand=True)
+    frame_tabla.columnconfigure(0, weight=1)
 
     # Agregamos barras de desplazamiento tanto vertical como horizontal
     scroll_v = ttk.Scrollbar(frame_tabla, orient="vertical")
@@ -566,13 +570,13 @@ def montar_interfaz(parent):
     for col in columnas:
         tabla.heading(col, text=cabeceras.get(col, col.upper()))
 
-    # Ajuste de anchos de columnas: todas las columnas menos 'descripción' son 2.5x más anchas
-    tabla.column("código", width=225, minwidth=150, stretch=False)
-    tabla.column("descripción", width=680, minwidth=300, stretch=True) # Más espacio para la descripción
-    tabla.column("proveedor", width=300, minwidth=200, stretch=False)
-    tabla.column("costo", width=200, minwidth=150, anchor="e", stretch=False)
-    tabla.column("coef", width=125, minwidth=100, anchor="center", stretch=False)
-    tabla.column("p_venta", width=275, minwidth=200, anchor="e", stretch=False)
+    # Ajuste de anchos de columnas para que la descripción ocupe el espacio disponible
+    tabla.column("código", width=120, minwidth=100, stretch=False)
+    tabla.column("descripción", width=320, minwidth=240, stretch=True)
+    tabla.column("proveedor", width=180, minwidth=140, stretch=False)
+    tabla.column("costo", width=110, minwidth=90, anchor="e", stretch=False)
+    tabla.column("coef", width=80, minwidth=70, anchor="center", stretch=False)
+    tabla.column("p_venta", width=110, minwidth=90, anchor="e", stretch=False)
 
     # Ya no manejamos acciones de editar/eliminar por clic en columnas
     tabla.bind("<Button-1>", on_tabla_click)

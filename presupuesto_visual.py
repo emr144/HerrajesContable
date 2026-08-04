@@ -561,6 +561,7 @@ def montar_interfaz(parent):
     global tabla_busqueda, ent_p2_cod, ent_p2_desc, combo_p2_prov
     
     ventana = tk.Frame(parent, bg=st.BG_MAIN)
+    ventana.columnconfigure(0, weight=1)
     var_tarjeta = tk.BooleanVar(value=False)
 
     # CABECERA
@@ -597,6 +598,7 @@ def montar_interfaz(parent):
     
     f_busqueda.columnconfigure(1, weight=1)
     f_busqueda.columnconfigure(3, weight=2)
+    f_busqueda.columnconfigure(5, weight=1)
 
     tk.Label(f_busqueda, text="CÓDIGO:", font=st.FONT_LABEL, bg=st.BG_MAIN, fg="white").grid(row=0, column=0, padx=5, sticky="w")
     ent_p2_cod = tk.Entry(f_busqueda, font=st.FONT_INPUT, bg=st.BG_INPUT, fg="white", bd=0)
@@ -626,14 +628,13 @@ def montar_interfaz(parent):
     tabla_busqueda.heading("precio_15", text="P. PART. 15%")
     tabla_busqueda.heading("precio_30", text="P. PART. 30%")
     # Ajustes de ancho y comportamiento de estiramiento (proporciones solicitadas)
-    # Tabla superior: Código (10%), Descripción (expandible ~50%), Proveedor (12-15%), Precios (10% cada uno)
-    tabla_busqueda.column("cod", width=270, minwidth=180, stretch=False)
-    tabla_busqueda.column("desc", width=520, minwidth=200, stretch=True)
-    tabla_busqueda.column("prov", width=420, minwidth=240, stretch=False)
-    tabla_busqueda.column("precio_prof", width=270, minwidth=210, anchor="e", stretch=False)
-    tabla_busqueda.column("precio_15", width=270, minwidth=210, anchor="e", stretch=False)
-    tabla_busqueda.column("precio_30", width=270, minwidth=210, anchor="e", stretch=False)
-    tabla_busqueda.pack(fill=tk.X, padx=15, pady=5)
+    tabla_busqueda.column("cod", width=140, minwidth=100, stretch=False)
+    tabla_busqueda.column("desc", width=320, minwidth=220, stretch=True)
+    tabla_busqueda.column("prov", width=180, minwidth=140, stretch=False)
+    tabla_busqueda.column("precio_prof", width=140, minwidth=120, anchor="e", stretch=False)
+    tabla_busqueda.column("precio_15", width=140, minwidth=120, anchor="e", stretch=False)
+    tabla_busqueda.column("precio_30", width=140, minwidth=120, anchor="e", stretch=False)
+    tabla_busqueda.pack(fill=tk.BOTH, expand=True, padx=15, pady=5)
     tabla_busqueda.bind("<<TreeviewSelect>>", seleccionar_p2)
     tabla_busqueda.bind("<Double-1>", lambda e: entrada_cantidad.focus_set())
 
@@ -660,14 +661,14 @@ def montar_interfaz(parent):
     tabla.heading("subtotal", text="SUBTOTAL")
     tabla.heading("mod", text="📎")
     tabla.heading("del", text="🗑️")
-    # Tabla carrito: Código reducido, Descripción expandible (~50-55%), Cantidad pequeña, Precios fijos, Iconos estrechos
-    tabla.column("cod", width=240, minwidth=180, stretch=False)
-    tabla.column("desc", width=560, minwidth=220, stretch=True)
-    tabla.column("cant", width=210, minwidth=150, anchor="center", stretch=False)
-    tabla.column("p_unit", width=360, minwidth=270, anchor="e", stretch=False)
-    tabla.column("subtotal", width=360, minwidth=270, anchor="e", stretch=False)
-    tabla.column("mod", width=120, minwidth=90, anchor="center", stretch=False)
-    tabla.column("del", width=120, minwidth=90, anchor="center", stretch=False)
+    # Tabla carrito: Descripción expandible y columnas de precio más compactas para adaptarse al ancho
+    tabla.column("cod", width=100, minwidth=90, stretch=False)
+    tabla.column("desc", width=320, minwidth=220, stretch=True)
+    tabla.column("cant", width=70, minwidth=60, anchor="center", stretch=False)
+    tabla.column("p_unit", width=110, minwidth=90, anchor="e", stretch=False)
+    tabla.column("subtotal", width=110, minwidth=90, anchor="e", stretch=False)
+    tabla.column("mod", width=60, minwidth=50, anchor="center", stretch=False)
+    tabla.column("del", width=60, minwidth=50, anchor="center", stretch=False)
     tabla.pack(fill=tk.BOTH, expand=True, padx=15, pady=5)
     tabla.bind("<Button-1>", on_tabla_click)
     tabla.tag_configure('total_tag', background=st.BG_CARD, foreground=st.ACCENT, font=st.FONT_LABEL)

@@ -3,6 +3,7 @@ from tkinter import ttk
 import tkinter.font as tkfont
 import ttkbootstrap as tb
 import os
+import ctypes
 
 # ==========================================
 # PALETA SLATE & EMERALD (Puro Tkinter)
@@ -47,9 +48,34 @@ def guardar_factor_fuente(factor):
     with open("font_config.txt", "w") as f:
         f.write(str(factor))
 
+
+def detectar_escala_dpi():
+    if os.name != "nt":
+        return 1.0
+    try:
+        user32 = ctypes.windll.user32
+        hdc = user32.GetDC(0)
+        if hdc:
+            dpi_x = ctypes.windll.gdi32.GetDeviceCaps(hdc, 88)
+            dpi_y = ctypes.windll.gdi32.GetDeviceCaps(hdc, 90)
+            user32.ReleaseDC(0, hdc)
+            if dpi_x and dpi_y:
+                return max(dpi_x, dpi_y) / 96.0
+    except Exception:
+        pass
+    return 1.0
+
+
+def calcular_factor_escala_total():
+    base = cargar_factor_fuente()
+    dpi_factor = detectar_escala_dpi()
+    factor_total = base * dpi_factor
+    return max(0.8, min(2.4, factor_total))
+
+
 def actualizar_fuentes():
     global FONT_INPUT, FONT_LABEL, FONT_NORMAL, FONT_TITLE
-    f = cargar_factor_fuente()
+    f = calcular_factor_escala_total()
     try:
         # Usamos objetos Font de tkinter para permitir actualizaciones en tiempo real.
         # Verificamos si ya son objetos Font comparando si tienen el método 'configure'
@@ -73,7 +99,7 @@ def actualizar_fuentes():
 def configurar_estilos_ttk():
     """Configura ttkbootstrap para un look moderno, curvo y espaciado"""
     style = tb.Style(theme="darkly")
-    f = cargar_factor_fuente()
+    f = calcular_factor_escala_total()
 
     # 1. Configuración Global para widgets TTK (Etiquetas, Botones TTK, etc.)
     style.configure(".", font=FONT_NORMAL)
@@ -96,14 +122,14 @@ def configurar_estilos_ttk():
     
     style.configure("TNotebook.Tab", 
                     font=FONT_LABEL, 
-                    padding=[15, 12], 
-                    width=int(28 / f), 
+                    padding=[max(12, int(15 * f)), max(8, int(12 * f))], 
+                    width=max(90, int(110 * f)), 
                     anchor="center",
                     relief="flat")
 
     # 4. Botones TTK: Forzamos un aspecto más curvo aumentando el padding interno
-    style.configure("TButton", font=FONT_LABEL, padding=[20, 10])
-    style.configure("Outline.TButton", font=FONT_LABEL, padding=[20, 10])
+    style.configure("TButton", font=FONT_LABEL, padding=[max(16, int(20 * f)), max(8, int(10 * f))])
+    style.configure("Outline.TButton", font=FONT_LABEL, padding=[max(16, int(20 * f)), max(8, int(10 * f))])
     
     return style
 
