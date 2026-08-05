@@ -8,6 +8,11 @@ from fpdf import FPDF
 import styles as st
 import database # Importamos para obtener la ruta
 
+def _tiene_columna_descripcion_personalizada(cursor):
+    cursor.execute("PRAGMA table_info(presupuesto_detalles)")
+    columnas = [row[1] for row in cursor.fetchall()]
+    return 'descripcion_personalizada' in columnas
+
 def cargar_historial():
     """Refresca la tabla con las ventas de la base de datos"""
     for row in tabla.get_children():
@@ -37,13 +42,21 @@ def generar_ticket_pdf(presupuesto_id):
         cursor.execute("SELECT cliente_nombre, fecha, total, cliente_tipo FROM presupuestos WHERE id = ?", (presupuesto_id,))
         datos_venta = cursor.fetchone()
         
-        # 2. Recuperamos los productos (Cambiado %s por ?)
-        cursor.execute('''
-            SELECT p.descripcion, d.cantidad, d.precio_unitario_congelado 
-            FROM presupuesto_detalles d
-            JOIN productos p ON d.producto_id = p.id
-            WHERE d.presupuesto_id = ?
-        ''', (presupuesto_id,))
+        # 2. Recuperamos los productos (con fallback para bases sin migrar)
+        if _tiene_columna_descripcion_personalizada(cursor):
+            cursor.execute('''
+                SELECT COALESCE(d.descripcion_personalizada, p.descripcion), d.cantidad, d.precio_unitario_congelado 
+                FROM presupuesto_detalles d
+                LEFT JOIN productos p ON d.producto_id = p.id
+                WHERE d.presupuesto_id = ?
+            ''', (presupuesto_id,))
+        else:
+            cursor.execute('''
+                SELECT p.descripcion, d.cantidad, d.precio_unitario_congelado 
+                FROM presupuesto_detalles d
+                LEFT JOIN productos p ON d.producto_id = p.id
+                WHERE d.presupuesto_id = ?
+            ''', (presupuesto_id,))
         items = cursor.fetchall()
         conexion.close()
         

@@ -44,6 +44,11 @@ var_tarjeta = None
 producto_id_seleccionado = None
 codigo_seleccionado = ""
 desc_seleccionada = None
+ent_custom_desc = None
+ent_custom_precio = None
+ent_custom_cantidad = None
+
+CODIGO_PRODUCTO_PERSONALIZADO = "XX-XXX"
 
 # --- FUNCIONES DE LÓGICA ---
 
@@ -148,23 +153,30 @@ def recalcular_carrito(event=None):
     multiplicador_global = obtener_multiplicador_precio()
 
     for item in carrito:
-        precio_base = item['precio_base_lista']
-
         markup_mode = item.get('markup_mode', 'global')
-        if markup_mode == 'fixed':
-            # porcentaje almacenado como decimal (ej. 0.15)
-            pct = float(item.get('markup_percent', multiplicador_global - 1.0))
-            nuevo_precio_unitario = round(precio_base * (1.0 + pct), 2)
+        if markup_mode == 'manual':
+            nuevo_precio_unitario = round(float(item.get('precio_unitario', 0.0)), 2)
         else:
-            # 'global' -> usa la lista seleccionada
-            nuevo_precio_unitario = round(precio_base * multiplicador_global, 2)
+            precio_base = float(item.get('precio_base_lista', 0.0))
+            if markup_mode == 'fixed':
+                # porcentaje almacenado como decimal (ej. 0.15)
+                pct = float(item.get('markup_percent', multiplicador_global - 1.0))
+                nuevo_precio_unitario = round(precio_base * (1.0 + pct), 2)
+            else:
+                # 'global' -> usa la lista seleccionada
+                nuevo_precio_unitario = round(precio_base * multiplicador_global, 2)
 
         nuevo_subtotal = round(nuevo_precio_unitario * item['cantidad'], 2)
 
         item['precio_unitario'] = nuevo_precio_unitario
 
         # Mostrar abreviatura del modo en la columna 'mod'
-        modo_label = 'GLB' if markup_mode == 'global' else f"{int(round(item.get('markup_percent', 0.0)*100))}%"
+        if markup_mode == 'global':
+            modo_label = 'GLB'
+        elif markup_mode == 'fixed':
+            modo_label = f"{int(round(item.get('markup_percent', 0.0)*100))}%"
+        else:
+            modo_label = 'MAN'
 
         tabla.insert("", "end", values=(item['codigo'], item['descripcion'], item['cantidad'], f"$ {nuevo_precio_unitario:.2f}", f"$ {nuevo_subtotal:.2f}", modo_label, "🗑️"))
         total_sin_descuento = round(total_sin_descuento + nuevo_subtotal, 2)
@@ -222,6 +234,71 @@ def agregar_producto(event=None):
     else:
         messagebox.showwarning("No encontrado", "El producto no existe.")
 
+def agregar_producto_fuera_lista(event=None):
+    global total_sin_descuento
+
+    descripcion = ent_custom_desc.get().strip() if ent_custom_desc else ""
+    precio_texto = ent_custom_precio.get().strip() if ent_custom_precio else ""
+    cantidad_texto = ent_custom_cantidad.get().strip() if ent_custom_cantidad else "1"
+
+    if not descripcion:
+        messagebox.showwarning("Dato faltante", "La descripción es obligatoria.")
+        return
+
+    try:
+        precio_final = float(precio_texto)
+    except ValueError:
+        messagebox.showerror("Error", "El precio final debe ser numérico.")
+        return
+
+    if precio_final <= 0:
+        messagebox.showerror("Error", "El precio final debe ser mayor a 0.")
+        return
+
+    try:
+        cantidad = int(cantidad_texto)
+    except ValueError:
+        messagebox.showerror("Error", "La cantidad debe ser un número entero.")
+        return
+
+    if cantidad <= 0:
+        messagebox.showerror("Error", "La cantidad debe ser mayor a 0.")
+        return
+
+    subtotal = round(cantidad * precio_final, 2)
+    item_custom = {
+        'prod_id': None,
+        'cantidad': cantidad,
+        'precio_unitario': round(precio_final, 2),
+        'precio_base_lista': round(precio_final, 2),
+        'codigo': CODIGO_PRODUCTO_PERSONALIZADO,
+        'descripcion': descripcion,
+        'markup_mode': 'manual',
+        'es_personalizado': True
+    }
+    carrito.append(item_custom)
+
+    tabla.insert("", "end", values=(CODIGO_PRODUCTO_PERSONALIZADO, descripcion, cantidad, f"$ {precio_final:.2f}", f"$ {subtotal:.2f}", 'MAN', "🗑️"))
+    total_sin_descuento = round(total_sin_descuento + subtotal, 2)
+    actualizar_total_visual()
+
+    ent_custom_desc.delete(0, tk.END)
+    ent_custom_precio.delete(0, tk.END)
+    ent_custom_cantidad.delete(0, tk.END)
+    ent_custom_cantidad.insert(0, "1")
+    ent_custom_desc.focus_set()
+
+def asegurar_columna_descripcion_personalizada(cursor):
+    cursor.execute("PRAGMA table_info(presupuesto_detalles)")
+    columnas = [row[1] for row in cursor.fetchall()]
+    if 'descripcion_personalizada' not in columnas:
+        cursor.execute("ALTER TABLE presupuesto_detalles ADD COLUMN descripcion_personalizada TEXT")
+
+def _tiene_columna_descripcion_personalizada(cursor):
+    cursor.execute("PRAGMA table_info(presupuesto_detalles)")
+    columnas = [row[1] for row in cursor.fetchall()]
+    return 'descripcion_personalizada' in columnas
+
 def borrar_item_especifico(item_id):
     global total_sin_descuento
     valores = tabla.item(item_id, "values")
@@ -244,12 +321,20 @@ def generar_ticket_pdf(presupuesto_id=None, vista_previa=False):
             cursor = conexion.cursor()
             cursor.execute("SELECT cliente_nombre, fecha, total, cliente_tipo FROM presupuestos WHERE id = ?", (presupuesto_id,))
             datos_venta = cursor.fetchone()
-            cursor.execute('''
-                SELECT p.descripcion, d.cantidad, d.precio_unitario_congelado 
-                FROM presupuesto_detalles d
-                JOIN productos p ON d.producto_id = p.id
-                WHERE d.presupuesto_id = ?
-            ''', (presupuesto_id,))
+            if _tiene_columna_descripcion_personalizada(cursor):
+                cursor.execute('''
+                    SELECT COALESCE(d.descripcion_personalizada, p.descripcion), d.cantidad, d.precio_unitario_congelado 
+                    FROM presupuesto_detalles d
+                    LEFT JOIN productos p ON d.producto_id = p.id
+                    WHERE d.presupuesto_id = ?
+                ''', (presupuesto_id,))
+            else:
+                cursor.execute('''
+                    SELECT p.descripcion, d.cantidad, d.precio_unitario_congelado 
+                    FROM presupuesto_detalles d
+                    LEFT JOIN productos p ON d.producto_id = p.id
+                    WHERE d.presupuesto_id = ?
+                ''', (presupuesto_id,))
             items = cursor.fetchall()
             conexion.close()
             if not datos_venta: return
@@ -381,12 +466,26 @@ def guardar_presupuesto(imprimir=False):
         
         conexion = database.conectar()
         cursor = conexion.cursor()
+        asegurar_columna_descripcion_personalizada(cursor)
         cursor.execute("INSERT INTO presupuestos (cliente_nombre, total, cliente_tipo) VALUES (?, ?, ?) RETURNING id", (nombre_cliente, float(total_final), tipo_cliente))
         presupuesto_id = cursor.fetchone()[0]
         
         for item in carrito:
-            cursor.execute('INSERT INTO presupuesto_detalles (presupuesto_id, producto_id, cantidad, precio_unitario_congelado) VALUES (?, ?, ?, ?)',
-                           (presupuesto_id, item['prod_id'], item['cantidad'], item['precio_unitario']))
+            cursor.execute('''
+                INSERT INTO presupuesto_detalles (
+                    presupuesto_id,
+                    producto_id,
+                    cantidad,
+                    precio_unitario_congelado,
+                    descripcion_personalizada
+                ) VALUES (?, ?, ?, ?, ?)
+            ''', (
+                presupuesto_id,
+                item.get('prod_id'),
+                item['cantidad'],
+                item['precio_unitario'],
+                item['descripcion'] if item.get('es_personalizado') else None
+            ))
         conexion.commit()
         conexion.close()
 
@@ -412,6 +511,13 @@ def cancelar_venta():
     entrada_cantidad.delete(0, tk.END)
     ent_p2_cod.delete(0, tk.END)
     ent_p2_desc.delete(0, tk.END)
+    if ent_custom_desc:
+        ent_custom_desc.delete(0, tk.END)
+    if ent_custom_precio:
+        ent_custom_precio.delete(0, tk.END)
+    if ent_custom_cantidad:
+        ent_custom_cantidad.delete(0, tk.END)
+        ent_custom_cantidad.insert(0, "1")
 
 def limpiar_busqueda():
     ent_p2_cod.delete(0, tk.END)
@@ -559,10 +665,11 @@ def on_tabla_click(event):
 def montar_interfaz(parent):
     global combo_cliente, entrada_cantidad, tabla, label_total, combo_lista_precios, label_prod_sel, var_tarjeta, label_subtotal_carrito
     global tabla_busqueda, ent_p2_cod, ent_p2_desc, combo_p2_prov
+    global ent_custom_desc, ent_custom_precio, ent_custom_cantidad
     
     ventana = tk.Frame(parent, bg=st.BG_MAIN)
     ventana.columnconfigure(0, weight=1)
-    ventana.rowconfigure(4, weight=1)
+    ventana.rowconfigure(5, weight=1)
     var_tarjeta = tk.BooleanVar(value=False)
 
     # CABECERA
@@ -652,6 +759,33 @@ def montar_interfaz(parent):
     entrada_cantidad.bind("<Return>", agregar_producto)
     tk.Button(f_add, text="➕ AÑADIR", command=agregar_producto, **st.estilo_boton(st.ACCENT)).pack(side=tk.LEFT, padx=10)
 
+    # PRODUCTO FUERA DE LISTA
+    f_custom = tk.Frame(ventana, bg=st.BG_CARD, padx=15, pady=8)
+    f_custom.grid(row=4, column=0, sticky="ew", padx=15, pady=(0, 5))
+    f_custom.columnconfigure(1, weight=2)
+    f_custom.columnconfigure(3, weight=1)
+
+    tk.Label(f_custom, text="PRODUCTO FUERA DE LISTA", font=st.FONT_LABEL, bg=st.BG_CARD, fg=st.ACCENT).grid(row=0, column=0, columnspan=7, sticky="w", pady=(0, 6))
+    tk.Label(f_custom, text="DESCRIPCIÓN:", font=st.FONT_LABEL, bg=st.BG_CARD, fg=st.TEXT_SECONDARY).grid(row=1, column=0, padx=5, sticky="w")
+    ent_custom_desc = tk.Entry(f_custom, font=st.FONT_INPUT, bg=st.BG_INPUT, fg="white", bd=0)
+    ent_custom_desc.grid(row=1, column=1, padx=5, sticky="ew")
+
+    tk.Label(f_custom, text="PRECIO FINAL:", font=st.FONT_LABEL, bg=st.BG_CARD, fg=st.TEXT_SECONDARY).grid(row=1, column=2, padx=(15, 5), sticky="w")
+    ent_custom_precio = tk.Entry(f_custom, font=st.FONT_INPUT, justify="right")
+    ent_custom_precio.grid(row=1, column=3, padx=5, sticky="ew")
+
+    tk.Label(f_custom, text="CANTIDAD:", font=st.FONT_LABEL, bg=st.BG_CARD, fg=st.TEXT_SECONDARY).grid(row=1, column=4, padx=(15, 5), sticky="w")
+    ent_custom_cantidad = tk.Entry(f_custom, width=6, font=st.FONT_INPUT, justify="center")
+    ent_custom_cantidad.grid(row=1, column=5, padx=5, sticky="w")
+    ent_custom_cantidad.insert(0, "1")
+
+    btn_add_custom = tk.Button(f_custom, text="➕ AGREGAR A LA VENTA", command=agregar_producto_fuera_lista, **st.estilo_boton(st.ACCENT))
+    btn_add_custom.grid(row=1, column=6, padx=(15, 5), sticky="e")
+
+    ent_custom_desc.bind("<Return>", agregar_producto_fuera_lista)
+    ent_custom_precio.bind("<Return>", agregar_producto_fuera_lista)
+    ent_custom_cantidad.bind("<Return>", agregar_producto_fuera_lista)
+
     # TABLA CARRITO
     columnas = ("cod", "desc", "cant", "p_unit", "subtotal", "mod", "del")
     tabla = ttk.Treeview(ventana, columns=columnas, show="headings")
@@ -670,16 +804,16 @@ def montar_interfaz(parent):
     tabla.column("subtotal", width=110, minwidth=90, anchor="e", stretch=False)
     tabla.column("mod", width=60, minwidth=50, anchor="center", stretch=False)
     tabla.column("del", width=60, minwidth=50, anchor="center", stretch=False)
-    tabla.grid(row=4, column=0, sticky="nsew", padx=15, pady=5)
+    tabla.grid(row=5, column=0, sticky="nsew", padx=15, pady=5)
     tabla.bind("<Button-1>", on_tabla_click)
     tabla.tag_configure('total_tag', background=st.BG_CARD, foreground=st.ACCENT, font=st.FONT_LABEL)
     
     label_subtotal_carrito = tk.Label(ventana, text="SUBTOTAL CARRITO: $ 0.00", font=st.FONT_LABEL, bg=st.BG_MAIN, fg=st.TEXT_PRIMARY)
-    label_subtotal_carrito.grid(row=5, column=0, sticky="e", padx=15, pady=(0, 5))
+    label_subtotal_carrito.grid(row=6, column=0, sticky="e", padx=15, pady=(0, 5))
 
     # PIE: TOTALES
     f_footer = tk.Frame(ventana, bg=st.BG_MAIN, pady=10)
-    f_footer.grid(row=6, column=0, sticky="ew", padx=15)
+    f_footer.grid(row=7, column=0, sticky="ew", padx=15)
     
     label_total = tk.Label(f_footer, text="TOTAL: $ -", font=("Inter", 24, "bold"), fg=st.ACCENT, bg=st.BG_MAIN)
     label_total.pack(side=tk.LEFT)
