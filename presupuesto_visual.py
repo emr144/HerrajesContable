@@ -23,15 +23,20 @@ def _normalize_string_for_sql_search(column_name):
     return n
 
 def _normalize_python_string_for_search(text):
-    """Normaliza una cadena de Python para comparación, eliminando acentos y caracteres especiales."""
+    """Normaliza una cadena de Python para comparación, eliminando acentos y caracteres especiales.
+    Preserva espacios para mantener tokens separados.
+    """
     if not text: return ""
     text = text.lower()
-    for char in [" ", "-", "_", "/", ".", ",", "(", ")", "[", "]", "*", "+", "|", ":", ";"]:
-        text = text.replace(char, "")
+    # Eliminar símbolos pero preservar espacios
+    for char in ["-", "_", "/", ".", ",", "(", ")", "[", "]", "*", "+", "|", ":", ";"]:
+        text = text.replace(char, " ")
+    # Normalizar tildes y caracteres especiales
     replacements = [('á','a'),('é','e'),('í','i'),('ó','o'),('ú','u'),('ü','u'),('ñ','n'),('ç','c')]
     for old, new in replacements:
         text = text.replace(old, new)
-    return text
+    # Limpiar espacios múltiples
+    return ' '.join(text.split())
 
 # Variables globales
 carrito = []
@@ -71,6 +76,7 @@ def obtener_proveedores_lista():
     return lista_proveedores_cache
 
 def buscar_productos_db(termino="", filtro_proveedor=None, filtro_codigo=""):
+    """Busca productos con lógica flexible: palabras en cualquier orden."""
     conexion = database.conectar()
     cursor = conexion.cursor()
     
@@ -87,14 +93,16 @@ def buscar_productos_db(termino="", filtro_proveedor=None, filtro_codigo=""):
     if filtro_codigo:
         tokens = _normalize_python_string_for_search(filtro_codigo).split()
         for t in tokens:
-            query += f" AND {_normalize_string_for_sql_search('p.codigo_proveedor')} LIKE ?"
-            args.append(f'%{t}%')
+            if t:
+                query += f" AND {_normalize_string_for_sql_search('p.codigo_proveedor')} LIKE ?"
+                args.append(f'%{t}%')
 
     if termino:
         tokens = _normalize_python_string_for_search(termino).split()
         for t in tokens:
-            query += f" AND {_normalize_string_for_sql_search('p.descripcion')} LIKE ?"
-            args.append(f'%{t}%')
+            if t:
+                query += f" AND {_normalize_string_for_sql_search('p.descripcion')} LIKE ?"
+                args.append(f'%{t}%')
 
     if filtro_proveedor:
         query += " AND pr.nombre = ?"

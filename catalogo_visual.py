@@ -32,7 +32,9 @@ def _normalize_python_string_for_search(text):
 sugerencias_map = {}
 
 def obtener_productos(filtro=""):
-    """Consulta la DB buscando por código o por descripción"""
+    """Consulta la DB buscando por código o descripción.
+    Búsqueda flexible: encuentra palabras en cualquier orden.
+    """
     conexion = database.conectar()
     if not conexion: return []
     cursor = conexion.cursor()
@@ -42,13 +44,20 @@ def obtener_productos(filtro=""):
     norm_cod = _normalize_string_for_sql_search("codigo_proveedor")
     norm_desc = _normalize_string_for_sql_search("descripcion")
     
-    cond_cod = " AND ".join([f"{norm_cod} LIKE ?" for _ in tokens])
-    cond_desc = " AND ".join([f"{norm_desc} LIKE ?" for _ in tokens])
-
-    query = f"SELECT id, codigo_proveedor, descripcion FROM productos WHERE (({cond_cod}) OR ({cond_desc})) AND estado = 'ACTIVO' LIMIT 10"
+    # Busca: código O descripción deben contener TODAS las palabras
+    cond_parts = []
+    params = []
+    for t in tokens:
+        if t:
+            cond_parts.append(f"({norm_cod} LIKE ? OR {norm_desc} LIKE ?)")
+            params.extend([f"%{t}%", f"%{t}%"])
     
-    params = [f"%{t}%" for t in tokens] * 2
-    cursor.execute(query, params) # Use %s placeholders
+    if not cond_parts: return []
+    
+    where_clause = " AND ".join(cond_parts) + " AND estado = 'ACTIVO'"
+    query = f"SELECT id, codigo_proveedor, descripcion FROM productos WHERE {where_clause} LIMIT 10"
+    
+    cursor.execute(query, tuple(params))
     resultados = cursor.fetchall()
     conexion.close()
     return resultados

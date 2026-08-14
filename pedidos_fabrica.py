@@ -66,7 +66,9 @@ def obtener_proveedores():
         if conexion: conexion.close()
 
 def buscar_productos_para_pedido(termino="", proveedor_nombre=None):
-    """Busca productos por descripción o código para el autocompletado de pedidos."""
+    """Busca productos por descripción o código para el autocompletado de pedidos.
+    Búsqueda flexible: encuentra palabras en cualquier orden.
+    """
     conexion = database.conectar()
     cursor = None
     if not conexion: return []
@@ -82,8 +84,9 @@ def buscar_productos_para_pedido(termino="", proveedor_nombre=None):
         cond_parts = []
         params = []
         for t in tokens:
-            cond_parts.append(f"({norm_desc} LIKE ? OR {norm_cod} LIKE ?)")
-            params.extend([f"%{t}%", f"%{t}%"])
+            if t:
+                cond_parts.append(f"({norm_desc} LIKE ? OR {norm_cod} LIKE ?)")
+                params.extend([f"%{t}%", f"%{t}%"])
         
         query = f"""
             SELECT p.id, p.codigo_proveedor, p.descripcion, pr.nombre, 

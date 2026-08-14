@@ -22,16 +22,20 @@ def _normalize_string_for_sql_search(column_name):
     return n
 
 def _normalize_python_string_for_search(text):
-    """Normaliza una cadena de Python para comparación, eliminando acentos y caracteres especiales."""
+    """Normaliza una cadena de Python para comparación, eliminando acentos y caracteres especiales.
+    Preserva espacios para mantener tokens separados.
+    """
     if not text: return ""
     text = text.lower()
-    for char in [" ", "-", "_", "/", ".", ",", "(", ")", "[", "]", "*", "+", "|", ":", ";"]:
-        text = text.replace(char, "")
+    # Eliminar símbolos pero preservar espacios
+    for char in ["-", "_", "/", ".", ",", "(", ")", "[", "]", "*", "+", "|", ":", ";"]:
+        text = text.replace(char, " ")
+    # Normalizar tildes y caracteres especiales
     replacements = [('á','a'),('é','e'),('í','i'),('ó','o'),('ú','u'),('ü','u'),('ñ','n'),('ç','c')]
     for old, new in replacements:
         text = text.replace(old, new)
-    return text
-
+    # Limpiar espacios múltiples
+    return ' '.join(text.split())
 # Variable global para controlar edición
 producto_seleccionado_id = None
 
@@ -89,14 +93,16 @@ def cargar_productos():
                 query += f" AND {_normalize_string_for_sql_search('p.codigo_proveedor')} LIKE ?"
                 params.append(f"%{t}%")
             
-    # Filtro por Descripción
+    # Filtro por Descripción (búsqueda flexible: palabras en cualquier orden)
     if ent_buscar_desc:
         desc_f = ent_buscar_desc.get().strip()
         if desc_f:
             tokens = _normalize_python_string_for_search(desc_f).split()
+            # Busca descripciones que contengan TODAS las palabras (en cualquier orden)
             for t in tokens:
-                query += f" AND {_normalize_string_for_sql_search('p.descripcion')} LIKE ?"
-                params.append(f"%{t}%")
+                if t:  # Evitar tokens vacíos
+                    query += f" AND {_normalize_string_for_sql_search('p.descripcion')} LIKE ?"
+                    params.append(f"%{t}%")
         
     query += " ORDER BY p.descripcion ASC"
     cursor.execute(query, params)
@@ -375,7 +381,9 @@ def on_tabla_click(event):
 # --- FUNCIONES PARA BUSCADOR EN FORMULARIO DE EDICIÓN ---
 
 def buscar_productos_para_edicion(termino):
-    """Busca productos por descripción o código para el autocompletado de edición."""
+    """Busca productos por descripción o código para el autocompletado de edición.
+    Búsqueda flexible: encuentra palabras en cualquier orden.
+    """
     conn = database.conectar()
     cursor = conn.cursor()
     tokens = _normalize_python_string_for_search(termino).split()
@@ -384,12 +392,19 @@ def buscar_productos_para_edicion(termino):
     norm_desc = _normalize_string_for_sql_search("descripcion")
     norm_cod = _normalize_string_for_sql_search("codigo_proveedor")
     
-    cond_desc = " AND ".join([f"{norm_desc} LIKE ?" for _ in tokens])
-    cond_cod = " AND ".join([f"{norm_cod} LIKE ?" for _ in tokens])
+    # Busca: descripción O código deben contener TODAS las palabras
+    cond_parts = []
+    params = []
+    for t in tokens:
+        if t:
+            cond_parts.append(f"({norm_desc} LIKE ? OR {norm_cod} LIKE ?)")
+            params.extend([f"%{t}%", f"%{t}%"])
 
-    query = f"SELECT id, codigo_proveedor, descripcion FROM productos WHERE (({cond_desc}) OR ({cond_cod})) ORDER BY descripcion LIMIT 15"
+    if not cond_parts: return []
     
-    params = [f"%{t}%" for t in tokens] * 2
+    where_clause = " AND ".join(cond_parts)
+    query = f"SELECT id, codigo_proveedor, descripcion FROM productos WHERE {where_clause} ORDER BY descripcion LIMIT 15"
+    
     cursor.execute(query, params)
     resultados = cursor.fetchall()
     conn.close()

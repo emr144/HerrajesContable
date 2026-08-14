@@ -4,7 +4,7 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import pandas as pd
 import styles as st
-from database import db 
+from database import db
 
 def _ejecutar_importacion(proveedor_id, archivo_excel, numero_lista, fecha_lista, descuento_prov=None, incremento_prov=None, margen_defecto=1.6):
     """Lógica de procesamiento de archivo y carga a la nube."""
@@ -78,7 +78,7 @@ def montar_interfaz(parent):
             label_archivo.config(text=os.path.basename(path))
 
     def actualizar_solo_coeficientes():
-        """Actualiza coeficientes en la nube sin requerir Excel."""
+        """Actualiza coeficientes en la base compartida y sincroniza la copia local."""
         prov = combo_proveedores.get()
         if not prov:
             messagebox.showwarning("Atención", "Seleccione un proveedor primero.")
@@ -98,19 +98,22 @@ def montar_interfaz(parent):
         if not confirmar: return
 
         try:
-            # 1. Actualizar el proveedor
-            db.ejecutar_consulta("""
-                UPDATE proveedores SET descuento_global = %s, incremento_global = %s, 
-                fecha_modif_coeficiente = CURRENT_DATE WHERE id = %s
-            """, (desc, inc, proveedor_id))
+            consultas = [
+                ("""
+                    UPDATE proveedores SET descuento_global = %s, incremento_global = %s, 
+                    fecha_modif_coeficiente = CURRENT_DATE WHERE id = %s
+                """, (desc, inc, proveedor_id)),
+                ("""
+                    UPDATE productos SET coeficiente_ganancia = %s 
+                    WHERE proveedor_id = %s AND estado = 'ACTIVO'
+                """, (coef, proveedor_id)),
+            ]
 
-            # 2. Actualizar el coeficiente de TODOS sus productos activos
-            db.ejecutar_consulta("""
-                UPDATE productos SET coeficiente_ganancia = %s 
-                WHERE proveedor_id = %s AND estado = 'ACTIVO'
-            """, (coef, proveedor_id))
+            for query, params in consultas:
+                if not db.ejecutar_consulta(query, params):
+                    raise RuntimeError("No se pudo actualizar la base compartida.")
 
-            messagebox.showinfo("Éxito", f"Coeficientes de {prov} actualizados correctamente en Supabase.")
+            messagebox.showinfo("Éxito", f"Coeficientes de {prov} actualizados correctamente en la base compartida.")
         except Exception as e:
             messagebox.showerror("Error", f"No se pudo actualizar: {e}")
 
